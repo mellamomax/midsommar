@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Midsommar</title>
+    <meta name="description" content="Midsommarapp för prepp, lekar och poäng." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <span class="brand-mark">M</span>
+          <div>
+            <strong>Midsommar på Taltrastvägen</strong>
+            <span>Eskilstuna · 19-21 juni</span>
+          </div>
+        </div>
+        <button class="profile-button" id="profile-button" type="button">
+          <span id="profile-initial">?</span>
+          <small id="profile-label">Välj</small>
+        </button>
+      </header>
+
+      <section class="forecast-strip" aria-label="Väderprognos" id="forecast-strip"></section>
+
+      <nav class="page-tabs" aria-label="Huvudsidor">
+        <button class="page-tab is-active" type="button" data-page="prep">Prepp</button>
+        <button class="page-tab" type="button" data-page="party">Midsommar</button>
+      </nav>
+
+      <main class="app-main">
+        <section class="page is-active" id="prep-page" aria-label="Prepp">
+          <section class="prep-hero">
+            <span class="micro-label">Nedräkning</span>
+            <strong id="countdown-days">00 dagar</strong>
+            <small id="countdown-time">00:00:00 kvar</small>
+          </section>
+
+          <section class="prep-grid">
+            <article class="glass-card">
+              <div class="card-title">
+                <span>OSA</span>
+                <strong id="rsvp-count">0/8 klara</strong>
+              </div>
+              <div class="rsvp-list" id="rsvp-list"></div>
+            </article>
+
+            <article class="glass-card">
+              <div class="card-title">
+                <span>Packlista</span>
+                <strong id="pack-count">0 kvar</strong>
+              </div>
+              <div class="pack-list" id="pack-list"></div>
+            </article>
+          </section>
+        </section>
+
+        <section class="page" id="party-page" aria-label="Midsommar">
+          <nav class="section-tabs" aria-label="Midsommar sektioner">
+            <button class="section-tab is-active" type="button" data-section="today">Start</button>
+            <button class="section-tab" type="button" data-section="games">Lekar</button>
+            <button class="section-tab" type="button" data-section="score">Poäng</button>
+            <button class="section-tab" type="button" data-section="photos">Bilder</button>
+            <button class="section-tab" type="button" data-section="pentathlon">5-kamp</button>
+            <button class="section-tab" type="button" data-section="match">Match</button>
+          </nav>
+
+          <section class="party-panel">
+            <div class="panel-head">
+              <span id="party-kicker">Start</span>
+              <strong id="party-title">Dashboard</strong>
+            </div>
+            <div class="panel-content" id="party-content" tabindex="-1"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="profile-dialog" id="profile-dialog">
+      <form method="dialog">
+        <h2>Vem är du?</h2>
+        <p>Profilen styr din bingo, dina uppdrag och dina poäng.</p>
+        <div class="profile-grid" id="profile-grid"></div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
