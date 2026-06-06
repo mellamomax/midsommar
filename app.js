@@ -22,6 +22,7 @@ let remoteSaveTimer = null;
 let applyingRemoteState = false;
 let lastRemoteStateJson = "";
 let remotePollTimer = null;
+let pendingRemoteSave = false;
 
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 
@@ -209,7 +210,14 @@ function saveState() {
 }
 
 function getSharedState() {
-  return Object.fromEntries(SHARED_STATE_KEYS.map((key) => [key, state[key]]));
+  return sanitizeSharedState(Object.fromEntries(SHARED_STATE_KEYS.map((key) => [key, state[key]])));
+}
+
+function sanitizeSharedState(sharedState) {
+  return JSON.parse(JSON.stringify(sharedState, (key, value) => {
+    if (key === "photo" && typeof value === "string" && value.startsWith("data:image/")) return "";
+    return value;
+  }));
 }
 
 function applySharedState(sharedState) {
@@ -225,6 +233,7 @@ function applySharedState(sharedState) {
 
 function scheduleRemoteSave() {
   if (!remoteReady) return;
+  pendingRemoteSave = true;
   clearTimeout(remoteSaveTimer);
   remoteSaveTimer = setTimeout(saveRemoteState, 350);
 }
@@ -241,10 +250,12 @@ async function saveRemoteState() {
     body: JSON.stringify({ id: REMOTE_STATE_ID, data: sharedState, updated_at: new Date().toISOString() }),
   });
   if (!response.ok) {
+    pendingRemoteSave = false;
     console.warn("Kunde inte spara Supabase-state", await response.text());
     return;
   }
   lastRemoteStateJson = JSON.stringify(sharedState);
+  pendingRemoteSave = false;
 }
 
 async function loadRemoteState() {
@@ -274,7 +285,7 @@ async function fetchRemoteState() {
 }
 
 async function pollRemoteState() {
-  if (!remoteReady) return;
+  if (!remoteReady || pendingRemoteSave) return;
   const sharedState = await fetchRemoteState();
   if (!sharedState) return;
   const nextJson = JSON.stringify(sharedState);
@@ -660,12 +671,14 @@ function renderPentathlon() {
   return `<div class="score-mini">${totals.map((row) => `<article><strong>${escapeHtml(row.team)}</strong><span>${row.score} p</span></article>`).join("")}</div><div class="pentathlon-list">${state.pentathlon.map((event, eventIndex) => `<article class="game-card"><span class="micro-label">${eventIndex + 1}/5</span><h3>${escapeHtml(event.name)}</h3><div class="mini-score-row">${state.teamScores.map((team, teamIndex) => `<button type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}">${escapeHtml(team.team)} +</button>`).join("")}</div></article>`).join("")}</div>`;
 }
 
-function proofImageToDataUrl(file) {
+function compressProofImage(file) {
   return new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve(null), 1800);
     const reader = new FileReader();
     reader.addEventListener("load", () => {
       const image = new Image();
       image.addEventListener("load", () => {
+        clearTimeout(timeout);
         const maxSide = 900;
         const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
         const canvas = document.createElement("canvas");
@@ -673,47 +686,52 @@ function proofImageToDataUrl(file) {
         canvas.height = Math.max(1, Math.round(image.height * scale));
         const context = canvas.getContext("2d");
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.74));
+        canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.74);
       });
-      image.addEventListener("error", () => resolve(String(reader.result)));
+      image.addEventListener("error", () => {
+        clearTimeout(timeout);
+        resolve(null);
+      });
       image.src = String(reader.result);
     });
-    reader.addEventListener("error", () => resolve(""));
+    reader.addEventListener("error", () => {
+      clearTimeout(timeout);
+      resolve(null);
+    });
     reader.readAsDataURL(file);
   });
 }
 
-function dataUrlToBlob(dataUrl) {
-  const [header, body] = dataUrl.split(",");
-  const mime = header.match(/:(.*?);/)?.[1] || "image/jpeg";
-  const binary = atob(body);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-  return new Blob([bytes], { type: mime });
+function extensionForMime(mime) {
+  if (mime === "image/png") return "png";
+  if (mime === "image/webp") return "webp";
+  if (mime === "image/heic") return "heic";
+  if (mime === "image/heif") return "heif";
+  return "jpg";
 }
 
-function proofPath(kind, label) {
+function proofPath(kind, label, extension = "jpg") {
   const safeProfile = (state.profile || "guest").toLowerCase();
   const safeLabel = String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "proof";
-  return `${safeProfile}/${kind}-${safeLabel}-${Date.now()}.jpg`;
+  return `${safeProfile}/${kind}-${safeLabel}-${Date.now()}.${extension}`;
 }
 
 async function uploadProofImage(file, kind, label) {
-  const dataUrl = await proofImageToDataUrl(file);
-  if (!dataUrl) return dataUrl;
-  const blob = dataUrlToBlob(dataUrl);
-  const path = proofPath(kind, label);
+  const compressedBlob = await compressProofImage(file);
+  const blob = compressedBlob || file;
+  const mime = compressedBlob ? "image/jpeg" : (file.type || "application/octet-stream");
+  const path = proofPath(kind, label, extensionForMime(mime));
   const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${PROOF_BUCKET}/${encodeURI(path)}`, {
     method: "POST",
     headers: remoteHeaders({
-      "Content-Type": "image/jpeg",
+      "Content-Type": mime,
       "x-upsert": "false",
     }),
     body: blob,
   });
   if (!response.ok) {
     console.warn("Kunde inte ladda upp bild till Supabase", await response.text());
-    return dataUrl;
+    return "";
   }
   return `${SUPABASE_URL}/storage/v1/object/public/${PROOF_BUCKET}/${encodeURI(path)}`;
 }
@@ -726,7 +744,10 @@ async function completeMissionWithFile(input) {
   const mission = profile.missions[missionIndex];
   if (!mission || mission.photo) return;
   const photo = await uploadProofImage(file, "mission", mission.id || missionIndex);
-  if (!photo) return;
+  if (!photo) {
+    window.alert("Bilden kunde inte laddas upp. Testa igen med en vanlig bild från kameran eller albumet.");
+    return;
+  }
   mission.photo = photo;
   mission.completedAt = new Date().toISOString();
   profile.activeMission = null;
@@ -743,7 +764,10 @@ async function completeBingoWithFile(input) {
   const item = profile.bingo[bingoIndex];
   if (!item || profile.bingoProofs?.[item]?.completedAt) return;
   const photo = await uploadProofImage(file, "bingo", item);
-  if (!photo) return;
+  if (!photo) {
+    window.alert("Bilden kunde inte laddas upp. Testa igen med en vanlig bild från kameran eller albumet.");
+    return;
+  }
   profile.bingoProofs = profile.bingoProofs || {};
   profile.bingoProofs[item] = { photo, completedAt: new Date().toISOString() };
   if (!profile.bingoHits.includes(item)) profile.bingoHits.push(item);
