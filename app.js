@@ -23,6 +23,7 @@ let applyingRemoteState = false;
 let lastRemoteStateJson = "";
 let remotePollTimer = null;
 let pendingRemoteSave = false;
+let galleryIndex = null;
 
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 
@@ -101,8 +102,6 @@ const matchFallback = {
     time: "19:00 svensk tid",
     venue: "NRG Stadium, Houston",
   },
-  odds: "Inga odds i no-key API",
-  lineup: ["Olsen", "Hien", "Lindelöf", "Gudmundsson", "Kulusevski", "Ayari", "Bergvall", "Elanga", "Isak", "Gyökeres", "Nanasi"],
 };
 
 const voteQuestions = [
@@ -370,8 +369,8 @@ function migrateProfile(name, profile) {
   });
   profile.missions = profile.missions.map((mission, index) =>
     typeof mission === "string"
-      ? { id: `${name}-${index}`, text: mission, photo: "", completedAt: "" }
-      : { photo: "", completedAt: "", ...mission },
+      ? { id: `${name}-${index}`, text: mission, points: missionPointsFor(mission), photo: "", completedAt: "" }
+      : { photo: "", completedAt: "", points: missionPointsFor(mission.text || "", index), ...mission },
   );
 }
 
@@ -380,9 +379,17 @@ function getMissionsFor(name) {
   return missionPool.slice(guestIndex * 4, guestIndex * 4 + 4).map((text, index) => ({
     id: `${name}-${index}`,
     text,
+    points: missionPointsFor(text, index),
     photo: "",
     completedAt: "",
   }));
+}
+
+function missionPointsFor(text, index = 0) {
+  const value = String(text).toLowerCase();
+  if (/(gruppbild|minst fyra|hemlig allians|vinnarfirande|förklarar regler|mest svenska|räddade kvällen|oväntad detalj)/i.test(value)) return 3;
+  if (/(sista tuggan|något gult|något blått|kaffe|filt|barfota|potatis|tummen upp)/i.test(value)) return 1;
+  return index === 2 ? 3 : 2;
 }
 
 function renderAll() {
@@ -448,6 +455,7 @@ function renderPrep() {
 }
 
 function renderParty() {
+  if (state.section !== "photos") galleryIndex = null;
   const [kicker, title] = sectionMeta[state.section];
   setText("party-kicker", kicker);
   setText("party-title", title);
@@ -490,8 +498,6 @@ function renderMatch() {
       <p>${escapeHtml(apiData?.detail || `${matchFallback.selected.date} · ${matchFallback.selected.time} · ${matchFallback.selected.venue}`)}</p>
     </article>
     <article class="game-card"><span class="micro-label">Vi möter</span><h3>${matchFallback.opponents.map(escapeHtml).join(" · ")}</h3><p>API-status: ${escapeHtml(state.matchApiStatus)}. Källa: worldcup26.ir/get/games.</p></article>
-    <article class="game-card"><span class="micro-label">Startelva</span><div class="lineup">${matchFallback.lineup.map((name) => `<span>${escapeHtml(name)}</span>`).join("")}</div><p>Preliminär. Officiell elva släpps nära avspark via API.</p></article>
-    <article class="game-card"><span class="micro-label">Odds</span><h3>${escapeHtml(apiData?.odds || matchFallback.odds)}</h3><p>Öppna no-key API:t saknar ofta odds. Då visas ingen fejkdata.</p></article>
     <article class="game-card">
       <span class="micro-label">Din matchröst</span>
       <h3>1X2</h3>
@@ -568,7 +574,7 @@ function evaluateBingoRewards(profile) {
 function renderMission(profile) {
   return `<div class="mission-list">${profile.missions.map((mission, index) => `
     <article class="mission-card ${mission.photo ? "is-complete" : ""}">
-      <div><span class="micro-label">Uppdrag ${index + 1} · 2 p</span><h3>${escapeHtml(mission.text)}</h3><p class="hint">${mission.photo ? "Klar och låst." : "Tryck Utför när du kan ta bilden direkt."}</p></div>
+      <div><span class="micro-label">${mission.points || missionPointsFor(mission.text, index)} p</span><h3>${escapeHtml(mission.text)}</h3><p class="hint">${mission.photo ? "Klar och låst." : "Tryck Utför när du kan ta bilden direkt."}</p></div>
       ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*" capture="environment" data-mission-upload="${index}" />`}
     </article>`).join("")}</div>`;
 }
@@ -634,7 +640,7 @@ function renderPhotosLegacy() {
   `).join("")}</div>`;
 }
 
-function renderPhotos() {
+function getGalleryPhotos() {
   const missionPhotos = guests.flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.missions) return [];
@@ -649,18 +655,36 @@ function renderPhotos() {
       .filter(([, proof]) => proof?.photo)
       .map(([text, proof]) => ({ name, text, photo: proof.photo, type: "Bingo" }));
   });
-  const photos = [...missionPhotos, ...bingoPhotos];
+  return [...missionPhotos, ...bingoPhotos];
+}
 
+function renderPhotos() {
+  const photos = getGalleryPhotos();
+  if (galleryIndex !== null && !photos[galleryIndex]) galleryIndex = null;
   if (!photos.length) {
     return `<article class="game-card"><h3>Inga bilder ännu</h3><p class="hint">När någon klarar uppdrag eller bingo med bild hamnar bevisen här.</p></article>`;
   }
 
   return `<div class="photo-grid">${photos.map((item) => `
-    <article class="photo-card">
+    <button class="photo-card" type="button" data-photo-index="${photos.indexOf(item)}">
       <img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />
       <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span></div>
-    </article>
-  `).join("")}</div>`;
+    </button>
+  `).join("")}</div>${galleryIndex !== null ? renderPhotoViewer(photos) : ""}`;
+}
+
+function renderPhotoViewer(photos) {
+  const item = photos[galleryIndex];
+  const position = `${galleryIndex + 1}/${photos.length}`;
+  return `<div class="photo-viewer" data-photo-viewer>
+    <button class="photo-close" type="button" data-gallery-close aria-label="Stäng bildvisare">×</button>
+    <button class="photo-nav photo-nav--prev" type="button" data-gallery-prev aria-label="Föregående bild">‹</button>
+    <figure class="photo-viewer__stage">
+      <img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />
+      <figcaption><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${position}</small></figcaption>
+    </figure>
+    <button class="photo-nav photo-nav--next" type="button" data-gallery-next aria-label="Nästa bild">›</button>
+  </div>`;
 }
 
 function renderPentathlon() {
@@ -751,7 +775,7 @@ async function completeMissionWithFile(input) {
   mission.photo = photo;
   mission.completedAt = new Date().toISOString();
   profile.activeMission = null;
-  profile.points += 2;
+  profile.points += mission.points || missionPointsFor(mission.text, missionIndex);
   saveState();
   renderAll();
 }
@@ -773,6 +797,13 @@ async function completeBingoWithFile(input) {
   if (!profile.bingoHits.includes(item)) profile.bingoHits.push(item);
   evaluateBingoRewards(profile);
   saveState();
+  renderAll();
+}
+
+function moveGallery(step) {
+  const photos = getGalleryPhotos();
+  if (!photos.length || galleryIndex === null) return;
+  galleryIndex = (galleryIndex + step + photos.length) % photos.length;
   renderAll();
 }
 
@@ -902,6 +933,32 @@ function bindDynamicEvents() {
     completeBingoWithFile(input);
   }));
 
+  document.querySelectorAll("[data-photo-index]").forEach((button) => button.addEventListener("click", () => {
+    galleryIndex = Number(button.dataset.photoIndex);
+    renderAll();
+  }));
+
+  document.querySelector("[data-gallery-close]")?.addEventListener("click", () => {
+    galleryIndex = null;
+    renderAll();
+  });
+
+  document.querySelector("[data-gallery-prev]")?.addEventListener("click", () => moveGallery(-1));
+  document.querySelector("[data-gallery-next]")?.addEventListener("click", () => moveGallery(1));
+
+  const viewer = document.querySelector("[data-photo-viewer]");
+  if (viewer) {
+    let touchStartX = 0;
+    viewer.addEventListener("touchstart", (event) => {
+      touchStartX = event.changedTouches[0]?.clientX || 0;
+    }, { passive: true });
+    viewer.addEventListener("touchend", (event) => {
+      const delta = (event.changedTouches[0]?.clientX || 0) - touchStartX;
+      if (Math.abs(delta) < 40) return;
+      moveGallery(delta < 0 ? 1 : -1);
+    }, { passive: true });
+  }
+
   document.querySelectorAll("[data-five-event]").forEach((button) => button.addEventListener("click", () => {
     state.pentathlon[Number(button.dataset.fiveEvent)].scores[Number(button.dataset.fiveTeam)] += 1;
     saveState();
@@ -940,7 +997,6 @@ async function loadWorldCupMatch() {
     state.matchApiData = {
       title: `${teams.away || "Sweden"} vs ${teams.home || "TBD"}`,
       detail: [swedenMatch.date, swedenMatch.time, swedenMatch.stadium?.name || swedenMatch.stadium || swedenMatch.venue || swedenMatch.location].filter(Boolean).join(" · "),
-      odds: swedenMatch.odds ? JSON.stringify(swedenMatch.odds) : "Inga odds i no-key API",
     };
     state.matchApiStatus = "Matchdata hämtad från no-key API";
   } catch {
@@ -1031,12 +1087,14 @@ function escapeHtml(value) {
 document.querySelectorAll("[data-page]").forEach((button) => button.addEventListener("click", () => {
   state.page = button.dataset.page;
   if (state.page === "party") state.section = "today";
+  galleryIndex = null;
   saveState();
   renderAll();
 }));
 
 document.querySelectorAll("[data-section]").forEach((button) => button.addEventListener("click", () => {
   state.section = button.dataset.section;
+  galleryIndex = null;
   saveState();
   renderAll();
 }));
