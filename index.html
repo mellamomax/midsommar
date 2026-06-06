@@ -10,20 +10,21 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div class="brand-lockup">
-          <span class="brand-mark">M</span>
-          <div>
-            <strong>Midsommar på Taltrastvägen</strong>
-            <span>Eskilstuna · 19-21 juni</span>
+        <div class="topbar-main">
+          <div class="brand-lockup">
+            <span class="brand-mark">M</span>
+            <div>
+              <strong>Midsommar 2026</strong>
+              <span>Taltrastvägen 12 · Eskilstuna</span>
+            </div>
           </div>
+          <button class="profile-button" id="profile-button" type="button">
+            <span id="profile-initial">?</span>
+            <small id="profile-label">Välj</small>
+          </button>
         </div>
-        <button class="profile-button" id="profile-button" type="button">
-          <span id="profile-initial">?</span>
-          <small id="profile-label">Välj</small>
-        </button>
+        <section class="forecast-strip" aria-label="Väderprognos" id="forecast-strip"></section>
       </header>
-
-      <section class="forecast-strip" aria-label="Väderprognos" id="forecast-strip"></section>
 
       <nav class="page-tabs" aria-label="Huvudsidor">
         <button class="page-tab is-active" type="button" data-page="prep">Prepp</button>
