@@ -474,7 +474,7 @@ function normalizeProfileName(value) {
 }
 
 function isAdmin() {
-  return state.adminMode === true && state.adminOwner === "Max";
+  return state.adminMode === true && state.adminOwner === "Max" && canUseAdmin();
 }
 
 function canUseAdmin() {
@@ -545,15 +545,15 @@ function renderProfile() {
   document.querySelector("#profile-button").disabled = false;
   document.querySelector("#profile-grid").innerHTML = allParticipants()
     .map((name) => isAdmin()
-      ? `<div class="profile-manage-row"><button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button><button class="profile-delete-button" type="button" data-delete-profile="${escapeHtml(name)}" ${name === "Max" ? "disabled" : ""}>Radera</button></div>`
+      ? `<div class="profile-manage-row"><button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button><button class="profile-delete-button" type="button" data-delete-profile="${escapeHtml(name)}" aria-label="Radera ${escapeHtml(name)}" ${name === "Max" ? "disabled" : ""}>×</button></div>`
       : `<button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`)
     .join("");
   const adminInput = document.querySelector("#admin-name-input");
   if (adminInput && (isAdmin() || !adminInput.value)) adminInput.value = state.profile || "";
   if (adminInput) adminInput.disabled = !isAdmin();
   document.querySelector("[data-admin-login]").disabled = !isAdmin();
-  document.querySelector(".admin-name-field").hidden = !isAdmin();
-  document.querySelector("#current-profile-card").hidden = !(canUseAdmin() || isAdmin());
+  document.querySelector(".admin-name-field").hidden = !canUseAdmin() || !isAdmin();
+  document.querySelector("#current-profile-card").hidden = !canUseAdmin();
   document.querySelector("#profile-grid").hidden = false;
   document.querySelector("#admin-code-row").hidden = !canUseAdmin() || isAdmin();
   document.querySelector("[data-admin-mode]").hidden = !isAdmin();
@@ -782,7 +782,8 @@ function renderPersonalScore() {
   return `<div class="scoreboard scoreboard--leaderboard">${rows.map((row, index) => `
     <article class="score-row score-row--rank rank-${index + 1} ${row.name === state.profile ? "is-self" : ""}">
       <span class="rank-badge">${index + 1}</span>
-      <div><strong>${escapeHtml(row.name)}</strong><span>${row.points} poäng</span></div>
+      <strong>${escapeHtml(row.name)}</strong>
+      <span class="score-points">${row.points} p</span>
     </article>`).join("")}${isAdmin() ? renderVoteAdmin() : ""}</div>`;
 }
 
@@ -1445,6 +1446,7 @@ document.querySelector("#profile-grid").addEventListener("click", (event) => {
   const deleteButton = event.target.closest("[data-delete-profile]");
   if (deleteButton) {
     const name = deleteButton.dataset.deleteProfile;
+    if (!window.confirm(`Radera profilen ${name}? Det går inte att ångra.`)) return;
     if (!deleteProfile(name)) return;
     showToast(`Raderade ${name}`);
     saveState();
@@ -1454,6 +1456,10 @@ document.querySelector("#profile-grid").addEventListener("click", (event) => {
   const button = event.target.closest("[data-profile]");
   if (!button) return;
   state.profile = button.dataset.profile;
+  if (!canUseAdmin()) {
+    state.adminMode = false;
+    state.adminOwner = "";
+  }
   activeProfile();
   showToast(`Profil bytt till ${state.profile}`);
   saveState();

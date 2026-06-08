@@ -675,10 +675,11 @@ details[open] summary::after {
 }
 
 .profile-delete-button {
-  min-width: 72px;
-  padding: 0 10px;
+  min-width: 42px;
+  padding: 0;
   background: #c93d47;
-  font-size: 0.74rem;
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 .profile-delete-button:disabled {
@@ -874,11 +875,11 @@ details[open] summary::after {
 }
 
 .score-row--rank {
-  grid-template-columns: auto minmax(0, 1fr);
-  min-height: 42px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 36px;
   border: 1px solid transparent;
   border-radius: 14px;
-  padding: 7px 9px;
+  padding: 5px 8px;
   background: #fff;
 }
 
@@ -889,13 +890,21 @@ details[open] summary::after {
 
 .rank-badge {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   place-items: center;
   border-radius: 50%;
-  color: #fff;
-  background: var(--leaf);
+  color: var(--leaf-dark);
+  background: #edf4e9;
   font-weight: 950;
+}
+
+.score-points {
+  justify-self: end;
+  color: var(--leaf-dark);
+  font-size: 0.84rem;
+  font-weight: 950;
+  white-space: nowrap;
 }
 
 .score-row--rank.rank-1 .rank-badge {
@@ -3141,11 +3150,11 @@ body[data-section="score"] .scoreboard--leaderboard {
 }
 
 body[data-section="score"] .score-row--rank {
-  grid-template-columns: auto minmax(0, 1fr);
-  min-height: 42px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 36px;
   border: 1px solid transparent;
   border-radius: 14px;
-  padding: 7px 9px;
+  padding: 5px 8px;
 }
 
 body[data-section="score"] .score-row--rank.is-self {
