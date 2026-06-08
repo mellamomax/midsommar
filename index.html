@@ -34,27 +34,45 @@
       <main class="app-main">
         <section class="page is-active" id="prep-page" aria-label="Prepp">
           <section class="prep-hero">
-            <span class="micro-label">Nedräkning</span>
-            <strong id="countdown-days">00 dagar</strong>
-            <small id="countdown-time">00:00:00 kvar</small>
-          </section>
-
-          <section class="prep-grid">
-            <article class="glass-card">
-              <div class="card-title">
-                <span>OSA</span>
-                <strong id="rsvp-count">0/8 klara</strong>
+            <img class="prep-hero__image" src="assets/prep-countdown-bg.png" alt="" />
+            <div class="prep-hero__shade"></div>
+            <div class="prep-hero__content">
+              <div class="prep-welcome">
+                <span class="micro-label">Taltrastvägen 12</span>
+                <strong>Snart midsommar</strong>
+                <small>Eskilstuna · fredag 19 juni</small>
               </div>
-              <div class="rsvp-list" id="rsvp-list"></div>
-            </article>
 
-            <article class="glass-card">
-              <div class="card-title">
-                <span>Packlista</span>
-                <strong id="pack-count">0 kvar</strong>
-              </div>
-              <div class="pack-list" id="pack-list"></div>
-            </article>
+              <button class="countdown-ring" id="countdown-ring" type="button" aria-label="Nedräkning till midsommar">
+                <span>Nedräkning till</span>
+                <strong id="countdown-days">00</strong>
+                <small id="countdown-time">00:00:00 kvar</small>
+              </button>
+
+              <section class="prep-stack">
+                <article class="prep-rsvp-card">
+                  <div>
+                    <span class="micro-label">OSA</span>
+                    <strong id="rsvp-count">0/8 klara</strong>
+                  </div>
+                  <div class="rsvp-list" id="rsvp-list"></div>
+                </article>
+
+                <article class="prep-address-card">
+                  <span class="micro-label">Plats</span>
+                  <strong>Taltrastvägen 12</strong>
+                  <small>Eskilstuna</small>
+                </article>
+
+                <details class="prep-pack-card">
+                  <summary>
+                    <span>Packlista</span>
+                    <strong id="pack-count">0 kvar</strong>
+                  </summary>
+                  <div class="pack-list" id="pack-list"></div>
+                </details>
+              </section>
+            </div>
           </section>
         </section>
 
