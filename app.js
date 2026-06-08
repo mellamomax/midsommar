@@ -33,6 +33,7 @@ let toastTimer = null;
 let profileClickTimer = null;
 let lastProfileTap = 0;
 let lastCountdownTap = 0;
+let lastLoginTap = 0;
 
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 
@@ -1520,6 +1521,18 @@ document.querySelector("#login-screen")?.addEventListener("dblclick", (event) =>
   if (event.target.closest("input, button, label")) return;
   event.preventDefault();
   skipLoginForTest();
+});
+document.querySelector("#login-screen")?.addEventListener("pointerup", (event) => {
+  if (event.pointerType === "mouse") return;
+  if (event.target.closest("input, button, label")) return;
+  const now = Date.now();
+  if (now - lastLoginTap < 420) {
+    event.preventDefault();
+    lastLoginTap = 0;
+    skipLoginForTest();
+    return;
+  }
+  lastLoginTap = now;
 });
 
 document.querySelector("#profile-button").addEventListener("click", (event) => {
