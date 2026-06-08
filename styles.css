@@ -3165,3 +3165,232 @@ body[data-section="score"] .score-row--rank.is-self {
   border-color: var(--leaf-dark);
   box-shadow: 0 0 0 2px rgba(23, 74, 52, 0.12);
 }
+
+/* Prep/profile/game polish v34 */
+.brand-profile-button {
+  border: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.brand-profile-button img,
+#brand-profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-photo-picker {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  border: 1px solid rgba(38, 114, 71, 0.18);
+  border-radius: 16px;
+  padding: 8px 10px;
+  color: var(--leaf-dark);
+  background: #fff;
+  font-weight: 950;
+}
+
+.login-photo-picker::before {
+  content: "+";
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, var(--leaf), var(--blue));
+  font-size: 1.2rem;
+}
+
+.login-photo-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.login-photo-picker img {
+  grid-column: 1;
+  grid-row: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.login-photo-picker img:not([hidden]) + span,
+.login-photo-picker:has(img:not([hidden]))::before {
+  display: none;
+}
+
+body[data-page="prep"] .prep-hero__content {
+  grid-template-rows: auto minmax(150px, 1fr) auto;
+  gap: 8px;
+  padding: max(30px, env(safe-area-inset-top)) 14px max(34px, calc(env(safe-area-inset-bottom) + 28px));
+}
+
+body[data-page="prep"] .prep-welcome {
+  margin-top: 14px;
+}
+
+body[data-page="prep"] .prep-welcome strong {
+  color: #153f2e;
+  font-size: clamp(2rem, 8.7vw, 2.7rem);
+  line-height: 0.92;
+}
+
+body[data-page="prep"] .prep-welcome small {
+  color: #28533d;
+  font-size: 0.86rem;
+}
+
+body[data-page="prep"] .prep-welcome small::after {
+  content: "" !important;
+}
+
+body[data-page="prep"] .countdown-ring {
+  width: min(62vw, 232px);
+  gap: 6px;
+  padding: 14px;
+}
+
+body[data-page="prep"] .countdown-ring span {
+  font-size: 0.68rem;
+}
+
+body[data-page="prep"] .countdown-ring strong {
+  font-size: clamp(3.4rem, 15vw, 4.7rem);
+}
+
+body[data-page="prep"] .countdown-ring small {
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+body[data-page="prep"] .prep-stack {
+  position: relative;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.prep-location-pin {
+  position: absolute;
+  z-index: 2;
+  top: -27px;
+  right: 26px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, #d94f5b, #f0b24c);
+  box-shadow: 0 12px 24px rgba(143, 64, 46, 0.25);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+body[data-page="prep"] .prep-rsvp-card {
+  gap: 8px;
+  padding: 12px;
+  border-radius: 22px;
+}
+
+body[data-page="prep"] .rsvp-choice-group button {
+  min-height: 48px;
+}
+
+.game-picker {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.game-picker .pill-button {
+  min-width: 0;
+  padding: 0 5px;
+  font-size: 0.72rem;
+}
+
+.before-after-card {
+  gap: 8px;
+}
+
+.before-after-card h3,
+.before-after-card p {
+  margin: 0;
+}
+
+.before-after-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.before-after-slot {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px;
+  background: #fff;
+}
+
+.before-after-slot strong {
+  color: var(--leaf-dark);
+  font-size: 0.86rem;
+}
+
+.before-after-slot video {
+  width: 100%;
+  aspect-ratio: 9 / 12;
+  border-radius: 10px;
+  background: #14231a;
+  object-fit: cover;
+}
+
+.before-after-slot .upload-button {
+  min-height: 34px;
+}
+
+.before-after-slot .upload-button:disabled {
+  opacity: 0.55;
+}
+
+@media (max-width: 430px) {
+  body[data-page="prep"] .prep-hero__content {
+    grid-template-rows: auto minmax(146px, 1fr) auto;
+    padding: max(28px, env(safe-area-inset-top)) 12px max(36px, calc(env(safe-area-inset-bottom) + 30px));
+  }
+
+  body[data-page="prep"] .prep-welcome {
+    margin-top: 12px;
+  }
+
+  body[data-page="prep"] .prep-welcome strong {
+    font-size: clamp(1.9rem, 8.5vw, 2.35rem);
+  }
+
+  body[data-page="prep"] .countdown-ring {
+    width: min(60vw, 218px);
+  }
+
+  body[data-page="prep"] .rsvp-choice-group button {
+    min-height: 44px;
+    border-radius: 16px;
+    font-size: 0.68rem;
+  }
+
+  .game-picker {
+    gap: 4px;
+  }
+
+  .game-picker .pill-button {
+    font-size: 0.62rem;
+  }
+}

@@ -17,6 +17,11 @@
         <p>Skriv ditt eget namn. Sen låses appen till dig.</p>
         <form class="login-form" id="login-form">
           <input id="login-name" name="name" autocomplete="given-name" placeholder="Ditt namn" />
+          <label class="login-photo-picker">
+            <input id="login-photo" type="file" accept="image/*" capture="user" />
+            <span id="login-photo-label">Ta profilbild</span>
+            <img id="login-photo-preview" alt="Profilbild" hidden />
+          </label>
           <button type="submit">Fortsätt</button>
         </form>
       </div>
@@ -26,7 +31,10 @@
       <header class="topbar">
         <div class="topbar-main">
           <div class="brand-lockup">
-            <span class="brand-mark">M</span>
+            <button class="brand-mark brand-profile-button" id="home-profile-button" type="button" aria-label="Gå till profilstart">
+              <span id="brand-profile-initial">M</span>
+              <img id="brand-profile-avatar" alt="" hidden />
+            </button>
             <div>
               <strong>Midsommar 2026</strong>
             </div>
@@ -51,18 +59,18 @@
             <div class="prep-hero__shade"></div>
             <div class="prep-hero__content">
               <div class="prep-welcome">
-                <span class="micro-label">Taltrastvägen 12 · Eskilstuna</span>
                 <strong>Midsommar 2026</strong>
                 <small>Fredag 19 juni</small>
               </div>
 
               <div class="countdown-ring" id="countdown-ring" aria-label="Nedräkning till midsommar">
-                <span>Nedräkning till</span>
+                <span>Nedräkning</span>
                 <strong id="countdown-days">00</strong>
                 <small id="countdown-time">00:00:00 kvar</small>
               </div>
 
               <section class="prep-stack">
+                <div class="prep-location-pin" aria-label="Taltrastvägen 12, Eskilstuna" title="Taltrastvägen 12, Eskilstuna">⌖</div>
                 <article class="prep-rsvp-card">
                   <div>
                     <span class="micro-label">OSA</span>

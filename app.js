@@ -83,6 +83,7 @@ const seed = {
 
 const profileSeed = {
   points: 0,
+  avatarUrl: "",
   bingoHits: [],
   bingoProofs: {},
   bingoRewards: {},
@@ -91,6 +92,10 @@ const profileSeed = {
   wheelResult: "Snurra för kvällens twist.",
   missions: [],
   activeMission: null,
+  beforeAfter: {
+    before: { video: "", completedAt: "" },
+    after: { video: "", completedAt: "" },
+  },
 };
 
 const timeline = [
@@ -375,6 +380,10 @@ function makeProfile(name) {
 }
 
 function migrateProfile(name, profile) {
+  if (!profile.avatarUrl) profile.avatarUrl = "";
+  if (!profile.beforeAfter) profile.beforeAfter = structuredClone(profileSeed.beforeAfter);
+  if (!profile.beforeAfter.before) profile.beforeAfter.before = { video: "", completedAt: "" };
+  if (!profile.beforeAfter.after) profile.beforeAfter.after = { video: "", completedAt: "" };
   if (!Array.isArray(profile.missions) || !profile.missions.length) profile.missions = getMissionsFor(name);
   if (!profile.bingoProofs) profile.bingoProofs = {};
   if (!profile.bingoRewards) profile.bingoRewards = {};
@@ -541,6 +550,14 @@ function renderProfile() {
   const profile = activeProfile();
   setText("profile-label", profile ? `${state.profile} · ${profile.points} p${isAdmin() ? " · admin" : ""}` : "Välj");
   setText("profile-initial", state.profile ? state.profile.slice(0, 1) : "?");
+  setText("brand-profile-initial", state.profile ? state.profile.slice(0, 1) : "M");
+  const brandAvatar = document.querySelector("#brand-profile-avatar");
+  const brandInitial = document.querySelector("#brand-profile-initial");
+  if (brandAvatar && brandInitial) {
+    brandAvatar.hidden = !profile?.avatarUrl;
+    brandInitial.hidden = !!profile?.avatarUrl;
+    if (profile?.avatarUrl) brandAvatar.src = profile.avatarUrl;
+  }
   setText("dialog-profile-name", profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
   document.querySelector("#profile-button").disabled = false;
   document.querySelector("#profile-grid").innerHTML = allParticipants()
@@ -575,7 +592,7 @@ function renderPrep() {
   ensurePackList();
   const parts = countdownParts();
   setText("countdown-days", parts.days);
-  setText("countdown-time", `${pad(parts.hours)}:${pad(parts.minutes)}:${pad(parts.seconds)} kvar`);
+  setText("countdown-time", `${parts.days === 1 ? "dag" : "dagar"} · ${pad(parts.hours)} tim ${pad(parts.minutes)} min ${pad(parts.seconds)} sek`);
 
   const participants = allParticipants();
   const rsvpDone = participants.filter((name) => rsvpStatus(name)).length;
@@ -700,11 +717,13 @@ function renderGames() {
     <button class="pill-button ${state.game === "vote" ? "is-active" : ""}" type="button" data-game="vote">Pekleken</button>
     <button class="pill-button ${state.game === "mission" ? "is-active" : ""}" type="button" data-game="mission">Uppdrag</button>
     <button class="pill-button ${state.game === "bingo" ? "is-active" : ""}" type="button" data-game="bingo">Bingo</button>
+    <button class="pill-button ${state.game === "beforeAfter" ? "is-active" : ""}" type="button" data-game="beforeAfter">Före/efter</button>
   </div>
   ${state.game === "wheel" ? renderWheel(profile) : ""}
   ${state.game === "vote" ? renderVote(profile) : ""}
   ${state.game === "mission" ? renderMission(profile) : ""}
-  ${state.game === "bingo" ? renderBingo(profile) : ""}`;
+  ${state.game === "bingo" ? renderBingo(profile) : ""}
+  ${state.game === "beforeAfter" ? renderBeforeAfter(profile) : ""}`;
 }
 
 function renderWheel(profile) {
@@ -772,6 +791,29 @@ function renderBingo(profile) {
     <p class="hint">${profile.bingoRewards.lineText ? escapeHtml(profile.bingoRewards.lineText) : "3 i rad ger vinst eller straff."}</p>
     <p class="hint">${profile.bingoRewards.fullText ? escapeHtml(profile.bingoRewards.fullText) : "Full bricka ger storpris och +3 poäng."}</p>
   </div>`;
+}
+
+function renderBeforeAfter(profile) {
+  const before = profile.beforeAfter?.before || {};
+  const after = profile.beforeAfter?.after || {};
+  return `<article class="game-card before-after-card">
+    <span class="micro-label">Videochallenge</span>
+    <h3>Före / efter</h3>
+    <p class="hint">Ta en video innan 11:00 och en senare under dagen.</p>
+    <div class="before-after-grid">
+      ${renderBeforeAfterSlot("before", "Före 11:00", before)}
+      ${renderBeforeAfterSlot("after", "Efter", after, !before.video)}
+    </div>
+  </article>`;
+}
+
+function renderBeforeAfterSlot(slot, label, item, disabled = false) {
+  return `<section class="before-after-slot ${item.video ? "is-done" : ""}">
+    <strong>${label}</strong>
+    ${item.video ? `<video src="${item.video}" controls playsinline preload="metadata"></video><small>${escapeHtml(formatPhotoTime(item.completedAt))}</small>` : `<p class="hint">${disabled ? "Ta före-videon först." : "Ingen video än."}</p>`}
+    <button class="upload-button" type="button" data-before-after-start="${slot}" ${disabled || item.video ? "disabled" : ""}>${item.video ? "Klar" : "Ta video"}</button>
+    <input class="capture-input" type="file" accept="video/*" capture="user" data-before-after-upload="${slot}" />
+  </section>`;
 }
 
 function renderPersonalScore() {
@@ -918,20 +960,27 @@ function extensionForMime(mime) {
   if (mime === "image/webp") return "webp";
   if (mime === "image/heic") return "heic";
   if (mime === "image/heif") return "heif";
+  if (mime === "video/mp4") return "mp4";
+  if (mime === "video/quicktime") return "mov";
+  if (mime === "video/webm") return "webm";
+  if (String(mime).startsWith("video/")) return "mp4";
   return "jpg";
 }
 
-function proofPath(kind, label, extension = "jpg") {
-  const safeProfile = (state.profile || "guest").toLowerCase();
+function proofPath(kind, label, extension = "jpg", profileName = state.profile) {
+  const safeProfile = (profileName || "guest").toLowerCase();
   const safeLabel = String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "proof";
   return `${safeProfile}/${kind}-${safeLabel}-${Date.now()}.${extension}`;
 }
 
-async function uploadProofImage(file, kind, label) {
-  const compressedBlob = await compressProofImage(file);
+async function uploadProofFile(file, kind, label, options = {}) {
+  const shouldCompress = options.compressImage !== false && file.type?.startsWith("image/");
+  const compressedBlob = shouldCompress ? await compressProofImage(file) : null;
   const blob = compressedBlob || file;
   const mime = compressedBlob ? "image/jpeg" : (file.type || "application/octet-stream");
-  const path = proofPath(kind, label, extensionForMime(mime));
+  const nameExtension = String(file.name || "").split(".").pop()?.toLowerCase();
+  const extension = !compressedBlob && nameExtension && nameExtension.length <= 5 ? nameExtension : extensionForMime(mime);
+  const path = proofPath(kind, label, extension, options.profileName);
   const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${PROOF_BUCKET}/${encodeURI(path)}`, {
     method: "POST",
     headers: remoteHeaders({
@@ -945,6 +994,10 @@ async function uploadProofImage(file, kind, label) {
     return "";
   }
   return `${SUPABASE_URL}/storage/v1/object/public/${PROOF_BUCKET}/${encodeURI(path)}`;
+}
+
+async function uploadProofImage(file, kind, label, options = {}) {
+  return uploadProofFile(file, kind, label, { ...options, compressImage: true });
 }
 
 async function completeMissionWithFile(input) {
@@ -984,6 +1037,25 @@ async function completeBingoWithFile(input) {
   if (!profile.bingoHits.includes(item)) profile.bingoHits.push(item);
   evaluateBingoRewards(profile);
   saveState();
+  renderAll();
+}
+
+async function completeBeforeAfterVideo(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const slot = input.dataset.beforeAfterUpload;
+  if (!["before", "after"].includes(slot)) return;
+  const profile = activeProfile();
+  profile.beforeAfter = profile.beforeAfter || structuredClone(profileSeed.beforeAfter);
+  if (profile.beforeAfter[slot]?.video) return;
+  const video = await uploadProofFile(file, "fore-efter", slot, { compressImage: false });
+  if (!video) {
+    window.alert("Videon kunde inte laddas upp. Testa igen med en kortare video.");
+    return;
+  }
+  profile.beforeAfter[slot] = { video, completedAt: new Date().toISOString() };
+  saveState();
+  showToast(slot === "before" ? "Före-videon sparad" : "Efter-videon sparad");
   renderAll();
 }
 
@@ -1143,6 +1215,14 @@ function bindDynamicEvents() {
     completeBingoWithFile(input);
   }));
 
+  document.querySelectorAll("[data-before-after-start]").forEach((button) => button.addEventListener("click", () => {
+    document.querySelector(`[data-before-after-upload="${button.dataset.beforeAfterStart}"]`)?.click();
+  }));
+
+  document.querySelectorAll("[data-before-after-upload]").forEach((input) => input.addEventListener("change", () => {
+    completeBeforeAfterVideo(input);
+  }));
+
   document.querySelectorAll("[data-photo-index]").forEach((button) => button.addEventListener("click", () => {
     galleryIndex = Number(button.dataset.photoIndex);
     galleryMotion = "open";
@@ -1258,7 +1338,7 @@ function countdownParts() {
 function renderCountdown() {
   const parts = countdownParts();
   setText("countdown-days", parts.days);
-  setText("countdown-time", `${pad(parts.hours)}:${pad(parts.minutes)}:${pad(parts.seconds)} kvar`);
+  setText("countdown-time", `${parts.days === 1 ? "dag" : "dagar"} · ${pad(parts.hours)} tim ${pad(parts.minutes)} min ${pad(parts.seconds)} sek`);
 }
 
 function shuffle(items) {
@@ -1329,7 +1409,7 @@ document.querySelectorAll("[data-section]").forEach((button) => button.addEventL
   renderAll();
 }));
 
-document.querySelector("#login-form").addEventListener("submit", (event) => {
+document.querySelector("#login-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (state.profile) return;
   const name = normalizeProfileName(document.querySelector("#login-name").value);
@@ -1337,14 +1417,45 @@ document.querySelector("#login-form").addEventListener("submit", (event) => {
     showToast("Skriv ditt namn först");
     return;
   }
+  const photoInput = document.querySelector("#login-photo");
+  const photoFile = photoInput?.files?.[0];
+  const existingAvatar = state.profiles?.[name]?.avatarUrl || "";
+  if (!photoFile && !existingAvatar) {
+    showToast("Ta en profilbild först");
+    return;
+  }
+  const submitButton = event.currentTarget.querySelector("button[type='submit']");
+  if (submitButton) submitButton.disabled = true;
+  let avatarUrl = existingAvatar;
+  if (photoFile) {
+    showToast("Laddar upp profilbild...");
+    avatarUrl = await uploadProofImage(photoFile, "profile", "avatar", { profileName: name });
+    if (!avatarUrl) {
+      if (submitButton) submitButton.disabled = false;
+      window.alert("Profilbilden kunde inte laddas upp. Testa igen med en vanlig kamerabild.");
+      return;
+    }
+  }
   state.profile = name;
   state.adminMode = false;
   state.adminOwner = "";
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
-  activeProfile();
+  const profile = activeProfile();
+  profile.avatarUrl = avatarUrl;
   showToast(`Inloggad som ${state.profile}`);
   saveState();
+  if (submitButton) submitButton.disabled = false;
   renderAll();
+});
+
+document.querySelector("#login-photo")?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  const preview = document.querySelector("#login-photo-preview");
+  const label = document.querySelector("#login-photo-label");
+  if (!file || !preview) return;
+  preview.src = URL.createObjectURL(file);
+  preview.hidden = false;
+  if (label) label.textContent = "Profilbild vald";
 });
 
 function returnToPrepFromProfile() {
@@ -1357,6 +1468,21 @@ function returnToPrepFromProfile() {
   saveState();
   renderAll();
 }
+
+function returnToLoginForTest() {
+  clearTimeout(profileClickTimer);
+  document.querySelector("#profile-dialog")?.close();
+  state.profile = "";
+  state.adminMode = false;
+  state.adminOwner = "";
+  state.page = "prep";
+  galleryIndex = null;
+  galleryMotion = "open";
+  saveState();
+  renderAll();
+}
+
+document.querySelector("#home-profile-button")?.addEventListener("click", returnToLoginForTest);
 
 document.querySelector("#profile-button").addEventListener("click", (event) => {
   const now = Date.now();
