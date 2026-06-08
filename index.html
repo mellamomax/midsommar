@@ -14,8 +14,11 @@
       <div class="login-card">
         <span class="micro-label">Midsommar 2026</span>
         <h1>Vem är du?</h1>
-        <p>Välj ditt namn en gång. Sen är appen personlig.</p>
-        <div class="login-grid" id="login-grid"></div>
+        <p>Skriv ditt eget namn. Sen låses appen till dig.</p>
+        <form class="login-form" id="login-form">
+          <input id="login-name" name="name" autocomplete="given-name" placeholder="Ditt namn" />
+          <button type="submit">Fortsätt</button>
+        </form>
       </div>
     </section>
 
@@ -49,9 +52,9 @@
             <div class="prep-hero__shade"></div>
             <div class="prep-hero__content">
               <div class="prep-welcome">
-                <span class="micro-label">Taltrastvägen 12</span>
+                <span class="micro-label">Midsommar 2026</span>
                 <strong>Snart midsommar</strong>
-                <small>Eskilstuna · fredag 19 juni</small>
+                <small>Taltrastvägen 12 · Eskilstuna · fredag 19 juni</small>
               </div>
 
               <button class="countdown-ring" id="countdown-ring" type="button" aria-label="Nedräkning till midsommar">
@@ -107,9 +110,16 @@
         <h2>Admin</h2>
         <p id="profile-dialog-copy">Max kan byta aktiv profil och rätta lekar.</p>
         <button class="admin-mode-button" type="button" data-admin-mode>Admin mode</button>
+        <label class="admin-name-field">
+          <span>Aktivt namn</span>
+          <input id="admin-name-input" placeholder="Skriv namn" />
+          <button type="button" data-admin-login>Byt</button>
+        </label>
         <div class="profile-grid" id="profile-grid"></div>
       </form>
     </dialog>
+
+    <div class="toast" id="toast" aria-live="polite"></div>
 
     <script src="app.js"></script>
   </body>
