@@ -24,6 +24,7 @@ let lastRemoteStateJson = "";
 let remotePollTimer = null;
 let pendingRemoteSave = false;
 let galleryIndex = null;
+let lastCountdownTap = 0;
 
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 
@@ -48,6 +49,7 @@ const seed = {
     { id: "warm", text: "Varm tröja", done: false },
     { id: "flowers", text: "Blommigt / krans", done: false },
     { id: "drink", text: "Egen dryck", done: false },
+    { id: "rain", text: "Regnjacka", done: false },
     { id: "charger", text: "Laddare", done: false },
   ],
   teamScores: [
@@ -393,11 +395,27 @@ function missionPointsFor(text, index = 0) {
 }
 
 function renderAll() {
+  activatePartyIfEventStarted();
   renderShell();
   renderForecast();
   renderProfile();
   renderPrep();
   renderParty();
+}
+
+function activatePartyIfEventStarted() {
+  if (Date.now() < EVENT_START.getTime()) return;
+  if (state.page === "party") return;
+  state.page = "party";
+  state.section = "today";
+  if (!applyingRemoteState) saveState();
+}
+
+function openPartyForTest() {
+  state.page = "party";
+  state.section = "today";
+  saveState();
+  renderAll();
 }
 
 function renderShell() {
@@ -428,18 +446,22 @@ function renderForecast() {
 
 function renderPrep() {
   const profile = activeProfile();
+  ensurePackList();
   const parts = countdownParts();
-  setText("countdown-days", `${parts.days} dagar`);
-  setText("countdown-time", `${pad(parts.hours)}:${pad(parts.minutes)}:${pad(parts.seconds)} kvar`);
+  setText("countdown-days", parts.days);
+  setText("countdown-time", `${pad(parts.hours)} tim ${pad(parts.minutes)} min ${pad(parts.seconds)} sek`);
 
   const rsvpDone = Object.values(state.rsvp).filter(Boolean).length;
-  setText("rsvp-count", state.profile ? `${state.profile}: ${state.rsvp[state.profile] ? "kommer" : "ej svarat"}` : `${rsvpDone}/${guests.length} klara`);
+  setText("rsvp-count", state.profile ? (state.rsvp[state.profile] ? "Du kommer" : "Inte svarat") : `${rsvpDone}/${guests.length} klara`);
   document.querySelector("#rsvp-list").innerHTML = state.profile
     ? `<button class="rsvp-self ${state.rsvp[state.profile] ? "is-in" : ""}" type="button" data-rsvp="${escapeHtml(state.profile)}">
-        <strong>${escapeHtml(state.profile)}</strong>
-        <span>${state.rsvp[state.profile] ? "Jag kommer" : "Tryck för att OSA"}</span>
+        <strong>${state.rsvp[state.profile] ? "Jag kommer" : "OSA: jag kommer"}</strong>
+        <span>${escapeHtml(state.profile)} · tryck för att ändra</span>
       </button>`
-    : `<p class="hint">Välj din profil uppe till höger för att OSA.</p>`;
+    : `<button class="rsvp-self" type="button" data-open-profile>
+        <strong>Välj användare</strong>
+        <span>Sen kan du OSA med ditt namn.</span>
+      </button>`;
 
   const packLeft = state.pack.filter((item) => !item.done).length;
   setText("pack-count", `${packLeft} kvar`);
@@ -452,6 +474,12 @@ function renderPrep() {
   if (profile) {
     setText("profile-label", `${state.profile} · ${profile.points} p`);
   }
+}
+
+function ensurePackList() {
+  seed.pack.forEach((defaultItem) => {
+    if (!state.pack.some((item) => item.id === defaultItem.id)) state.pack.push({ ...defaultItem });
+  });
 }
 
 function renderParty() {
@@ -821,6 +849,10 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelectorAll("[data-open-profile]").forEach((button) => button.addEventListener("click", () => {
+    document.querySelector("#profile-dialog").showModal();
+  }));
+
   document.querySelectorAll("[data-game]").forEach((button) => button.addEventListener("click", () => {
     state.game = button.dataset.game;
     saveState();
@@ -1098,6 +1130,13 @@ document.querySelectorAll("[data-section]").forEach((button) => button.addEventL
   saveState();
   renderAll();
 }));
+
+document.querySelector("#countdown-ring")?.addEventListener("dblclick", openPartyForTest);
+document.querySelector("#countdown-ring")?.addEventListener("click", () => {
+  const now = Date.now();
+  if (now - lastCountdownTap < 380) openPartyForTest();
+  lastCountdownTap = now;
+});
 
 document.querySelector("#profile-button").addEventListener("click", () => document.querySelector("#profile-dialog").showModal());
 document.querySelector("#profile-grid").addEventListener("click", (event) => {
