@@ -36,7 +36,7 @@ const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor
 const sectionMeta = {
   today: ["Start", "Dashboard"],
   games: ["Lekar", "Dina tävlingar"],
-  score: ["Poäng", "Personlig poängställning"],
+  score: ["", "Poängställning"],
   photos: ["Bilder", "Uppdragsbilder"],
   pentathlon: ["5-kamp", "Lagpoäng"],
   match: ["Match", "VM-matchen"],
@@ -47,6 +47,7 @@ const seed = {
   section: "today",
   profile: "",
   adminMode: false,
+  adminOwner: "",
   game: "wheel",
   profiles: {},
   nameOverrides: {},
@@ -473,7 +474,11 @@ function normalizeProfileName(value) {
 }
 
 function isAdmin() {
-  return state.adminMode === true;
+  return state.adminMode === true && state.adminOwner === "Max";
+}
+
+function canUseAdmin() {
+  return state.profile?.toLowerCase() === "max";
 }
 
 function rsvpStatus(name) {
@@ -511,6 +516,22 @@ function renameProfile(oldName, newName) {
   return true;
 }
 
+function deleteProfile(name) {
+  if (!isAdmin() || !name || name === "Max") return false;
+  state.nameOverrides = state.nameOverrides || {};
+  Object.entries(state.nameOverrides).forEach(([originalName, displayName]) => {
+    if (displayName === name) delete state.nameOverrides[originalName];
+  });
+  delete state.profiles[name];
+  delete state.rsvp[name];
+  delete state.matchVotes[name];
+  if (state.profile === name) {
+    state.profile = "Max";
+    activeProfile();
+  }
+  return true;
+}
+
 function renderLogin() {
   const input = document.querySelector("#login-name");
   if (input && !input.value) input.value = "";
@@ -523,18 +544,21 @@ function renderProfile() {
   setText("dialog-profile-name", profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
   document.querySelector("#profile-button").disabled = false;
   document.querySelector("#profile-grid").innerHTML = allParticipants()
-    .map((name) => `<button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`)
+    .map((name) => isAdmin()
+      ? `<div class="profile-manage-row"><button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button><button class="profile-delete-button" type="button" data-delete-profile="${escapeHtml(name)}" ${name === "Max" ? "disabled" : ""}>Radera</button></div>`
+      : `<button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`)
     .join("");
   const adminInput = document.querySelector("#admin-name-input");
-  if (adminInput && !adminInput.value) adminInput.value = state.profile || "";
+  if (adminInput && (isAdmin() || !adminInput.value)) adminInput.value = state.profile || "";
   if (adminInput) adminInput.disabled = !isAdmin();
   document.querySelector("[data-admin-login]").disabled = !isAdmin();
   document.querySelector(".admin-name-field").hidden = !isAdmin();
+  document.querySelector("#current-profile-card").hidden = !(canUseAdmin() || isAdmin());
   document.querySelector("#profile-grid").hidden = false;
-  document.querySelector("#admin-code-row").hidden = isAdmin();
+  document.querySelector("#admin-code-row").hidden = !canUseAdmin() || isAdmin();
   document.querySelector("[data-admin-mode]").hidden = !isAdmin();
   document.querySelector("[data-admin-mode]").textContent = "Lämna admin mode";
-  setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Du kan byta profil eller döpa om aktiv person." : "Byt profil för test. Admin kod krävs bara för namnbyte och rättning.");
+  setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Du kan byta profil, döpa om aktiv person eller radera testprofiler." : "Byt profil för test.");
 }
 
 function renderForecast() {
@@ -673,7 +697,7 @@ function renderGames() {
   if (!profile) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
   return `<div class="game-picker">
     <button class="pill-button ${state.game === "wheel" ? "is-active" : ""}" type="button" data-game="wheel">Hjul</button>
-    <button class="pill-button ${state.game === "vote" ? "is-active" : ""}" type="button" data-game="vote">Röst</button>
+    <button class="pill-button ${state.game === "vote" ? "is-active" : ""}" type="button" data-game="vote">Pekleken</button>
     <button class="pill-button ${state.game === "mission" ? "is-active" : ""}" type="button" data-game="mission">Uppdrag</button>
     <button class="pill-button ${state.game === "bingo" ? "is-active" : ""}" type="button" data-game="bingo">Bingo</button>
   </div>
@@ -751,16 +775,21 @@ function renderBingo(profile) {
 }
 
 function renderPersonalScore() {
-  return `<div class="scoreboard">${allParticipants().map((name) => {
+  const rows = allParticipants().map((name) => {
     const profile = state.profiles[name] || makeProfile(name);
-    return `<article class="score-row"><div><strong>${escapeHtml(name)}</strong><span>${profile.points} poäng</span></div><span class="tag">${name === state.profile ? "du" : "auto"}</span></article>`;
-  }).join("")}<p class="hint">Poäng ges av appen: uppdrag, hjulbonus och adminrättad omröstning.</p>${isAdmin() ? renderVoteAdmin() : ""}</div>`;
+    return { name, points: profile.points };
+  }).sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, "sv"));
+  return `<div class="scoreboard scoreboard--leaderboard">${rows.map((row, index) => `
+    <article class="score-row score-row--rank rank-${index + 1} ${row.name === state.profile ? "is-self" : ""}">
+      <span class="rank-badge">${index + 1}</span>
+      <div><strong>${escapeHtml(row.name)}</strong><span>${row.points} poäng</span></div>
+    </article>`).join("")}${isAdmin() ? renderVoteAdmin() : ""}</div>`;
 }
 
 function renderVoteAdmin() {
   const participants = allParticipants();
   const answeredQuestions = [...new Set(participants.flatMap((name) => Object.keys((state.profiles[name] || {}).votes || {})))];
-  if (!answeredQuestions.length) return `<article class="game-card"><span class="micro-label">Admin</span><h3>Inga svar att rätta ännu</h3></article>`;
+  if (!answeredQuestions.length) return "";
   return `<article class="game-card"><span class="micro-label">Max admin</span><h3>Rätta omröstning</h3>${answeredQuestions.map((question) => {
     const isCorrected = state.voteCorrected?.[question];
     return `
@@ -1309,6 +1338,7 @@ document.querySelector("#login-form").addEventListener("submit", (event) => {
   }
   state.profile = name;
   state.adminMode = false;
+  state.adminOwner = "";
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
   activeProfile();
   showToast(`Inloggad som ${state.profile}`);
@@ -1362,6 +1392,7 @@ document.querySelector("#countdown-ring")?.addEventListener("click", (event) => 
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
   if (!state.adminMode) return;
   state.adminMode = !state.adminMode;
+  state.adminOwner = "";
   showToast("Admin mode av");
   saveState();
   document.querySelector("#profile-dialog").close();
@@ -1369,12 +1400,17 @@ document.querySelector("[data-admin-mode]").addEventListener("click", () => {
 });
 document.querySelector("[data-admin-code]").addEventListener("click", () => {
   const input = document.querySelector("#admin-code-input");
+  if (!canUseAdmin()) {
+    showToast("Endast Max kan öppna admin");
+    return;
+  }
   if (input.value.trim() !== "0202") {
     showToast("Fel adminkod");
     input.select();
     return;
   }
   state.adminMode = true;
+  state.adminOwner = "Max";
   input.value = "";
   showToast("Admin mode på");
   saveState();
@@ -1390,6 +1426,10 @@ document.querySelector("[data-admin-login]").addEventListener("click", () => {
   const name = normalizeProfileName(document.querySelector("#admin-name-input").value);
   if (!name) return;
   const oldName = state.profile;
+  if (oldName === "Max" && name !== "Max") {
+    showToast("Max måste heta Max för admin");
+    return;
+  }
   if (name !== oldName && allParticipants().includes(name)) {
     showToast("Namnet finns redan");
     return;
@@ -1402,6 +1442,15 @@ document.querySelector("[data-admin-login]").addEventListener("click", () => {
   renderAll();
 });
 document.querySelector("#profile-grid").addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-delete-profile]");
+  if (deleteButton) {
+    const name = deleteButton.dataset.deleteProfile;
+    if (!deleteProfile(name)) return;
+    showToast(`Raderade ${name}`);
+    saveState();
+    renderAll();
+    return;
+  }
   const button = event.target.closest("[data-profile]");
   if (!button) return;
   state.profile = button.dataset.profile;

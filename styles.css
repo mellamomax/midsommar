@@ -530,6 +530,11 @@ details[open] summary::after {
   line-height: 1.08;
 }
 
+.panel-head span:empty,
+.panel-head strong:empty {
+  display: none;
+}
+
 .panel-content {
   min-height: 0;
   overflow: auto;
@@ -648,7 +653,8 @@ details[open] summary::after {
   gap: 8px;
 }
 
-.profile-grid button {
+.profile-grid button,
+.profile-delete-button {
   min-height: 42px;
   border: 0;
   border-radius: 999px;
@@ -660,6 +666,23 @@ details[open] summary::after {
 .profile-grid button.is-selected {
   background: linear-gradient(135deg, var(--leaf-dark), var(--blue));
   box-shadow: 0 10px 22px rgba(23, 74, 52, 0.18);
+}
+
+.profile-manage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.profile-delete-button {
+  min-width: 72px;
+  padding: 0 10px;
+  background: #c93d47;
+  font-size: 0.74rem;
+}
+
+.profile-delete-button:disabled {
+  opacity: 0.35;
 }
 
 .game-picker {
@@ -842,6 +865,56 @@ details[open] summary::after {
 
 .score-row strong {
   display: block;
+}
+
+.scoreboard--leaderboard {
+  gap: 6px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.score-row--rank {
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 7px 9px;
+  background: #fff;
+}
+
+.score-row--rank.is-self {
+  border-color: var(--leaf-dark);
+  box-shadow: 0 0 0 2px rgba(23, 74, 52, 0.12);
+}
+
+.rank-badge {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--leaf);
+  font-weight: 950;
+}
+
+.score-row--rank.rank-1 .rank-badge {
+  color: #4a3500;
+  background: linear-gradient(135deg, #ffe27a, #f3b72f);
+}
+
+.score-row--rank.rank-2 .rank-badge {
+  color: #34404a;
+  background: linear-gradient(135deg, #eef3f6, #aebbc4);
+}
+
+.score-row--rank.rank-3 .rank-badge {
+  color: #fff;
+  background: linear-gradient(135deg, #c9834a, #8f542d);
+}
+
+body[data-section="score"] .panel-content {
+  overflow: hidden;
 }
 
 .score-controls {
@@ -3051,4 +3124,31 @@ body[data-page="prep"] .rsvp-choice-group button {
 body[data-page="prep"] .rsvp-choice-group button.is-selected {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(23, 74, 52, 0.2);
+}
+
+body[data-admin="true"] .profile-grid {
+  grid-template-columns: 1fr;
+}
+
+body[data-section="score"] .panel-content {
+  overflow: hidden;
+}
+
+body[data-section="score"] .scoreboard--leaderboard {
+  gap: 6px;
+  height: 100%;
+  overflow: hidden;
+}
+
+body[data-section="score"] .score-row--rank {
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 7px 9px;
+}
+
+body[data-section="score"] .score-row--rank.is-self {
+  border-color: var(--leaf-dark);
+  box-shadow: 0 0 0 2px rgba(23, 74, 52, 0.12);
 }
