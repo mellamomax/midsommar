@@ -106,6 +106,12 @@ const matchFallback = {
   },
 };
 
+const matchSchedule = [
+  { date: "Grupp F", opponent: "Tunisia", note: "Tid från API" },
+  { date: "Lör 20 juni", opponent: "Netherlands", note: "19:00 svensk tid" },
+  { date: "Grupp F", opponent: "Japan", note: "Tid från API" },
+];
+
 const voteQuestions = [
   "börjar dansa först?",
   "styr grillen?",
@@ -419,6 +425,7 @@ function openPartyForTest() {
 }
 
 function renderShell() {
+  document.body.dataset.page = state.page;
   document.querySelectorAll("[data-page]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.page === state.page);
   });
@@ -452,15 +459,21 @@ function renderPrep() {
   setText("countdown-time", `${pad(parts.hours)} tim ${pad(parts.minutes)} min ${pad(parts.seconds)} sek`);
 
   const rsvpDone = Object.values(state.rsvp).filter(Boolean).length;
-  setText("rsvp-count", state.profile ? (state.rsvp[state.profile] ? "Du kommer" : "Inte svarat") : `${rsvpDone}/${guests.length} klara`);
+  setText("rsvp-count", state.profile ? state.profile : `${rsvpDone}/${guests.length} svar`);
   document.querySelector("#rsvp-list").innerHTML = state.profile
     ? `<button class="rsvp-self ${state.rsvp[state.profile] ? "is-in" : ""}" type="button" data-rsvp="${escapeHtml(state.profile)}">
-        <strong>${state.rsvp[state.profile] ? "Jag kommer" : "OSA: jag kommer"}</strong>
-        <span>${escapeHtml(state.profile)} · tryck för att ändra</span>
+        <span class="rsvp-status-dot"></span>
+        <span class="rsvp-copy">
+          <strong>${state.rsvp[state.profile] ? "Jag kommer" : "Jag kommer?"}</strong>
+          <small>${state.rsvp[state.profile] ? "Svarat och klart" : "Tryck för att tacka ja"}</small>
+        </span>
       </button>`
     : `<button class="rsvp-self" type="button" data-open-profile>
-        <strong>Välj användare</strong>
-        <span>Sen kan du OSA med ditt namn.</span>
+        <span class="rsvp-status-dot"></span>
+        <span class="rsvp-copy">
+          <strong>Välj användare</strong>
+          <small>OSA med ditt eget namn</small>
+        </span>
       </button>`;
 
   const packLeft = state.pack.filter((item) => !item.done).length;
@@ -484,6 +497,7 @@ function ensurePackList() {
 
 function renderParty() {
   if (state.section !== "photos") galleryIndex = null;
+  document.body.dataset.section = state.section;
   const [kicker, title] = sectionMeta[state.section];
   setText("party-kicker", kicker);
   setText("party-title", title);
@@ -519,14 +533,19 @@ function renderScoreMini() {
 function renderMatch() {
   const apiData = state.matchApiData;
   const vote = state.matchVotes[state.profile] || {};
-  return `<div class="match-layout">
-    <article class="game-card match-hero">
+  return `<div class="match-layout match-layout--compact">
+    <article class="game-card match-hero match-summary-card">
       <span class="micro-label">Grupp ${escapeHtml(matchFallback.group.replace("Group ", ""))}</span>
       <h3>${escapeHtml(apiData?.title || `${matchFallback.selected.away} vs ${matchFallback.selected.home}`)}</h3>
       <p>${escapeHtml(apiData?.detail || `${matchFallback.selected.date} · ${matchFallback.selected.time} · ${matchFallback.selected.venue}`)}</p>
     </article>
-    <article class="game-card"><span class="micro-label">Vi möter</span><h3>${matchFallback.opponents.map(escapeHtml).join(" · ")}</h3><p>API-status: ${escapeHtml(state.matchApiStatus)}. Källa: worldcup26.ir/get/games.</p></article>
-    <article class="game-card">
+    <article class="game-card match-list-card">
+      <span class="micro-label">Våra matcher</span>
+      <div class="match-list">
+        ${matchSchedule.map((match) => `<div class="match-row"><span>${escapeHtml(match.date)}</span><strong>Sverige - ${escapeHtml(match.opponent)}</strong><small>${escapeHtml(match.note)}</small></div>`).join("")}
+      </div>
+    </article>
+    <article class="game-card match-vote-card">
       <span class="micro-label">Din matchröst</span>
       <h3>1X2</h3>
       <div class="choice-grid">
@@ -694,11 +713,11 @@ function renderPhotos() {
   }
 
   return `<div class="photo-grid">${photos.map((item) => `
-    <button class="photo-card" type="button" data-photo-index="${photos.indexOf(item)}">
+    <a class="photo-card" href="${item.photo}" target="_blank" rel="noopener">
       <img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />
       <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span></div>
-    </button>
-  `).join("")}</div>${galleryIndex !== null ? renderPhotoViewer(photos) : ""}`;
+    </a>
+  `).join("")}</div>`;
 }
 
 function renderPhotoViewer(photos) {
