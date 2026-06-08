@@ -3300,7 +3300,9 @@ body[data-page="prep"] .prep-stack {
   place-items: center;
   color: transparent;
   background: transparent;
+  border: 0;
   box-shadow: none;
+  cursor: pointer;
 }
 
 .prep-location-pin::before {
@@ -3404,12 +3406,30 @@ body[data-page="prep"] .rsvp-choice-group button {
 }
 
 body[data-page="party"] .topbar {
-  width: calc(100% + 14px);
-  margin: -7px -7px 0;
+  width: 100%;
+  margin: 0;
   border-radius: 0 0 28px 28px;
   padding: max(12px, env(safe-area-inset-top)) 12px 10px;
   background: linear-gradient(135deg, #fffef8, #eaf7e8 48%, #fff4cf);
   box-shadow: 0 14px 26px rgba(23, 74, 52, 0.14);
+  justify-items: stretch;
+}
+
+body[data-page="party"] .app-shell {
+  padding: 0 0 max(7px, env(safe-area-inset-bottom));
+}
+
+body[data-page="party"] .app-main {
+  padding: 0 4px;
+}
+
+body[data-page="party"] .topbar .topbar-main,
+body[data-page="party"] .topbar .forecast-strip {
+  width: 100%;
+}
+
+body[data-page="party"] .forecast-strip {
+  max-width: none;
 }
 
 #party-page .section-tab[data-section="games"]::before {

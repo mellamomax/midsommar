@@ -1505,6 +1505,29 @@ function returnToLoginForTest() {
 
 document.querySelector("#home-profile-button")?.addEventListener("click", returnToLoginForTest);
 
+function openEventAddressInMaps() {
+  const address = "Taltrastvägen 12, Eskilstuna";
+  const encodedAddress = encodeURIComponent(address);
+  const agent = navigator.userAgent || "";
+  if (/iPad|iPhone|iPod/.test(agent)) {
+    window.location.href = `maps://?q=${encodedAddress}`;
+    setTimeout(() => {
+      if (!document.hidden) window.location.href = `https://maps.apple.com/?q=${encodedAddress}`;
+    }, 650);
+    return;
+  }
+  if (/Android/i.test(agent)) {
+    window.location.href = `geo:0,0?q=${encodedAddress}`;
+    setTimeout(() => {
+      if (!document.hidden) window.location.href = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+    }, 650);
+    return;
+  }
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, "_blank", "noopener");
+}
+
+document.querySelector(".prep-location-pin")?.addEventListener("click", openEventAddressInMaps);
+
 function skipLoginForTest() {
   if (state.profile) return;
   state.profile = "Test";
