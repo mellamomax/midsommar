@@ -25,7 +25,6 @@ let lastRemoteStateJson = "";
 let remotePollTimer = null;
 let pendingRemoteSave = false;
 let galleryIndex = null;
-let lastCountdownTap = 0;
 let toastTimer = null;
 let profileClickTimer = null;
 
@@ -423,13 +422,6 @@ function activatePartyIfEventStarted() {
   if (!applyingRemoteState) saveState();
 }
 
-function openPartyForTest() {
-  state.page = "party";
-  state.section = "today";
-  saveState();
-  renderAll();
-}
-
 function renderShell() {
   document.body.dataset.page = state.page;
   document.body.dataset.loggedIn = state.profile ? "true" : "false";
@@ -472,10 +464,6 @@ function isAdmin() {
   return state.adminMode === true;
 }
 
-function canOpenAdmin() {
-  return state.profile === "Max" || state.adminMode === true;
-}
-
 function rsvpStatus(name) {
   const value = state.rsvp?.[name];
   if (value === true) return "yes";
@@ -487,7 +475,7 @@ function rsvpStatus(name) {
 function rsvpLabel(status) {
   if (status === "yes") return "kommer";
   if (status === "maybe") return "kanske";
-  if (status === "no") return "kommer inte";
+  if (status === "no") return "kan inte";
   return "inte svarat";
 }
 
@@ -520,14 +508,21 @@ function renderProfile() {
   const profile = activeProfile();
   setText("profile-label", profile ? `${state.profile} · ${profile.points} p${isAdmin() ? " · admin" : ""}` : "Välj");
   setText("profile-initial", state.profile ? state.profile.slice(0, 1) : "?");
+  setText("dialog-profile-name", profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
   document.querySelector("#profile-button").disabled = false;
-  document.querySelector("#profile-grid").innerHTML = isAdmin()
-    ? allParticipants().map((name) => `<button value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")
-    : "";
+  document.querySelector("#profile-grid").innerHTML = allParticipants()
+    .map((name) => `<button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`)
+    .join("");
   const adminInput = document.querySelector("#admin-name-input");
   if (adminInput && !adminInput.value) adminInput.value = state.profile || "";
-  document.querySelector("[data-admin-mode]").textContent = state.adminMode ? "Lämna admin mode" : "Gå in i admin mode";
-  setText("profile-dialog-copy", isAdmin() ? "Byt aktiv profil eller döp om aktiv person." : "Max kan slå på admin mode här.");
+  if (adminInput) adminInput.disabled = !isAdmin();
+  document.querySelector("[data-admin-login]").disabled = !isAdmin();
+  document.querySelector(".admin-name-field").hidden = !isAdmin();
+  document.querySelector("#profile-grid").hidden = false;
+  document.querySelector("#admin-code-row").hidden = isAdmin();
+  document.querySelector("[data-admin-mode]").hidden = !isAdmin();
+  document.querySelector("[data-admin-mode]").textContent = "Lämna admin mode";
+  setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Du kan byta profil eller döpa om aktiv person." : "Byt profil för test. Admin kod krävs bara för namnbyte och rättning.");
 }
 
 function renderForecast() {
@@ -550,9 +545,9 @@ function renderPrep() {
   const rsvpDone = participants.filter((name) => rsvpStatus(name)).length;
   const status = rsvpStatus(state.profile);
   const choices = [
-    ["yes", "Ja"],
+    ["yes", "Kommer"],
     ["maybe", "Kanske"],
-    ["no", "Nej"],
+    ["no", "Kan inte"],
   ];
   setText("rsvp-count", state.profile ? state.profile : `${rsvpDone}/${participants.length} svar`);
   document.querySelector("#rsvp-list").innerHTML = state.profile
@@ -605,7 +600,6 @@ function renderParty() {
 function renderToday() {
   return `<div class="dashboard-grid">
     <article class="dash-card dash-card--wide"><span>Nästa</span><strong>12:00 Lunch</strong><small>Sill, potatis, kall dryck</small></article>
-    <article class="dash-card match-hero"><span>VM</span><strong>SWE - NED</strong><small>${matchFallback.selected.time}</small></article>
     <article class="dash-card dash-card--wide"><span>Hållpunkter</span><div class="timeline-mini">${timeline.map((item) => `<b>${escapeHtml(item[0])}</b><span>${escapeHtml(item[1])}</span>`).join("")}</div></article>
     <article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>
   </div>`;
@@ -814,12 +808,13 @@ function renderPhotos() {
   if (!photos.length) {
     return `<article class="game-card"><h3>Inga bilder ännu</h3><p class="hint">När någon klarar uppdrag eller bingo med bild hamnar bevisen här.</p></article>`;
   }
+  if (galleryIndex !== null) return renderPhotoViewer(photos);
 
-  return `<div class="photo-grid">${photos.map((item) => `
-    <a class="photo-card" href="${item.photo}" target="_blank" rel="noopener">
+  return `<div class="photo-grid">${photos.map((item, index) => `
+    <button class="photo-card" type="button" data-photo-index="${index}">
       <img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />
       <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span></div>
-    </a>
+    </button>
   `).join("")}</div>`;
 }
 
@@ -1294,20 +1289,9 @@ document.querySelector("#login-form").addEventListener("submit", (event) => {
   renderAll();
 });
 
-document.querySelector("#countdown-ring")?.addEventListener("dblclick", openPartyForTest);
-document.querySelector("#countdown-ring")?.addEventListener("click", () => {
-  const now = Date.now();
-  if (now - lastCountdownTap < 380) openPartyForTest();
-  lastCountdownTap = now;
-});
-
 document.querySelector("#profile-button").addEventListener("click", () => {
   clearTimeout(profileClickTimer);
   profileClickTimer = setTimeout(() => {
-    if (!canOpenAdmin()) {
-      showToast("Profilen är låst. Dubbelklicka namnet för prepp.");
-      return;
-    }
     document.querySelector("#profile-dialog").showModal();
   }, 220);
 });
@@ -1321,12 +1305,30 @@ document.querySelector("#profile-button").addEventListener("dblclick", () => {
   renderAll();
 });
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
-  if (state.profile !== "Max" && !state.adminMode) return;
+  if (!state.adminMode) return;
   state.adminMode = !state.adminMode;
-  showToast(state.adminMode ? "Admin mode på" : "Admin mode av");
+  showToast("Admin mode av");
   saveState();
-  if (!state.adminMode) document.querySelector("#profile-dialog").close();
+  document.querySelector("#profile-dialog").close();
   renderAll();
+});
+document.querySelector("[data-admin-code]").addEventListener("click", () => {
+  const input = document.querySelector("#admin-code-input");
+  if (input.value.trim() !== "0202") {
+    showToast("Fel adminkod");
+    input.select();
+    return;
+  }
+  state.adminMode = true;
+  input.value = "";
+  showToast("Admin mode på");
+  saveState();
+  renderAll();
+});
+document.querySelector("#admin-code-input").addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  document.querySelector("[data-admin-code]").click();
 });
 document.querySelector("[data-admin-login]").addEventListener("click", () => {
   if (!isAdmin()) return;
@@ -1346,13 +1348,23 @@ document.querySelector("[data-admin-login]").addEventListener("click", () => {
 });
 document.querySelector("#profile-grid").addEventListener("click", (event) => {
   const button = event.target.closest("[data-profile]");
-  if (!button || !isAdmin()) return;
-  state.adminMode = true;
+  if (!button) return;
   state.profile = button.dataset.profile;
   activeProfile();
+  showToast(`Profil bytt till ${state.profile}`);
   saveState();
   document.querySelector("#profile-dialog").close();
   renderAll();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (state.section !== "photos" || galleryIndex === null) return;
+  if (event.key === "Escape") {
+    galleryIndex = null;
+    renderAll();
+  }
+  if (event.key === "ArrowLeft") moveGallery(-1);
+  if (event.key === "ArrowRight") moveGallery(1);
 });
 
 function showToast(message) {

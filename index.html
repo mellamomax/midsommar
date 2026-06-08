@@ -57,11 +57,11 @@
                 <small>Fredag 19 juni</small>
               </div>
 
-              <button class="countdown-ring" id="countdown-ring" type="button" aria-label="Nedräkning till midsommar">
+              <div class="countdown-ring" id="countdown-ring" aria-label="Nedräkning till midsommar">
                 <span>Nedräkning till</span>
                 <strong id="countdown-days">00</strong>
                 <small id="countdown-time">00:00:00 kvar</small>
-              </button>
+              </div>
 
               <section class="prep-stack">
                 <article class="prep-rsvp-card">
@@ -107,8 +107,19 @@
 
     <dialog class="profile-dialog" id="profile-dialog">
       <form method="dialog">
-        <h2>Admin</h2>
-        <p id="profile-dialog-copy">Max kan byta aktiv profil och rätta lekar.</p>
+        <h2>Profil</h2>
+        <p id="profile-dialog-copy">Du kan se din valda profil här.</p>
+        <div class="current-profile-card">
+          <span>Vald profil</span>
+          <strong id="dialog-profile-name">Ingen vald</strong>
+        </div>
+        <label class="admin-code-field" id="admin-code-row">
+          <span>Admin kod</span>
+          <div>
+            <input id="admin-code-input" inputmode="numeric" maxlength="4" placeholder="0202" autocomplete="one-time-code" />
+            <button type="button" data-admin-code>Lås upp</button>
+          </div>
+        </label>
         <button class="admin-mode-button" type="button" data-admin-mode>Admin mode</button>
         <label class="admin-name-field">
           <span>Aktivt namn</span>
