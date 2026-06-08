@@ -25,6 +25,7 @@ let remotePollTimer = null;
 let pendingRemoteSave = false;
 let galleryIndex = null;
 let lastCountdownTap = 0;
+let toastTimer = null;
 
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 
@@ -437,26 +438,40 @@ function renderShell() {
   document.querySelector(`#${state.page}-page`).classList.add("is-active");
 }
 
+function allParticipants() {
+  return [...new Set([...guests, ...Object.keys(state.profiles || {}), ...Object.keys(state.rsvp || {})].filter(Boolean))];
+}
+
+function normalizeProfileName(value) {
+  const cleaned = String(value || "").trim().replace(/\s+/g, " ");
+  if (!cleaned) return "";
+  const known = guests.find((name) => name.toLowerCase() === cleaned.toLowerCase());
+  if (known) return known;
+  return cleaned
+    .split(" ")
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function isAdmin() {
   return state.profile === "Max" || state.adminMode === true;
 }
 
 function renderLogin() {
-  const loginGrid = document.querySelector("#login-grid");
-  if (!loginGrid) return;
-  loginGrid.innerHTML = guests
-    .map((name) => `<button type="button" data-login-profile="${escapeHtml(name)}"><span>${escapeHtml(name.slice(0, 1))}</span><strong>${escapeHtml(name)}</strong></button>`)
-    .join("");
+  const input = document.querySelector("#login-name");
+  if (input && !input.value) input.value = "";
 }
 
 function renderProfile() {
   const profile = activeProfile();
   setText("profile-label", profile ? `${state.profile} · ${profile.points} p${isAdmin() ? " · admin" : ""}` : "Välj");
   setText("profile-initial", state.profile ? state.profile.slice(0, 1) : "?");
-  document.querySelector("#profile-button").disabled = Boolean(state.profile && !isAdmin());
+  document.querySelector("#profile-button").disabled = false;
   document.querySelector("#profile-grid").innerHTML = isAdmin()
-    ? guests.map((name) => `<button value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")
+    ? allParticipants().map((name) => `<button value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")
     : "";
+  const adminInput = document.querySelector("#admin-name-input");
+  if (adminInput && !adminInput.value) adminInput.value = state.profile || "";
   setText("profile-dialog-copy", isAdmin() ? "Byt aktiv profil eller fortsätt som admin." : "Profilen är låst efter första valet.");
 }
 
@@ -476,12 +491,14 @@ function renderPrep() {
   setText("countdown-days", parts.days);
   setText("countdown-time", `${pad(parts.hours)} tim ${pad(parts.minutes)} min ${pad(parts.seconds)} sek`);
 
+  const participants = allParticipants();
   const rsvpDone = Object.values(state.rsvp).filter(Boolean).length;
-  setText("rsvp-count", state.profile ? state.profile : `${rsvpDone}/${guests.length} svar`);
+  const hasAnswered = state.profile && Object.prototype.hasOwnProperty.call(state.rsvp, state.profile);
+  setText("rsvp-count", state.profile ? state.profile : `${rsvpDone}/${participants.length} svar`);
   document.querySelector("#rsvp-list").innerHTML = state.profile
-    ? `<button class="rsvp-self ${state.rsvp[state.profile] ? "is-in" : ""}" type="button" data-rsvp="${escapeHtml(state.profile)}">
+    ? `<button class="rsvp-self ${state.rsvp[state.profile] ? "is-in" : "is-out"} ${hasAnswered ? "has-answer" : ""}" type="button" data-rsvp="${escapeHtml(state.profile)}">
         <span class="rsvp-status-dot"></span>
-        <strong>${state.rsvp[state.profile] ? "Kommer" : "OSA"}</strong>
+        <strong>${!hasAnswered ? "OSA" : state.rsvp[state.profile] ? "Kommer" : "Kommer inte"}</strong>
       </button>`
     : `<button class="rsvp-self" type="button" data-open-profile>
         <span class="rsvp-status-dot"></span>
@@ -497,7 +514,7 @@ function renderPrep() {
     .join("");
 
   if (profile) {
-    setText("profile-label", `${state.profile} · ${profile.points} p`);
+    setText("profile-label", `${state.profile} · ${profile.points} p${isAdmin() ? " · admin" : ""}`);
   }
 }
 
@@ -607,7 +624,7 @@ function renderWheel(profile) {
 
 function renderVote(profile) {
   const question = profile.voteDeck[0] || voteQuestions[0];
-  return `<article class="game-card"><span class="micro-label">Din fråga</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${guests.filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa egen fråga</button></article>`;
+  return `<article class="game-card"><span class="micro-label">Din fråga</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa egen fråga</button></article>`;
 }
 
 function renderMissionLegacy(profile) {
@@ -669,14 +686,15 @@ function renderBingo(profile) {
 }
 
 function renderPersonalScore() {
-  return `<div class="scoreboard">${guests.map((name) => {
+  return `<div class="scoreboard">${allParticipants().map((name) => {
     const profile = state.profiles[name] || makeProfile(name);
     return `<article class="score-row"><div><strong>${escapeHtml(name)}</strong><span>${profile.points} poäng</span></div><span class="tag">${name === state.profile ? "du" : "auto"}</span></article>`;
   }).join("")}<p class="hint">Poäng ges av appen: uppdrag, hjulbonus och adminrättad omröstning.</p>${isAdmin() ? renderVoteAdmin() : ""}</div>`;
 }
 
 function renderVoteAdmin() {
-  const answeredQuestions = [...new Set(guests.flatMap((name) => Object.keys((state.profiles[name] || {}).votes || {})))];
+  const participants = allParticipants();
+  const answeredQuestions = [...new Set(participants.flatMap((name) => Object.keys((state.profiles[name] || {}).votes || {})))];
   if (!answeredQuestions.length) return `<article class="game-card"><span class="micro-label">Admin</span><h3>Inga svar att rätta ännu</h3></article>`;
   return `<article class="game-card"><span class="micro-label">Max admin</span><h3>Rätta omröstning</h3>${answeredQuestions.map((question) => {
     const isCorrected = state.voteCorrected?.[question];
@@ -684,7 +702,7 @@ function renderVoteAdmin() {
     <div class="correction-card">
       <strong>Vem ${escapeHtml(question)}</strong>
       <div class="choice-grid">
-        ${guests.map((name) => `<button class="choice-button ${state.voteCorrections[question] === name ? "is-selected" : ""}" type="button" data-correct-question="${escapeHtml(question)}" data-correct-target="${escapeHtml(name)}" ${isCorrected ? "disabled" : ""}>${escapeHtml(name)}</button>`).join("")}
+        ${participants.map((name) => `<button class="choice-button ${state.voteCorrections[question] === name ? "is-selected" : ""}" type="button" data-correct-question="${escapeHtml(question)}" data-correct-target="${escapeHtml(name)}" ${isCorrected ? "disabled" : ""}>${escapeHtml(name)}</button>`).join("")}
       </div>
       <button class="pill-button" type="button" data-award-question="${escapeHtml(question)}" ${isCorrected ? "disabled" : ""}>${isCorrected ? "Rättad" : "Rätta och dela poäng"}</button>
     </div>
@@ -714,14 +732,14 @@ function renderPhotosLegacy() {
 }
 
 function getGalleryPhotos() {
-  const missionPhotos = guests.flatMap((name) => {
+  const missionPhotos = allParticipants().flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.missions) return [];
     return profile.missions
       .filter((mission) => mission.photo)
       .map((mission) => ({ name, text: mission.text, photo: mission.photo, type: "Uppdrag" }));
   });
-  const bingoPhotos = guests.flatMap((name) => {
+  const bingoPhotos = allParticipants().flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.bingoProofs) return [];
     return Object.entries(profile.bingoProofs)
@@ -882,8 +900,11 @@ function moveGallery(step) {
 
 function bindDynamicEvents() {
   document.querySelectorAll("[data-rsvp]").forEach((button) => button.addEventListener("click", () => {
-    state.rsvp[button.dataset.rsvp] = !state.rsvp[button.dataset.rsvp];
+    const name = button.dataset.rsvp;
+    const hasAnswered = Object.prototype.hasOwnProperty.call(state.rsvp, name);
+    state.rsvp[name] = hasAnswered ? !state.rsvp[name] : true;
     saveState();
+    showToast(state.rsvp[name] ? "OSA sparad: du kommer" : "OSA sparad: du kommer inte");
     renderAll();
   }));
 
@@ -922,7 +943,7 @@ function bindDynamicEvents() {
     if (state.voteCorrected?.[question]) return;
     const correct = state.voteCorrections[question];
     if (!correct) return;
-    guests.forEach((name) => {
+    allParticipants().forEach((name) => {
       const profile = state.profiles[name];
       if (!profile?.votes || profile.votes[question] !== correct) return;
       const key = `${name}::${question}`;
@@ -977,7 +998,8 @@ function bindDynamicEvents() {
     ];
     const action = actions[Math.floor(Math.random() * actions.length)];
     if (action.bonus) {
-      const winner = guests[Math.floor(Math.random() * guests.length)];
+      const participants = allParticipants();
+      const winner = participants[Math.floor(Math.random() * participants.length)];
       const winnerProfile = state.profiles[winner] || makeProfile(winner);
       winnerProfile.points += 1;
       state.profiles[winner] = winnerProfile;
@@ -1117,7 +1139,7 @@ function getWeatherDays() {
 }
 
 function getPersonalLeaders() {
-  return guests
+  return allParticipants()
     .map((name) => ({ name, points: (state.profiles[name] || makeProfile(name)).points }))
     .sort((a, b) => b.points - a.points);
 }
@@ -1189,13 +1211,19 @@ document.querySelectorAll("[data-section]").forEach((button) => button.addEventL
   renderAll();
 }));
 
-document.querySelector("#login-grid").addEventListener("click", (event) => {
-  const button = event.target.closest("[data-login-profile]");
-  if (!button || state.profile) return;
-  state.profile = button.dataset.loginProfile;
+document.querySelector("#login-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (state.profile) return;
+  const name = normalizeProfileName(document.querySelector("#login-name").value);
+  if (!name) {
+    showToast("Skriv ditt namn först");
+    return;
+  }
+  state.profile = name;
   state.adminMode = false;
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
   activeProfile();
+  showToast(`Inloggad som ${state.profile}`);
   saveState();
   renderAll();
 });
@@ -1208,13 +1236,34 @@ document.querySelector("#countdown-ring")?.addEventListener("click", () => {
 });
 
 document.querySelector("#profile-button").addEventListener("click", () => {
-  if (!isAdmin()) return;
+  if (!isAdmin()) {
+    showToast("Profilen är låst. Dubbelklicka namnet för prepp.");
+    return;
+  }
   document.querySelector("#profile-dialog").showModal();
+});
+document.querySelector("#profile-button").addEventListener("dblclick", () => {
+  if (!state.profile) return;
+  state.page = "prep";
+  galleryIndex = null;
+  saveState();
+  renderAll();
 });
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
   if (state.profile !== "Max" && !state.adminMode) return;
   state.adminMode = true;
   saveState();
+  renderAll();
+});
+document.querySelector("[data-admin-login]").addEventListener("click", () => {
+  if (!isAdmin()) return;
+  const name = normalizeProfileName(document.querySelector("#admin-name-input").value);
+  if (!name) return;
+  state.adminMode = true;
+  state.profile = name;
+  activeProfile();
+  saveState();
+  document.querySelector("#profile-dialog").close();
   renderAll();
 });
 document.querySelector("#profile-grid").addEventListener("click", (event) => {
@@ -1227,6 +1276,15 @@ document.querySelector("#profile-grid").addEventListener("click", (event) => {
   document.querySelector("#profile-dialog").close();
   renderAll();
 });
+
+function showToast(message) {
+  const toast = document.querySelector("#toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add("is-visible");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 1600);
+}
 
 async function startApp() {
   renderAll();
