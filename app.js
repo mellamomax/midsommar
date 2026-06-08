@@ -1,4 +1,7 @@
 const EVENT_START = new Date("2026-06-19T12:00:00+02:00");
+const BEFORE_VIDEO_OPEN = new Date("2026-06-19T00:00:00+02:00");
+const BEFORE_VIDEO_CLOSE = new Date("2026-06-19T11:00:00+02:00");
+const AFTER_VIDEO_OPEN = new Date("2026-06-19T20:00:00+02:00");
 const STORAGE_KEY = "midsommar-dashboard-v6";
 const WEATHER = { latitude: 59.3333, longitude: 16.4333 };
 const SUPABASE_URL = "https://wugavohwdfuhahbwxcea.supabase.co";
@@ -796,22 +799,34 @@ function renderBingo(profile) {
 function renderBeforeAfter(profile) {
   const before = profile.beforeAfter?.before || {};
   const after = profile.beforeAfter?.after || {};
+  const beforeState = beforeAfterSlotState("before", before, before);
+  const afterState = beforeAfterSlotState("after", after, before);
   return `<article class="game-card before-after-card">
     <span class="micro-label">Videochallenge</span>
     <h3>Före / efter</h3>
-    <p class="hint">Ta en video innan 11:00 och en senare under dagen.</p>
+    <p class="hint">Före-video fram till 11:00. Efter-video öppnar 20:00.</p>
     <div class="before-after-grid">
-      ${renderBeforeAfterSlot("before", "Före 11:00", before)}
-      ${renderBeforeAfterSlot("after", "Efter", after, !before.video)}
+      ${renderBeforeAfterSlot("before", "Före", before, beforeState)}
+      ${renderBeforeAfterSlot("after", "Efter", after, afterState)}
     </div>
   </article>`;
 }
 
-function renderBeforeAfterSlot(slot, label, item, disabled = false) {
-  return `<section class="before-after-slot ${item.video ? "is-done" : ""}">
+function beforeAfterSlotState(slot, item, beforeItem) {
+  const now = new Date();
+  if (item.video) return { disabled: true, message: "Klar" };
+  if (slot === "before" && now < BEFORE_VIDEO_OPEN) return { disabled: true, message: "Öppnar på midsommardagen." };
+  if (slot === "before" && now >= BEFORE_VIDEO_CLOSE) return { disabled: true, message: "Före stängde 11:00." };
+  if (slot === "after" && !beforeItem?.video) return { disabled: true, message: "Ta före-videon först." };
+  if (slot === "after" && now < AFTER_VIDEO_OPEN) return { disabled: true, message: "Öppnar efter 20:00." };
+  return { disabled: false, message: "Ingen video än." };
+}
+
+function renderBeforeAfterSlot(slot, label, item, slotState) {
+  return `<section class="before-after-slot ${item.video ? "is-done" : ""} ${slotState.disabled && !item.video ? "is-locked" : ""}">
     <strong>${label}</strong>
-    ${item.video ? `<video src="${item.video}" controls playsinline preload="metadata"></video><small>${escapeHtml(formatPhotoTime(item.completedAt))}</small>` : `<p class="hint">${disabled ? "Ta före-videon först." : "Ingen video än."}</p>`}
-    <button class="upload-button" type="button" data-before-after-start="${slot}" ${disabled || item.video ? "disabled" : ""}>${item.video ? "Klar" : "Ta video"}</button>
+    ${item.video ? `<video src="${item.video}" controls playsinline preload="metadata"></video><small>${escapeHtml(formatPhotoTime(item.completedAt))}</small>` : `<p class="hint">${escapeHtml(slotState.message)}</p>`}
+    <button class="upload-button" type="button" data-before-after-start="${slot}" ${slotState.disabled || item.video ? "disabled" : ""}>${item.video ? "Klar" : "Ta video"}</button>
     <input class="capture-input" type="file" accept="video/*" capture="user" data-before-after-upload="${slot}" />
   </section>`;
 }
@@ -1048,6 +1063,11 @@ async function completeBeforeAfterVideo(input) {
   const profile = activeProfile();
   profile.beforeAfter = profile.beforeAfter || structuredClone(profileSeed.beforeAfter);
   if (profile.beforeAfter[slot]?.video) return;
+  const slotState = beforeAfterSlotState(slot, profile.beforeAfter[slot], profile.beforeAfter.before);
+  if (slotState.disabled) {
+    showToast(slotState.message);
+    return;
+  }
   const video = await uploadProofFile(file, "fore-efter", slot, { compressImage: false });
   if (!video) {
     window.alert("Videon kunde inte laddas upp. Testa igen med en kortare video.");
@@ -1483,6 +1503,24 @@ function returnToLoginForTest() {
 }
 
 document.querySelector("#home-profile-button")?.addEventListener("click", returnToLoginForTest);
+
+function skipLoginForTest() {
+  if (state.profile) return;
+  state.profile = "Test";
+  state.adminMode = false;
+  state.adminOwner = "";
+  if (Date.now() < EVENT_START.getTime()) state.page = "prep";
+  activeProfile();
+  showToast("Testläge öppnat");
+  saveState();
+  renderAll();
+}
+
+document.querySelector("#login-screen")?.addEventListener("dblclick", (event) => {
+  if (event.target.closest("input, button, label")) return;
+  event.preventDefault();
+  skipLoginForTest();
+});
 
 document.querySelector("#profile-button").addEventListener("click", (event) => {
   const now = Date.now();
