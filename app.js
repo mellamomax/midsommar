@@ -7,6 +7,7 @@ const REMOTE_STATE_ID = "main";
 const PROOF_BUCKET = "proofs";
 const SHARED_STATE_KEYS = [
   "profiles",
+  "nameOverrides",
   "rsvp",
   "pack",
   "teamScores",
@@ -26,6 +27,7 @@ let pendingRemoteSave = false;
 let galleryIndex = null;
 let lastCountdownTap = 0;
 let toastTimer = null;
+let profileClickTimer = null;
 
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 
@@ -45,6 +47,7 @@ const seed = {
   adminMode: false,
   game: "wheel",
   profiles: {},
+  nameOverrides: {},
   rsvp: Object.fromEntries(guests.map((name, index) => [name, index < 5])),
   pack: [
     { id: "swim", text: "Badkläder", done: false },
@@ -234,7 +237,7 @@ function applySharedState(sharedState) {
   SHARED_STATE_KEYS.forEach((key) => {
     if (sharedState[key] !== undefined) state[key] = sharedState[key];
   });
-  guests.forEach((name) => {
+  Object.keys(state.profiles || {}).forEach((name) => {
     const profile = state.profiles[name];
     if (profile) migrateProfile(name, profile);
   });
@@ -385,7 +388,7 @@ function migrateProfile(name, profile) {
 }
 
 function getMissionsFor(name) {
-  const guestIndex = Math.max(0, guests.indexOf(name));
+  const guestIndex = Math.max(0, guests.indexOf(originalGuestForDisplay(name) || name));
   return missionPool.slice(guestIndex * 4, guestIndex * 4 + 4).map((text, index) => ({
     id: `${name}-${index}`,
     text,
@@ -439,13 +442,25 @@ function renderShell() {
 }
 
 function allParticipants() {
-  return [...new Set([...guests, ...Object.keys(state.profiles || {}), ...Object.keys(state.rsvp || {})].filter(Boolean))];
+  const overrides = state.nameOverrides || {};
+  const overriddenNames = new Set(Object.values(overrides).filter(Boolean));
+  const baseGuests = guests.map((name) => overrides[name] || name);
+  const extras = [...Object.keys(state.profiles || {}), ...Object.keys(state.rsvp || {})]
+    .filter((name) => name && !guests.includes(name) && !overriddenNames.has(name));
+  return [...new Set([...baseGuests, ...extras].filter(Boolean))];
+}
+
+function originalGuestForDisplay(name) {
+  const overrides = state.nameOverrides || {};
+  const match = Object.entries(overrides).find(([, displayName]) => displayName === name);
+  if (match) return match[0];
+  return guests.includes(name) ? name : "";
 }
 
 function normalizeProfileName(value) {
   const cleaned = String(value || "").trim().replace(/\s+/g, " ");
   if (!cleaned) return "";
-  const known = guests.find((name) => name.toLowerCase() === cleaned.toLowerCase());
+  const known = allParticipants().find((name) => name.toLowerCase() === cleaned.toLowerCase());
   if (known) return known;
   return cleaned
     .split(" ")
@@ -454,7 +469,46 @@ function normalizeProfileName(value) {
 }
 
 function isAdmin() {
+  return state.adminMode === true;
+}
+
+function canOpenAdmin() {
   return state.profile === "Max" || state.adminMode === true;
+}
+
+function rsvpStatus(name) {
+  const value = state.rsvp?.[name];
+  if (value === true) return "yes";
+  if (value === false) return "no";
+  if (["yes", "maybe", "no"].includes(value)) return value;
+  return "";
+}
+
+function rsvpLabel(status) {
+  if (status === "yes") return "kommer";
+  if (status === "maybe") return "kanske";
+  if (status === "no") return "kommer inte";
+  return "inte svarat";
+}
+
+function renameProfile(oldName, newName) {
+  if (!oldName || !newName || oldName === newName) return false;
+  state.nameOverrides = state.nameOverrides || {};
+  const originalGuest = originalGuestForDisplay(oldName);
+  if (originalGuest) state.nameOverrides[originalGuest] = newName;
+
+  if (state.profiles[oldName] && !state.profiles[newName]) state.profiles[newName] = state.profiles[oldName];
+  if (state.profiles[oldName]) delete state.profiles[oldName];
+  if (Object.prototype.hasOwnProperty.call(state.rsvp || {}, oldName)) {
+    state.rsvp[newName] = state.rsvp[oldName];
+    delete state.rsvp[oldName];
+  }
+  if (Object.prototype.hasOwnProperty.call(state.matchVotes || {}, oldName)) {
+    state.matchVotes[newName] = state.matchVotes[oldName];
+    delete state.matchVotes[oldName];
+  }
+  state.profile = newName;
+  return true;
 }
 
 function renderLogin() {
@@ -472,7 +526,8 @@ function renderProfile() {
     : "";
   const adminInput = document.querySelector("#admin-name-input");
   if (adminInput && !adminInput.value) adminInput.value = state.profile || "";
-  setText("profile-dialog-copy", isAdmin() ? "Byt aktiv profil eller fortsätt som admin." : "Profilen är låst efter första valet.");
+  document.querySelector("[data-admin-mode]").textContent = state.adminMode ? "Lämna admin mode" : "Gå in i admin mode";
+  setText("profile-dialog-copy", isAdmin() ? "Byt aktiv profil eller döp om aktiv person." : "Max kan slå på admin mode här.");
 }
 
 function renderForecast() {
@@ -489,17 +544,21 @@ function renderPrep() {
   ensurePackList();
   const parts = countdownParts();
   setText("countdown-days", parts.days);
-  setText("countdown-time", `${pad(parts.hours)} tim ${pad(parts.minutes)} min ${pad(parts.seconds)} sek`);
+  setText("countdown-time", `${pad(parts.hours)}:${pad(parts.minutes)}:${pad(parts.seconds)} kvar`);
 
   const participants = allParticipants();
-  const rsvpDone = Object.values(state.rsvp).filter(Boolean).length;
-  const hasAnswered = state.profile && Object.prototype.hasOwnProperty.call(state.rsvp, state.profile);
+  const rsvpDone = participants.filter((name) => rsvpStatus(name)).length;
+  const status = rsvpStatus(state.profile);
+  const choices = [
+    ["yes", "Ja"],
+    ["maybe", "Kanske"],
+    ["no", "Nej"],
+  ];
   setText("rsvp-count", state.profile ? state.profile : `${rsvpDone}/${participants.length} svar`);
   document.querySelector("#rsvp-list").innerHTML = state.profile
-    ? `<button class="rsvp-self ${state.rsvp[state.profile] ? "is-in" : "is-out"} ${hasAnswered ? "has-answer" : ""}" type="button" data-rsvp="${escapeHtml(state.profile)}">
-        <span class="rsvp-status-dot"></span>
-        <strong>${!hasAnswered ? "OSA" : state.rsvp[state.profile] ? "Kommer" : "Kommer inte"}</strong>
-      </button>`
+    ? `<div class="rsvp-choice-group" aria-label="OSA för ${escapeHtml(state.profile)}">
+        ${choices.map(([value, label]) => `<button class="${status === value ? "is-selected" : ""}" type="button" data-rsvp-status="${value}" data-rsvp-name="${escapeHtml(state.profile)}">${label}</button>`).join("")}
+      </div>`
     : `<button class="rsvp-self" type="button" data-open-profile>
         <span class="rsvp-status-dot"></span>
         <strong>Välj</strong>
@@ -899,12 +958,13 @@ function moveGallery(step) {
 }
 
 function bindDynamicEvents() {
-  document.querySelectorAll("[data-rsvp]").forEach((button) => button.addEventListener("click", () => {
-    const name = button.dataset.rsvp;
-    const hasAnswered = Object.prototype.hasOwnProperty.call(state.rsvp, name);
-    state.rsvp[name] = hasAnswered ? !state.rsvp[name] : true;
+  document.querySelectorAll("[data-rsvp-status]").forEach((button) => button.addEventListener("click", () => {
+    const name = button.dataset.rsvpName;
+    const status = button.dataset.rsvpStatus;
+    if (!name || !["yes", "maybe", "no"].includes(status)) return;
+    state.rsvp[name] = status;
     saveState();
-    showToast(state.rsvp[name] ? "OSA sparad: du kommer" : "OSA sparad: du kommer inte");
+    showToast(`OSA sparad: ${rsvpLabel(status)}`);
     renderAll();
   }));
 
@@ -1155,6 +1215,12 @@ function countdownParts() {
   };
 }
 
+function renderCountdown() {
+  const parts = countdownParts();
+  setText("countdown-days", parts.days);
+  setText("countdown-time", `${pad(parts.hours)}:${pad(parts.minutes)}:${pad(parts.seconds)} kvar`);
+}
+
 function shuffle(items) {
   return [...items].sort(() => Math.random() - 0.5);
 }
@@ -1236,14 +1302,19 @@ document.querySelector("#countdown-ring")?.addEventListener("click", () => {
 });
 
 document.querySelector("#profile-button").addEventListener("click", () => {
-  if (!isAdmin()) {
-    showToast("Profilen är låst. Dubbelklicka namnet för prepp.");
-    return;
-  }
-  document.querySelector("#profile-dialog").showModal();
+  clearTimeout(profileClickTimer);
+  profileClickTimer = setTimeout(() => {
+    if (!canOpenAdmin()) {
+      showToast("Profilen är låst. Dubbelklicka namnet för prepp.");
+      return;
+    }
+    document.querySelector("#profile-dialog").showModal();
+  }, 220);
 });
 document.querySelector("#profile-button").addEventListener("dblclick", () => {
+  clearTimeout(profileClickTimer);
   if (!state.profile) return;
+  document.querySelector("#profile-dialog")?.close();
   state.page = "prep";
   galleryIndex = null;
   saveState();
@@ -1251,17 +1322,24 @@ document.querySelector("#profile-button").addEventListener("dblclick", () => {
 });
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
   if (state.profile !== "Max" && !state.adminMode) return;
-  state.adminMode = true;
+  state.adminMode = !state.adminMode;
+  showToast(state.adminMode ? "Admin mode på" : "Admin mode av");
   saveState();
+  if (!state.adminMode) document.querySelector("#profile-dialog").close();
   renderAll();
 });
 document.querySelector("[data-admin-login]").addEventListener("click", () => {
   if (!isAdmin()) return;
   const name = normalizeProfileName(document.querySelector("#admin-name-input").value);
   if (!name) return;
-  state.adminMode = true;
-  state.profile = name;
+  const oldName = state.profile;
+  if (name !== oldName && allParticipants().includes(name)) {
+    showToast("Namnet finns redan");
+    return;
+  }
+  renameProfile(oldName, name);
   activeProfile();
+  showToast(oldName === name ? "Namnet är oförändrat" : `Bytte namn till ${name}`);
   saveState();
   document.querySelector("#profile-dialog").close();
   renderAll();
@@ -1293,7 +1371,7 @@ async function startApp() {
   renderAll();
   loadWeather();
   loadWorldCupMatch();
-  setInterval(renderPrep, 1000);
+  setInterval(renderCountdown, 1000);
 }
 
 startApp();
