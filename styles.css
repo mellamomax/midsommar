@@ -1820,3 +1820,281 @@ body {
     min-height: 42px;
   }
 }
+
+/* Prep as wallpaper, no app chrome */
+body[data-page="prep"] {
+  background: #06110e;
+}
+
+body[data-page="prep"] .app-shell {
+  grid-template-rows: minmax(0, 1fr);
+  width: 100%;
+  max-width: none;
+  gap: 0;
+  padding: 0;
+}
+
+body[data-page="prep"] .topbar,
+body[data-page="prep"] .page-tabs {
+  display: none;
+}
+
+body[data-page="prep"] .prep-hero {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body[data-page="prep"] .prep-hero__content {
+  grid-template-rows: auto minmax(180px, 1fr) auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+
+body[data-page="prep"] .prep-welcome {
+  margin-top: 6px;
+}
+
+body[data-page="prep"] .prep-welcome small::after {
+  content: " · Taltrastvägen 12";
+}
+
+body[data-page="prep"] .prep-stack {
+  gap: 9px;
+}
+
+body[data-page="prep"] .prep-rsvp-card {
+  position: relative;
+  grid-template-columns: minmax(0, 0.58fr) minmax(0, 1.42fr);
+  gap: 12px;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.26);
+  border-radius: 18px;
+  padding: 12px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 244, 225, 0.88)),
+    #fff;
+}
+
+body[data-page="prep"] .prep-rsvp-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(180deg, #ffe27b, var(--leaf), var(--red));
+}
+
+body[data-page="prep"] .prep-rsvp-card > div:first-child {
+  display: grid;
+  gap: 3px;
+  padding-left: 4px;
+}
+
+body[data-page="prep"] #rsvp-count {
+  font-size: 1.12rem;
+}
+
+body[data-page="prep"] .rsvp-self {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #204f38, #2e7d4c);
+  box-shadow: 0 10px 24px rgba(32, 79, 56, 0.22);
+}
+
+body[data-page="prep"] .rsvp-self:not(.is-in) {
+  color: var(--leaf-dark);
+  background: linear-gradient(135deg, #fff8df, #ffffff);
+  box-shadow: inset 0 0 0 1px rgba(38, 114, 71, 0.22);
+}
+
+body[data-page="prep"] .rsvp-self .rsvp-status-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #fff 0 28%, transparent 30%),
+    var(--leaf);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.16);
+}
+
+body[data-page="prep"] .rsvp-self:not(.is-in) .rsvp-status-dot {
+  background:
+    radial-gradient(circle at 50% 50%, var(--leaf) 0 18%, transparent 20%),
+    #e6efde;
+}
+
+body[data-page="prep"] .rsvp-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+body[data-page="prep"] .rsvp-copy strong {
+  color: inherit;
+  font-size: 1rem;
+}
+
+body[data-page="prep"] .rsvp-copy small {
+  color: currentColor;
+  opacity: 0.76;
+  font-size: 0.74rem;
+  font-weight: 850;
+}
+
+body[data-page="prep"] .prep-address-card {
+  display: none;
+}
+
+body[data-page="prep"] .prep-pack-card {
+  border-radius: 16px;
+  background: rgba(255, 253, 248, 0.94);
+}
+
+body[data-page="prep"] .prep-pack-card summary {
+  min-height: 50px;
+}
+
+.photo-card {
+  text-decoration: none;
+}
+
+body[data-section="match"] .party-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+body[data-section="match"] .panel-content {
+  overflow: hidden;
+}
+
+.match-layout--compact {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.match-summary-card,
+.match-list-card,
+.match-vote-card {
+  min-height: 0;
+}
+
+.match-summary-card {
+  padding: 11px;
+}
+
+.match-summary-card h3 {
+  margin: 3px 0;
+  font-size: 1.05rem;
+}
+
+.match-summary-card p {
+  margin: 0;
+  font-size: 0.76rem;
+}
+
+.match-list-card {
+  padding: 10px;
+}
+
+.match-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.match-row {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 7px;
+  background: #f5f7ef;
+}
+
+.match-row span {
+  color: var(--red);
+  font-size: 0.66rem;
+  font-weight: 950;
+}
+
+.match-row strong {
+  overflow: hidden;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-row small {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.match-vote-card {
+  display: grid;
+  grid-template-rows: auto auto auto auto auto minmax(0, auto);
+  gap: 6px;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.match-vote-card h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.match-vote-card .choice-grid {
+  gap: 5px;
+}
+
+.match-vote-card .choice-button {
+  min-height: 32px;
+  font-size: 0.82rem;
+}
+
+.match-vote-card .hint {
+  margin: 0;
+}
+
+@media (max-width: 430px) {
+  body[data-page="prep"] .prep-hero__content {
+    grid-template-rows: auto minmax(154px, 1fr) auto;
+    padding: max(13px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  body[data-page="prep"] .countdown-ring {
+    width: min(64vw, 242px);
+  }
+
+  body[data-page="prep"] .prep-rsvp-card {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  body[data-page="prep"] .rsvp-self {
+    min-height: 54px;
+  }
+
+  .match-layout--compact {
+    gap: 6px;
+  }
+
+  .match-row {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .match-row small {
+    grid-column: 2;
+  }
+}
