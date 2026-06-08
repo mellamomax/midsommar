@@ -28,6 +28,8 @@ let galleryIndex = null;
 let galleryMotion = "open";
 let toastTimer = null;
 let profileClickTimer = null;
+let lastProfileTap = 0;
+let lastCountdownTap = 0;
 
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 
@@ -726,8 +728,8 @@ function evaluateBingoRewards(profile) {
 
 function renderMission(profile) {
   return `<div class="mission-list">${profile.missions.map((mission, index) => `
-    <article class="mission-card ${mission.photo ? "is-complete" : ""}">
-      <div><span class="micro-label">${mission.points || missionPointsFor(mission.text, index)} p</span><h3>${escapeHtml(mission.text)}</h3><p class="hint">${mission.photo ? "Klar och låst." : "Tryck Utför när du kan ta bilden direkt."}</p></div>
+    <article class="mission-card mission-card--compact ${mission.photo ? "is-complete" : ""}">
+      <div class="mission-copy"><h3><span class="mission-points">${mission.points || missionPointsFor(mission.text, index)} p</span><span>${escapeHtml(mission.text)}</span></h3></div>
       ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*" capture="environment" data-mission-upload="${index}" />`}
     </article>`).join("")}</div>`;
 }
@@ -800,14 +802,14 @@ function getGalleryPhotos() {
     if (!profile?.missions) return [];
     return profile.missions
       .filter((mission) => mission.photo)
-      .map((mission) => ({ name, text: mission.text, photo: mission.photo, type: "Uppdrag" }));
+      .map((mission) => ({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt }));
   });
   const bingoPhotos = allParticipants().flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.bingoProofs) return [];
     return Object.entries(profile.bingoProofs)
       .filter(([, proof]) => proof?.photo)
-      .map(([text, proof]) => ({ name, text, photo: proof.photo, type: "Bingo" }));
+      .map(([text, proof]) => ({ name, text, photo: proof.photo, type: "Bingo", takenAt: proof.completedAt }));
   });
   return [...missionPhotos, ...bingoPhotos];
 }
@@ -823,7 +825,7 @@ function renderPhotos() {
   return `<div class="photo-grid">${photos.map((item, index) => `
     <button class="photo-card" type="button" data-photo-index="${index}">
       <img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />
-      <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span></div>
+      <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${escapeHtml(formatPhotoTime(item.takenAt))}</small></div>
     </button>
   `).join("")}</div>`;
 }
@@ -836,7 +838,7 @@ function renderPhotoViewer(photos) {
     <button class="photo-nav photo-nav--prev" type="button" data-gallery-prev aria-label="Föregående bild">‹</button>
     <figure class="photo-viewer__stage">
       <img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />
-      <figcaption><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${position}</small></figcaption>
+      <figcaption><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${position} · ${escapeHtml(formatPhotoTime(item.takenAt))}</small></figcaption>
     </figure>
     <button class="photo-nav photo-nav--next" type="button" data-gallery-next aria-label="Nästa bild">›</button>
   </div>`;
@@ -1270,6 +1272,18 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function formatPhotoTime(value) {
+  if (!value) return "Tid saknas";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Tid saknas";
+  return new Intl.DateTimeFormat("sv-SE", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 document.querySelectorAll("[data-page]").forEach((button) => button.addEventListener("click", () => {
   state.page = button.dataset.page;
   if (state.page === "party") state.section = "today";
@@ -1302,13 +1316,7 @@ document.querySelector("#login-form").addEventListener("submit", (event) => {
   renderAll();
 });
 
-document.querySelector("#profile-button").addEventListener("click", () => {
-  clearTimeout(profileClickTimer);
-  profileClickTimer = setTimeout(() => {
-    document.querySelector("#profile-dialog").showModal();
-  }, 220);
-});
-document.querySelector("#profile-button").addEventListener("dblclick", () => {
+function returnToPrepFromProfile() {
   clearTimeout(profileClickTimer);
   if (!state.profile) return;
   document.querySelector("#profile-dialog")?.close();
@@ -1317,10 +1325,39 @@ document.querySelector("#profile-button").addEventListener("dblclick", () => {
   galleryMotion = "open";
   saveState();
   renderAll();
+}
+
+document.querySelector("#profile-button").addEventListener("click", (event) => {
+  const now = Date.now();
+  clearTimeout(profileClickTimer);
+  if (now - lastProfileTap < 360) {
+    event.preventDefault();
+    lastProfileTap = 0;
+    returnToPrepFromProfile();
+    return;
+  }
+  lastProfileTap = now;
+  profileClickTimer = setTimeout(() => {
+    document.querySelector("#profile-dialog").showModal();
+  }, 260);
+});
+document.querySelector("#profile-button").addEventListener("dblclick", (event) => {
+  event.preventDefault();
+  returnToPrepFromProfile();
 });
 document.querySelector("#countdown-ring")?.addEventListener("dblclick", (event) => {
   event.preventDefault();
   openPartyForTest();
+});
+document.querySelector("#countdown-ring")?.addEventListener("click", (event) => {
+  const now = Date.now();
+  if (now - lastCountdownTap < 380) {
+    event.preventDefault();
+    lastCountdownTap = 0;
+    openPartyForTest();
+    return;
+  }
+  lastCountdownTap = now;
 });
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
   if (!state.adminMode) return;

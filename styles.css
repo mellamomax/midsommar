@@ -24,6 +24,8 @@ body {
   min-width: 320px;
   margin: 0;
   overflow: hidden;
+  touch-action: manipulation;
+  overscroll-behavior: none;
   background: var(--paper);
   color: var(--ink);
   font-family:
@@ -337,6 +339,48 @@ details[open] summary::after {
   margin: 3px 0 4px;
   font-size: 0.96rem;
   line-height: 1.16;
+}
+
+.mission-card--compact {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 58px;
+  padding: 9px 10px;
+}
+
+.mission-card--compact .mission-copy {
+  min-width: 0;
+}
+
+.mission-card--compact h3 {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.mission-points {
+  display: grid;
+  min-width: 44px;
+  min-height: 36px;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--leaf-dark);
+  background: rgba(47, 113, 71, 0.13);
+  font-size: 1rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.mission-card--compact .upload-button,
+.mission-card--compact .done-pill {
+  min-width: 58px;
+  min-height: 38px;
+  padding: 0 12px;
+  white-space: nowrap;
 }
 
 .mission-photo {
@@ -1307,10 +1351,16 @@ body {
   padding: 9px;
 }
 
-.photo-card span {
+.photo-card span,
+.photo-card small {
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.25;
+}
+
+.photo-card small {
+  color: rgba(31, 77, 53, 0.72);
+  font-weight: 850;
 }
 
 .section-tabs {
@@ -2932,7 +2982,11 @@ body[data-page="prep"] .prep-pack-card .pack-list span {
 }
 
 button,
-.countdown-ring {
+.app-shell,
+.countdown-ring,
+.profile-button,
+.photo-card,
+.photo-viewer {
   touch-action: manipulation;
 }
 
