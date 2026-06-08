@@ -25,6 +25,7 @@ let lastRemoteStateJson = "";
 let remotePollTimer = null;
 let pendingRemoteSave = false;
 let galleryIndex = null;
+let galleryMotion = "open";
 let toastTimer = null;
 let profileClickTimer = null;
 
@@ -420,6 +421,15 @@ function activatePartyIfEventStarted() {
   state.page = "party";
   state.section = "today";
   if (!applyingRemoteState) saveState();
+}
+
+function openPartyForTest() {
+  state.page = "party";
+  state.section = "today";
+  galleryIndex = null;
+  galleryMotion = "open";
+  saveState();
+  renderAll();
 }
 
 function renderShell() {
@@ -821,7 +831,7 @@ function renderPhotos() {
 function renderPhotoViewer(photos) {
   const item = photos[galleryIndex];
   const position = `${galleryIndex + 1}/${photos.length}`;
-  return `<div class="photo-viewer" data-photo-viewer>
+  return `<div class="photo-viewer is-${galleryMotion}" data-photo-viewer>
     <button class="photo-close" type="button" data-gallery-close aria-label="Stäng bildvisare">×</button>
     <button class="photo-nav photo-nav--prev" type="button" data-gallery-prev aria-label="Föregående bild">‹</button>
     <figure class="photo-viewer__stage">
@@ -948,6 +958,7 @@ async function completeBingoWithFile(input) {
 function moveGallery(step) {
   const photos = getGalleryPhotos();
   if (!photos.length || galleryIndex === null) return;
+  galleryMotion = step < 0 ? "prev" : "next";
   galleryIndex = (galleryIndex + step + photos.length) % photos.length;
   renderAll();
 }
@@ -1102,11 +1113,13 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-photo-index]").forEach((button) => button.addEventListener("click", () => {
     galleryIndex = Number(button.dataset.photoIndex);
+    galleryMotion = "open";
     renderAll();
   }));
 
   document.querySelector("[data-gallery-close]")?.addEventListener("click", () => {
     galleryIndex = null;
+    galleryMotion = "open";
     renderAll();
   });
 
@@ -1301,8 +1314,13 @@ document.querySelector("#profile-button").addEventListener("dblclick", () => {
   document.querySelector("#profile-dialog")?.close();
   state.page = "prep";
   galleryIndex = null;
+  galleryMotion = "open";
   saveState();
   renderAll();
+});
+document.querySelector("#countdown-ring")?.addEventListener("dblclick", (event) => {
+  event.preventDefault();
+  openPartyForTest();
 });
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
   if (!state.adminMode) return;
@@ -1361,6 +1379,7 @@ document.addEventListener("keydown", (event) => {
   if (state.section !== "photos" || galleryIndex === null) return;
   if (event.key === "Escape") {
     galleryIndex = null;
+    galleryMotion = "open";
     renderAll();
   }
   if (event.key === "ArrowLeft") moveGallery(-1);

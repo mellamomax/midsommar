@@ -2861,6 +2861,71 @@ body[data-page="prep"] .prep-pack-card .pack-list span {
   max-height: 100%;
 }
 
+.photo-viewer__stage {
+  overflow: hidden;
+}
+
+.photo-viewer.is-open .photo-viewer__stage img {
+  animation: photoOpen 220ms ease-out both;
+}
+
+.photo-viewer.is-next .photo-viewer__stage img {
+  animation: photoSlideNext 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.photo-viewer.is-prev .photo-viewer__stage img {
+  animation: photoSlidePrev 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.photo-viewer.is-next .photo-viewer__stage figcaption,
+.photo-viewer.is-prev .photo-viewer__stage figcaption {
+  animation: photoCaptionPulse 260ms ease-out both;
+}
+
+@keyframes photoOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes photoSlideNext {
+  from {
+    opacity: 0.35;
+    transform: translateX(38px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes photoSlidePrev {
+  from {
+    opacity: 0.35;
+    transform: translateX(-38px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes photoCaptionPulse {
+  from {
+    opacity: 0.55;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .photo-close {
   top: max(8px, env(safe-area-inset-top));
   right: 10px;
@@ -2872,7 +2937,8 @@ button,
 }
 
 body[data-page="prep"] .countdown-ring {
-  pointer-events: none;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 body[data-page="prep"] .prep-rsvp-card {
