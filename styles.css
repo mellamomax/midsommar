@@ -2615,3 +2615,163 @@ body[data-page="prep"] .prep-pack-card .pack-row {
     font-size: 0.57rem;
   }
 }
+
+body[data-page="prep"] .prep-welcome {
+  gap: 3px;
+  text-shadow: 0 2px 14px rgba(255, 255, 255, 0.8);
+}
+
+body[data-page="prep"] .prep-welcome .micro-label {
+  color: #287245;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+}
+
+body[data-page="prep"] .prep-welcome strong {
+  color: #173f2d;
+  font-size: clamp(1.45rem, 7vw, 2rem);
+  line-height: 0.95;
+}
+
+body[data-page="prep"] .prep-welcome small {
+  color: #214937;
+  font-size: 0.78rem;
+}
+
+body[data-page="prep"] .prep-hero__content {
+  grid-template-rows: auto minmax(212px, 1fr) auto;
+  gap: 12px;
+}
+
+body[data-page="prep"] .countdown-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: min(68vw, 250px);
+  aspect-ratio: 1;
+  padding: 18px;
+  border: 8px solid rgba(255, 226, 123, 0.9);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 20px 42px rgba(23, 74, 52, 0.18),
+    0 0 0 10px rgba(255, 255, 255, 0.36),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.95);
+}
+
+body[data-page="prep"] .countdown-ring span,
+body[data-page="prep"] .countdown-ring strong,
+body[data-page="prep"] .countdown-ring small {
+  align-self: center;
+  margin: 0;
+  max-width: 100%;
+}
+
+body[data-page="prep"] .countdown-ring span {
+  color: #d84b5d;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+body[data-page="prep"] .countdown-ring strong {
+  color: #185037;
+  font-size: clamp(3.25rem, 15vw, 4.6rem);
+  line-height: 0.82;
+}
+
+body[data-page="prep"] .countdown-ring small {
+  color: #185037;
+  font-size: 0.7rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+body[data-page="prep"] .prep-rsvp-card {
+  min-height: 54px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+body[data-page="prep"] .prep-rsvp-card .micro-label {
+  display: none;
+}
+
+body[data-page="prep"] #rsvp-count {
+  color: #173f2d;
+  font-size: 0.95rem;
+}
+
+body[data-page="prep"] .rsvp-choice-group {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 4px;
+  justify-content: end;
+}
+
+body[data-page="prep"] .rsvp-choice-group button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 10px;
+  color: #24533e;
+  background: rgba(38, 114, 71, 0.1);
+  font-size: 0.72rem;
+  font-weight: 950;
+  box-shadow: inset 0 0 0 1px rgba(38, 114, 71, 0.08);
+}
+
+body[data-page="prep"] .rsvp-choice-group button.is-selected {
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+body[data-page="prep"] .rsvp-choice-group button.is-selected[data-rsvp-status="yes"] {
+  background: linear-gradient(135deg, #287245, #174a34);
+}
+
+body[data-page="prep"] .rsvp-choice-group button.is-selected[data-rsvp-status="maybe"] {
+  color: #3f3410;
+  background: linear-gradient(135deg, #ffd966, #f2b84b);
+}
+
+body[data-page="prep"] .rsvp-choice-group button.is-selected[data-rsvp-status="no"] {
+  background: linear-gradient(135deg, #d85a5a, #a63d3d);
+}
+
+body[data-page="prep"] .prep-pack-card .pack-row span,
+body[data-page="prep"] .prep-pack-card .pack-list span {
+  color: #17211b !important;
+  font-weight: 850;
+}
+
+#party-page .section-tabs {
+  border-radius: 32px;
+  padding: 7px;
+  margin: 0 1px max(2px, env(safe-area-inset-bottom));
+}
+
+#party-page .section-tab {
+  border-radius: 24px;
+}
+
+#party-page .section-tab::before {
+  border-radius: 14px;
+}
+
+@media (max-width: 430px) {
+  body[data-page="prep"] .countdown-ring {
+    width: min(66vw, 244px);
+    padding: 16px;
+  }
+
+  body[data-page="prep"] .rsvp-choice-group button {
+    padding: 0 8px;
+    font-size: 0.68rem;
+  }
+
+  #party-page .section-tabs {
+    border-radius: 30px;
+  }
+}
