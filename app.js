@@ -41,6 +41,7 @@ const seed = {
   page: "prep",
   section: "today",
   profile: "",
+  adminMode: false,
   game: "wheel",
   profiles: {},
   rsvp: Object.fromEntries(guests.map((name, index) => [name, index < 5])),
@@ -404,6 +405,7 @@ function renderAll() {
   activatePartyIfEventStarted();
   renderShell();
   renderForecast();
+  renderLogin();
   renderProfile();
   renderPrep();
   renderParty();
@@ -426,6 +428,8 @@ function openPartyForTest() {
 
 function renderShell() {
   document.body.dataset.page = state.page;
+  document.body.dataset.loggedIn = state.profile ? "true" : "false";
+  document.body.dataset.admin = isAdmin() ? "true" : "false";
   document.querySelectorAll("[data-page]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.page === state.page);
   });
@@ -433,13 +437,27 @@ function renderShell() {
   document.querySelector(`#${state.page}-page`).classList.add("is-active");
 }
 
+function isAdmin() {
+  return state.profile === "Max" || state.adminMode === true;
+}
+
+function renderLogin() {
+  const loginGrid = document.querySelector("#login-grid");
+  if (!loginGrid) return;
+  loginGrid.innerHTML = guests
+    .map((name) => `<button type="button" data-login-profile="${escapeHtml(name)}"><span>${escapeHtml(name.slice(0, 1))}</span><strong>${escapeHtml(name)}</strong></button>`)
+    .join("");
+}
+
 function renderProfile() {
   const profile = activeProfile();
-  setText("profile-label", profile ? `${state.profile} · ${profile.points} p` : "Välj");
+  setText("profile-label", profile ? `${state.profile} · ${profile.points} p${isAdmin() ? " · admin" : ""}` : "Välj");
   setText("profile-initial", state.profile ? state.profile.slice(0, 1) : "?");
-  document.querySelector("#profile-grid").innerHTML = guests
-    .map((name) => `<button value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`)
-    .join("");
+  document.querySelector("#profile-button").disabled = Boolean(state.profile && !isAdmin());
+  document.querySelector("#profile-grid").innerHTML = isAdmin()
+    ? guests.map((name) => `<button value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")
+    : "";
+  setText("profile-dialog-copy", isAdmin() ? "Byt aktiv profil eller fortsätt som admin." : "Profilen är låst efter första valet.");
 }
 
 function renderForecast() {
@@ -463,17 +481,11 @@ function renderPrep() {
   document.querySelector("#rsvp-list").innerHTML = state.profile
     ? `<button class="rsvp-self ${state.rsvp[state.profile] ? "is-in" : ""}" type="button" data-rsvp="${escapeHtml(state.profile)}">
         <span class="rsvp-status-dot"></span>
-        <span class="rsvp-copy">
-          <strong>${state.rsvp[state.profile] ? "Jag kommer" : "Jag kommer?"}</strong>
-          <small>${state.rsvp[state.profile] ? "Svarat och klart" : "Tryck för att tacka ja"}</small>
-        </span>
+        <strong>${state.rsvp[state.profile] ? "Kommer" : "OSA"}</strong>
       </button>`
     : `<button class="rsvp-self" type="button" data-open-profile>
         <span class="rsvp-status-dot"></span>
-        <span class="rsvp-copy">
-          <strong>Välj användare</strong>
-          <small>OSA med ditt eget namn</small>
-        </span>
+        <strong>Välj</strong>
       </button>`;
 
   const packLeft = state.pack.filter((item) => !item.done).length;
@@ -533,6 +545,7 @@ function renderScoreMini() {
 function renderMatch() {
   const apiData = state.matchApiData;
   const vote = state.matchVotes[state.profile] || {};
+  const result = normalizeMatchResult(vote);
   return `<div class="match-layout match-layout--compact">
     <article class="game-card match-hero match-summary-card">
       <span class="micro-label">Grupp ${escapeHtml(matchFallback.group.replace("Group ", ""))}</span>
@@ -552,12 +565,25 @@ function renderMatch() {
         ${["1", "X", "2"].map((pick) => `<button class="choice-button ${vote.oneXtwo === pick ? "is-selected" : ""}" type="button" data-match-pick="${pick}">${pick}</button>`).join("")}
       </div>
       <h3>Resultat</h3>
-      <div class="choice-grid">
-        ${["1-0", "1-1", "2-1", "0-2", "2-2", "3-1"].map((result) => `<button class="choice-button ${vote.result === result ? "is-selected" : ""}" type="button" data-match-result="${result}">${result}</button>`).join("")}
+      <div class="score-inputs">
+        <label><span>SWE</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.home)}" data-match-score="home" /></label>
+        <b>-</b>
+        <label><span>NED</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.away)}" data-match-score="away" /></label>
       </div>
-      <p class="hint">${vote.oneXtwo || vote.result ? `Sparat: ${vote.oneXtwo || "-"} · ${vote.result || "-"}` : "Rösta innan matchen."}</p>
+      <p class="hint">${vote.oneXtwo || result.text ? `Sparat: ${vote.oneXtwo || "-"} · ${result.text || "-"}` : "Rösta innan matchen."}</p>
     </article>
   </div>`;
+}
+
+function normalizeMatchResult(vote) {
+  if (vote.resultHome !== undefined || vote.resultAway !== undefined) {
+    const home = vote.resultHome ?? "";
+    const away = vote.resultAway ?? "";
+    return { home, away, text: home !== "" && away !== "" ? `${home}-${away}` : "" };
+  }
+  const match = String(vote.result || "").match(/^(\d+)-(\d+)$/);
+  if (!match) return { home: "", away: "", text: "" };
+  return { home: match[1], away: match[2], text: `${match[1]}-${match[2]}` };
 }
 
 function renderGames() {
@@ -646,7 +672,7 @@ function renderPersonalScore() {
   return `<div class="scoreboard">${guests.map((name) => {
     const profile = state.profiles[name] || makeProfile(name);
     return `<article class="score-row"><div><strong>${escapeHtml(name)}</strong><span>${profile.points} poäng</span></div><span class="tag">${name === state.profile ? "du" : "auto"}</span></article>`;
-  }).join("")}<p class="hint">Poäng ges av appen: uppdrag, hjulbonus och adminrättad omröstning.</p>${state.profile === "Max" ? renderVoteAdmin() : ""}</div>`;
+  }).join("")}<p class="hint">Poäng ges av appen: uppdrag, hjulbonus och adminrättad omröstning.</p>${isAdmin() ? renderVoteAdmin() : ""}</div>`;
 }
 
 function renderVoteAdmin() {
@@ -924,6 +950,19 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelectorAll("[data-match-score]").forEach((input) => input.addEventListener("input", () => {
+    if (!state.profile) return;
+    const vote = { ...(state.matchVotes[state.profile] || {}) };
+    const value = input.value === "" ? "" : String(Math.max(0, Math.min(20, Number(input.value) || 0)));
+    if (input.dataset.matchScore === "home") vote.resultHome = value;
+    if (input.dataset.matchScore === "away") vote.resultAway = value;
+    vote.result = vote.resultHome !== "" && vote.resultAway !== "" ? `${vote.resultHome}-${vote.resultAway}` : "";
+    state.matchVotes[state.profile] = vote;
+    const hint = document.querySelector(".match-vote-card .hint");
+    if (hint) hint.textContent = vote.oneXtwo || vote.result ? `Sparat: ${vote.oneXtwo || "-"} · ${vote.result || "-"}` : "Rösta innan matchen.";
+    saveState();
+  }));
+
   document.querySelector("[data-spin]")?.addEventListener("click", () => {
     const profile = activeProfile();
     const actions = [
@@ -1150,6 +1189,17 @@ document.querySelectorAll("[data-section]").forEach((button) => button.addEventL
   renderAll();
 }));
 
+document.querySelector("#login-grid").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-login-profile]");
+  if (!button || state.profile) return;
+  state.profile = button.dataset.loginProfile;
+  state.adminMode = false;
+  if (Date.now() < EVENT_START.getTime()) state.page = "prep";
+  activeProfile();
+  saveState();
+  renderAll();
+});
+
 document.querySelector("#countdown-ring")?.addEventListener("dblclick", openPartyForTest);
 document.querySelector("#countdown-ring")?.addEventListener("click", () => {
   const now = Date.now();
@@ -1157,10 +1207,20 @@ document.querySelector("#countdown-ring")?.addEventListener("click", () => {
   lastCountdownTap = now;
 });
 
-document.querySelector("#profile-button").addEventListener("click", () => document.querySelector("#profile-dialog").showModal());
+document.querySelector("#profile-button").addEventListener("click", () => {
+  if (!isAdmin()) return;
+  document.querySelector("#profile-dialog").showModal();
+});
+document.querySelector("[data-admin-mode]").addEventListener("click", () => {
+  if (state.profile !== "Max" && !state.adminMode) return;
+  state.adminMode = true;
+  saveState();
+  renderAll();
+});
 document.querySelector("#profile-grid").addEventListener("click", (event) => {
   const button = event.target.closest("[data-profile]");
-  if (!button) return;
+  if (!button || !isAdmin()) return;
+  state.adminMode = true;
   state.profile = button.dataset.profile;
   activeProfile();
   saveState();
