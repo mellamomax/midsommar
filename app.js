@@ -35,6 +35,79 @@ let lastProfileTap = 0;
 let lastCountdownTap = 0;
 let lastLoginTap = 0;
 
+const snapsSongs = {
+  sv: [
+    {
+      id: "sill-och-sol",
+      title: "Sill och sol",
+      melody: "Melodi: Helan går",
+      text: ["Sill och sol, nu lyfter vi glaset.", "Potatisen ler, och kransen sitter snett.", "En liten skål, sen tillbaka till kalaset.", "Midsommar nu, det här blir helt perfekt."],
+    },
+    {
+      id: "badbryggan",
+      title: "Badbryggan",
+      melody: "Melodi: Små grodorna",
+      text: ["Nu går vi ut mot bryggan, hurra hurra hurra.", "Men först en liten nubbe, så modet kan bli bra.", "Vi doppar bara tårna, sen säger någon nej.", "Och alla ropar skåla, kom igen nu, häng med mig."],
+    },
+    {
+      id: "krans-paniken",
+      title: "Kranspaniken",
+      melody: "Melodi: Imse vimse spindel",
+      text: ["Kransen tappas snett ner i midsommargräset.", "Någon hittar blommor, någon hittar glas.", "Upp går lilla snapsen, ner går hela väsendet.", "Sen står vi där och skrattar i vårt sommarkalas."],
+    },
+  ],
+  dk: [
+    {
+      id: "en-nubbejavel",
+      title: "En nubbejävel",
+      melody: "Karsten Torebjer-original",
+      text: ["Karsten-spår. Spela originalet och kör med.", "Texten är inte inlagd här, men titeln räcker långt när bordet är igång."],
+    },
+    {
+      id: "blottaren",
+      title: "Blottaren",
+      melody: "Karsten Torebjer-original",
+      text: ["Kort Karsten-spår.", "Bra som snabb mellansång när ingen orkar en hel visa."],
+    },
+    {
+      id: "nu-kommer-sommaren",
+      title: "Nu kommer sommaren",
+      melody: "Karsten Torebjer-original",
+      text: ["Karsten-spår för midsommarkänslan.", "Lägg mobilen på bordet, spela originalet och skåla."],
+    },
+    {
+      id: "vi-tar-oss-en-liten-javel",
+      title: "Vi tar oss en liten jävel",
+      melody: "Karsten Torebjer-original",
+      text: ["Kort Karsten-spår.", "Perfekt när någon säger att nästa skål behöver vara effektiv."],
+    },
+    {
+      id: "helt-dyngrak",
+      title: "Helt dyngrak",
+      melody: "Karsten Torebjer-original",
+      text: ["Karsten-spår.", "Spara den här till senare på kvällen."],
+    },
+    {
+      id: "snart-sa-tar-vi-lille-javeln",
+      title: "Snart så tar vi lille jäveln",
+      melody: "Karsten Torebjer-original",
+      text: ["Kort Karsten-spår.", "Bra uppvärmning innan glasen faktiskt lyfts."],
+    },
+    {
+      id: "ge-levern-vad-den-tal",
+      title: "Ge levern vad den tål",
+      melody: "Karsten Torebjer-original",
+      text: ["Karsten-spår.", "Använd med lagom dåligt omdöme och mycket vatten bredvid."],
+    },
+    {
+      id: "skal-for-fan",
+      title: "Skål för fan",
+      melody: "Karsten Torebjer-original",
+      text: ["Karsten-spår.", "Den subtila finalen. Eller ja, ungefär så subtilt det blir."],
+    },
+  ],
+};
+
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 
 const sectionMeta = {
@@ -53,6 +126,8 @@ const seed = {
   adminMode: false,
   adminOwner: "",
   game: "wheel",
+  snapsLang: "sv",
+  activeSnapId: "",
   profiles: {},
   nameOverrides: {},
   rsvp: Object.fromEntries(guests.map((name, index) => [name, index < 5])),
@@ -637,6 +712,7 @@ function ensurePackList() {
 
 function renderParty() {
   if (state.section !== "photos") galleryIndex = null;
+  if (state.section !== "today") state.activeSnapId = "";
   document.body.dataset.section = state.section;
   const [kicker, title] = sectionMeta[state.section];
   setText("party-kicker", kicker);
@@ -658,7 +734,38 @@ function renderToday() {
   return `<div class="dashboard-grid">
     <article class="dash-card dash-card--wide"><span>Nästa</span><strong>12:00 Lunch</strong><small>Sill, potatis, kall dryck</small></article>
     <article class="dash-card dash-card--wide"><span>Hållpunkter</span><div class="timeline-mini">${timeline.map((item) => `<b>${escapeHtml(item[0])}</b><span>${escapeHtml(item[1])}</span>`).join("")}</div></article>
+    ${renderSnapsShortcut()}
     <article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>
+  </div>`;
+}
+
+function renderSnapsShortcut() {
+  const lang = snapsSongs[state.snapsLang] ? state.snapsLang : "sv";
+  const songs = snapsSongs[lang];
+  const activeSong = songs.find((song) => song.id === state.activeSnapId);
+  return `<article class="dash-card dash-card--wide snaps-card">
+    <div class="snaps-card__head">
+      <div><span>Snapsvisor</span><strong>${lang === "dk" ? "Karsten-läge" : "Svenska klassiker"}</strong></div>
+      <div class="snaps-lang-toggle" role="group" aria-label="Välj snapsvisor">
+        <button class="${lang === "sv" ? "is-active" : ""}" type="button" data-snaps-lang="sv">Svenska</button>
+        <button class="${lang === "dk" ? "is-active" : ""}" type="button" data-snaps-lang="dk">Danska</button>
+      </div>
+    </div>
+    <div class="snaps-list">
+      ${songs.map((song) => `<button type="button" data-open-snap="${escapeHtml(song.id)}"><strong>${escapeHtml(song.title)}</strong><small>${escapeHtml(song.melody)}</small></button>`).join("")}
+    </div>
+    ${activeSong ? renderSnapViewer(activeSong, lang) : ""}
+  </article>`;
+}
+
+function renderSnapViewer(song, lang) {
+  return `<div class="snap-viewer" data-close-snaps>
+    <article class="snap-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(song.title)}">
+      <span>${lang === "dk" ? "Karsten Torebjer" : "Snapsvisa"}</span>
+      <h3>${escapeHtml(song.title)}</h3>
+      <p class="snap-melody">${escapeHtml(song.melody)}</p>
+      <div class="snap-lyrics">${song.text.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}</div>
+    </article>
   </div>`;
 }
 
@@ -1109,6 +1216,26 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-open-profile]").forEach((button) => button.addEventListener("click", () => {
     document.querySelector("#profile-dialog").showModal();
   }));
+
+  document.querySelectorAll("[data-snaps-lang]").forEach((button) => button.addEventListener("click", () => {
+    state.snapsLang = button.dataset.snapsLang;
+    state.activeSnapId = "";
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-open-snap]").forEach((button) => button.addEventListener("click", () => {
+    state.activeSnapId = button.dataset.openSnap;
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelector("[data-close-snaps]")?.addEventListener("click", (event) => {
+    if (event.target !== event.currentTarget) return;
+    state.activeSnapId = "";
+    saveState();
+    renderAll();
+  });
 
   document.querySelectorAll("[data-game]").forEach((button) => button.addEventListener("click", () => {
     state.game = button.dataset.game;
@@ -1668,6 +1795,12 @@ document.querySelector("#profile-grid").addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && state.activeSnapId) {
+    state.activeSnapId = "";
+    saveState();
+    renderAll();
+    return;
+  }
   if (state.section !== "photos" || galleryIndex === null) return;
   if (event.key === "Escape") {
     galleryIndex = null;
