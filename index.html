@@ -8,6 +8,17 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <section class="login-screen" id="login-screen" aria-label="Välj användare">
+      <img class="login-screen__image" src="assets/prep-sunny-bg.png" alt="" />
+      <div class="login-screen__shade"></div>
+      <div class="login-card">
+        <span class="micro-label">Midsommar 2026</span>
+        <h1>Vem är du?</h1>
+        <p>Välj ditt namn en gång. Sen är appen personlig.</p>
+        <div class="login-grid" id="login-grid"></div>
+      </div>
+    </section>
+
     <div class="app-shell">
       <header class="topbar">
         <div class="topbar-main">
@@ -34,7 +45,7 @@
       <main class="app-main">
         <section class="page is-active" id="prep-page" aria-label="Prepp">
           <section class="prep-hero">
-            <img class="prep-hero__image" src="assets/prep-countdown-bg.png" alt="" />
+            <img class="prep-hero__image" src="assets/prep-sunny-bg.png" alt="" />
             <div class="prep-hero__shade"></div>
             <div class="prep-hero__content">
               <div class="prep-welcome">
@@ -93,8 +104,9 @@
 
     <dialog class="profile-dialog" id="profile-dialog">
       <form method="dialog">
-        <h2>Vem är du?</h2>
-        <p>Profilen styr din bingo, dina uppdrag och dina poäng.</p>
+        <h2>Admin</h2>
+        <p id="profile-dialog-copy">Max kan byta aktiv profil och rätta lekar.</p>
+        <button class="admin-mode-button" type="button" data-admin-mode>Admin mode</button>
         <div class="profile-grid" id="profile-grid"></div>
       </form>
     </dialog>
