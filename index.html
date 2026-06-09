@@ -35,11 +35,6 @@
               <strong>Midsommar 2026</strong>
             </div>
           </div>
-          <button class="profile-button" id="profile-button" type="button">
-            <span id="profile-initial">?</span>
-            <img id="profile-avatar" alt="" hidden />
-            <small id="profile-label">Välj</small>
-          </button>
         </div>
         <section class="forecast-strip" aria-label="Väderprognos" id="forecast-strip"></section>
       </header>
@@ -100,8 +95,15 @@
 
           <section class="party-panel">
             <div class="panel-head">
-              <span id="party-kicker">Start</span>
-              <strong id="party-title">Dashboard</strong>
+              <div class="panel-title-copy">
+                <span id="party-kicker">Start</span>
+                <strong id="party-title">Dashboard</strong>
+              </div>
+              <button class="profile-button" id="profile-button" type="button">
+                <span id="profile-initial">?</span>
+                <img id="profile-avatar" alt="" hidden />
+                <small id="profile-label">Välj</small>
+              </button>
             </div>
             <div class="panel-content" id="party-content" tabindex="-1"></div>
           </section>

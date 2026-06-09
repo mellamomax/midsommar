@@ -3906,3 +3906,122 @@ body[data-section="games"] .game-picker {
     text-align: left;
   }
 }
+
+/* Unified party header and footer anchor */
+body[data-page="party"] .app-shell {
+  grid-template-rows: minmax(0, 1fr);
+  height: 100svh;
+}
+
+body[data-page="party"] .topbar {
+  display: none;
+}
+
+body[data-page="party"] .app-main,
+body[data-page="party"] #party-page.is-active {
+  display: grid;
+  min-height: 0;
+  height: 100%;
+}
+
+body[data-page="party"] #party-page.is-active {
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: stretch;
+}
+
+body[data-page="party"] .party-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+}
+
+body[data-page="party"] .panel-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  border-bottom: 1px solid rgba(223, 232, 214, 0.82);
+  padding: 10px 12px;
+}
+
+.panel-title-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+body[data-page="party"] .panel-head strong {
+  overflow: hidden;
+  font-size: 1.24rem;
+  line-height: 1.02;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body[data-page="party"] .panel-head .profile-button {
+  min-width: 116px;
+  justify-self: end;
+}
+
+body[data-page="party"] #party-page .section-tabs {
+  align-self: end;
+  margin: 0 6px max(4px, env(safe-area-inset-bottom));
+  border-radius: 28px;
+}
+
+#party-page:has([data-section="today"].is-active) .panel-head {
+  display: grid !important;
+}
+
+body[data-section="games"] .panel-content {
+  overflow: auto;
+}
+
+.game-menu-button {
+  border-radius: 13px;
+}
+
+.game-menu-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+}
+
+.game-menu-icon svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.game-menu-icon svg circle,
+.game-menu-icon svg path {
+  vector-effect: non-scaling-stroke;
+}
+
+.game-menu-icon--vote svg circle,
+.game-menu-icon--wheel svg circle,
+.game-menu-icon--bingo svg path:first-child,
+.game-menu-icon--people svg circle {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.game-menu-icon--vote svg circle {
+  fill: var(--leaf-dark);
+  stroke: var(--leaf-dark);
+}
+
+.game-menu-icon--wheel svg circle:nth-child(2) {
+  fill: var(--leaf-dark);
+}
+
+.game-menu-icon--bingo svg path:first-child {
+  fill: transparent;
+}

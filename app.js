@@ -61,10 +61,10 @@ const snapsSongs = {
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 
 const sectionMeta = {
-  today: ["Start", "Dashboard"],
+  today: ["Start", "Midsommaröversikt"],
   games: ["Lekar", "Dina tävlingar"],
-  score: ["", "Poängställning"],
-  photos: ["Bilder", "Uppdragsbilder"],
+  score: ["Poäng", "Poängställning"],
+  photos: ["Bilder", "Galleri"],
   pentathlon: ["5-kamp", "Lagpoäng"],
   match: ["Match", "VM-matchen"],
 };
@@ -812,12 +812,12 @@ function renderGames() {
   const profile = activeProfile();
   if (!profile) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
   return `<div class="game-picker">
-    ${renderGamePickerButton("wheel", "🎯", "Hjul")}
-    ${renderGamePickerButton("vote", "💬", "Pekleken")}
-    ${renderGamePickerButton("snaps", "🥃", "Snaps")}
-    ${renderGamePickerButton("mission", "⚑", "Uppdrag")}
-    ${renderGamePickerButton("bingo", "▦", "Bingo")}
-    ${renderGamePickerButton("beforeAfter", "◐", "Före/efter")}
+    ${renderGamePickerButton("wheel", "wheel", "Hjul")}
+    ${renderGamePickerButton("vote", "vote", "Pekleken")}
+    ${renderGamePickerButton("snaps", "snaps", "Snaps")}
+    ${renderGamePickerButton("mission", "mission", "Uppdrag")}
+    ${renderGamePickerButton("bingo", "bingo", "Bingo")}
+    ${renderGamePickerButton("beforeAfter", "people", "Före/efter")}
   </div>
   ${state.game === "wheel" ? renderWheel(profile) : ""}
   ${state.game === "vote" ? renderVote(profile) : ""}
@@ -828,7 +828,19 @@ function renderGames() {
 }
 
 function renderGamePickerButton(game, icon, label) {
-  return `<button class="game-menu-button ${state.game === game ? "is-active" : ""}" type="button" data-game="${game}"><span>${icon}</span><strong>${label}</strong></button>`;
+  return `<button class="game-menu-button ${state.game === game ? "is-active" : ""}" type="button" data-game="${game}"><span class="game-menu-icon game-menu-icon--${icon}" aria-hidden="true">${gameIcon(icon)}</span><strong>${label}</strong></button>`;
+}
+
+function gameIcon(icon) {
+  const icons = {
+    wheel: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22"/><circle cx="32" cy="32" r="8"/><path d="M32 10v12M32 42v12M10 32h12M42 32h12M16 16l9 9M39 39l9 9M48 16l-9 9M25 39l-9 9"/></svg>`,
+    vote: `<svg viewBox="0 0 64 64"><path d="M12 18c0-5 4-9 9-9h22c5 0 9 4 9 9v14c0 5-4 9-9 9H30L17 53v-12h4c-5 0-9-4-9-9V18Z"/><circle cx="25" cy="25" r="3"/><circle cx="32" cy="25" r="3"/><circle cx="39" cy="25" r="3"/></svg>`,
+    snaps: `<svg viewBox="0 0 64 64"><path d="M18 12h28l-5 32H23L18 12Z"/><path d="M24 44h16l4 8H20l4-8Z"/><path d="M21 24h22"/></svg>`,
+    mission: `<svg viewBox="0 0 64 64"><path d="M18 54V10"/><path d="M18 12h28l-5 11 5 11H18"/><path d="M18 34h20"/></svg>`,
+    bingo: `<svg viewBox="0 0 64 64"><path d="M12 12h40v40H12z"/><path d="M25 12v40M39 12v40M12 25h40M12 39h40"/></svg>`,
+    people: `<svg viewBox="0 0 64 64"><circle cx="24" cy="21" r="9"/><circle cx="43" cy="24" r="7"/><path d="M9 52c2-12 9-19 15-19s13 7 15 19"/><path d="M33 52c2-9 6-14 11-14 6 0 10 5 12 14"/></svg>`,
+  };
+  return icons[icon] || icons.wheel;
 }
 
 function renderWheel(profile) {
