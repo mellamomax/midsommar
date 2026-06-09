@@ -136,6 +136,15 @@ const timeline = [
   ["Kväll", "Poängfinal"],
 ];
 
+const eventSchedule = [
+  { at: "2026-06-19T12:00:00+02:00", time: "12:00", title: "Lunch", detail: "Sill, potatis, kall dryck", color: "yellow" },
+  { at: "2026-06-19T15:00:00+02:00", time: "15:00", title: "Kransar / Bad", detail: "Kransar, brygga och första leken", color: "green" },
+  { at: "2026-06-19T18:30:00+02:00", time: "18:30", title: "Middag", detail: "Grill, snapsvisor och quiz", color: "red" },
+  { at: "2026-06-20T19:00:00+02:00", time: "Lör", title: "VM-match", detail: "Sverige - Netherlands", color: "blue" },
+  { at: "2026-06-20T20:45:00+02:00", time: "Lör", title: "5-kamp", detail: "Laggrenar och finalryck", color: "green" },
+  { at: "2026-06-20T22:30:00+02:00", time: "Kväll", title: "Poängfinal", detail: "Rättning, vinnare och pris", color: "red" },
+];
+
 const matchFallback = {
   group: "Group F",
   opponents: ["Tunisia", "Netherlands", "Japan"],
@@ -680,11 +689,38 @@ function renderParty() {
 }
 
 function renderToday() {
+  const next = getNextEvent();
   return `<div class="dashboard-grid">
-    <article class="dash-card dash-card--wide"><span>Nästa</span><strong>12:00 Lunch</strong><small>Sill, potatis, kall dryck</small></article>
-    <article class="dash-card dash-card--wide"><span>Hållpunkter</span><div class="timeline-mini">${timeline.map((item) => `<b>${escapeHtml(item[0])}</b><span>${escapeHtml(item[1])}</span>`).join("")}</div></article>
+    <article class="dash-card dash-card--wide next-activity-card">
+      <div class="next-activity-icon">◷</div>
+      <div>
+        <span>Nästa aktivitet</span>
+        <strong>${escapeHtml(next.time)} ${escapeHtml(next.title)}</strong>
+        <small>${escapeHtml(next.relative)}</small>
+      </div>
+      <b>›</b>
+    </article>
+    <article class="dash-card dash-card--wide schedule-card"><span>Dagens schema</span><div class="timeline-mini timeline-mini--rich">${eventSchedule.map((item) => `<i class="dot dot--${escapeHtml(item.color)}"></i><b>${escapeHtml(item.time)}</b><span>${escapeHtml(item.title)}</span>`).join("")}</div></article>
     <article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>
   </div>`;
+}
+
+function getNextEvent() {
+  const now = new Date();
+  const upcoming = eventSchedule.find((item) => new Date(item.at) >= now) || eventSchedule[eventSchedule.length - 1];
+  return { ...upcoming, relative: relativeToEvent(upcoming.at) };
+}
+
+function relativeToEvent(value) {
+  const diff = new Date(value).getTime() - Date.now();
+  if (diff <= 0) return "Pågår eller har precis varit";
+  const minutes = Math.round(diff / 60000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const mins = minutes % 60;
+  if (days > 0) return `Om ${days} d ${hours} h`;
+  if (hours > 0) return `Om ${hours} t ${mins} min`;
+  return `Om ${mins} min`;
 }
 
 function renderSnapsGame() {
@@ -723,10 +759,12 @@ function renderMatch() {
   const apiData = state.matchApiData;
   const vote = state.matchVotes[state.profile] || {};
   const result = normalizeMatchResult(vote);
+  const outcome = matchOutcome(result);
   return `<div class="match-layout match-layout--compact">
     <article class="game-card match-hero match-summary-card">
-      <span class="micro-label">Grupp ${escapeHtml(matchFallback.group.replace("Group ", ""))}</span>
-      <h3>${escapeHtml(apiData?.title || `${matchFallback.selected.away} vs ${matchFallback.selected.home}`)}</h3>
+      <span class="micro-label">Nästa match</span>
+      <div class="match-flags"><strong>🇸🇪</strong><span>vs</span><strong>🇳🇱</strong></div>
+      <h3>Sverige vs Netherlands</h3>
       <p>${escapeHtml(apiData?.detail || `${matchFallback.selected.date} · ${matchFallback.selected.time} · ${matchFallback.selected.venue}`)}</p>
     </article>
     <article class="game-card match-list-card">
@@ -736,18 +774,15 @@ function renderMatch() {
       </div>
     </article>
     <article class="game-card match-vote-card">
-      <span class="micro-label">Din matchröst</span>
-      <h3>1X2</h3>
-      <div class="choice-grid">
-        ${["1", "X", "2"].map((pick) => `<button class="choice-button ${vote.oneXtwo === pick ? "is-selected" : ""}" type="button" data-match-pick="${pick}">${pick}</button>`).join("")}
-      </div>
-      <h3>Resultat</h3>
+      <span class="micro-label">Tippa resultat</span>
       <div class="score-inputs">
         <label><span>SWE</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.home)}" data-match-score="home" /></label>
         <b>-</b>
         <label><span>NED</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.away)}" data-match-score="away" /></label>
       </div>
-      <p class="hint">${vote.oneXtwo || result.text ? `Sparat: ${vote.oneXtwo || "-"} · ${result.text || "-"}` : "Rösta innan matchen."}</p>
+      <p class="match-outcome">${escapeHtml(outcome)}</p>
+      <button class="pill-button match-save-button" type="button" data-match-save>Spara tipp</button>
+      <p class="hint">Rösta innan matchen.</p>
     </article>
   </div>`;
 }
@@ -763,16 +798,26 @@ function normalizeMatchResult(vote) {
   return { home: match[1], away: match[2], text: `${match[1]}-${match[2]}` };
 }
 
+function matchOutcome(result) {
+  if (result.home === "" || result.away === "") return "Fyll i resultat så räknas vinnare automatiskt.";
+  const home = Number(result.home);
+  const away = Number(result.away);
+  if (Number.isNaN(home) || Number.isNaN(away)) return "Fyll i resultat så räknas vinnare automatiskt.";
+  if (home > away) return `Sverige vinner · ${home}-${away}`;
+  if (home < away) return `Netherlands vinner · ${home}-${away}`;
+  return `Oavgjort · ${home}-${away}`;
+}
+
 function renderGames() {
   const profile = activeProfile();
   if (!profile) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
   return `<div class="game-picker">
-    <button class="pill-button ${state.game === "wheel" ? "is-active" : ""}" type="button" data-game="wheel">Hjul</button>
-    <button class="pill-button ${state.game === "vote" ? "is-active" : ""}" type="button" data-game="vote">Pekleken</button>
-    <button class="pill-button ${state.game === "snaps" ? "is-active" : ""}" type="button" data-game="snaps">Snaps</button>
-    <button class="pill-button ${state.game === "mission" ? "is-active" : ""}" type="button" data-game="mission">Uppdrag</button>
-    <button class="pill-button ${state.game === "bingo" ? "is-active" : ""}" type="button" data-game="bingo">Bingo</button>
-    <button class="pill-button ${state.game === "beforeAfter" ? "is-active" : ""}" type="button" data-game="beforeAfter">Före/efter</button>
+    ${renderGamePickerButton("wheel", "🎯", "Hjul")}
+    ${renderGamePickerButton("vote", "💬", "Pekleken")}
+    ${renderGamePickerButton("snaps", "🥃", "Snaps")}
+    ${renderGamePickerButton("mission", "⚑", "Uppdrag")}
+    ${renderGamePickerButton("bingo", "▦", "Bingo")}
+    ${renderGamePickerButton("beforeAfter", "◐", "Före/efter")}
   </div>
   ${state.game === "wheel" ? renderWheel(profile) : ""}
   ${state.game === "vote" ? renderVote(profile) : ""}
@@ -780,6 +825,10 @@ function renderGames() {
   ${state.game === "mission" ? renderMission(profile) : ""}
   ${state.game === "bingo" ? renderBingo(profile) : ""}
   ${state.game === "beforeAfter" ? renderBeforeAfter(profile) : ""}`;
+}
+
+function renderGamePickerButton(game, icon, label) {
+  return `<button class="game-menu-button ${state.game === game ? "is-active" : ""}" type="button" data-game="${game}"><span>${icon}</span><strong>${label}</strong></button>`;
 }
 
 function renderWheel(profile) {
@@ -989,7 +1038,21 @@ function renderPentathlon() {
     team: team.team,
     score: state.pentathlon.reduce((sum, event) => sum + event.scores[teamIndex], 0),
   }));
-  return `<div class="score-mini">${totals.map((row) => `<article><strong>${escapeHtml(row.team)}</strong><span>${row.score} p</span></article>`).join("")}</div><div class="pentathlon-list">${state.pentathlon.map((event, eventIndex) => `<article class="game-card"><span class="micro-label">${eventIndex + 1}/5</span><h3>${escapeHtml(event.name)}</h3><div class="mini-score-row">${state.teamScores.map((team, teamIndex) => `<button type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}">${escapeHtml(team.team)} +</button>`).join("")}</div></article>`).join("")}</div>`;
+  return `<div class="score-mini pentathlon-totals">${totals.map((row) => `<article><strong>${escapeHtml(row.team)}</strong><span>${row.score} p</span></article>`).join("")}</div><div class="pentathlon-list">${state.pentathlon.map((event, eventIndex) => {
+    const status = pentathlonStatus(eventIndex);
+    return `<article class="game-card pentathlon-event pentathlon-event--${status.key}">
+      <div class="pentathlon-event__head"><span class="micro-label">${eventIndex + 1}/5</span><span class="event-status">${escapeHtml(status.label)}</span></div>
+      <h3>${escapeHtml(event.name)}</h3>
+      <div class="mini-score-row">${state.teamScores.map((team, teamIndex) => `<button type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}">${escapeHtml(team.team)} +1</button>`).join("")}</div>
+    </article>`;
+  }).join("")}</div>`;
+}
+
+function pentathlonStatus(eventIndex) {
+  const firstOpen = state.pentathlon.findIndex((event) => event.scores.reduce((sum, score) => sum + score, 0) === 0);
+  if (firstOpen === -1 || eventIndex < firstOpen) return { key: "done", label: "Klar" };
+  if (eventIndex === firstOpen) return { key: "live", label: "Pågår" };
+  return { key: "soon", label: "Kommer" };
 }
 
 function compressProofImage(file) {
@@ -1234,11 +1297,19 @@ function bindDynamicEvents() {
     if (input.dataset.matchScore === "home") vote.resultHome = value;
     if (input.dataset.matchScore === "away") vote.resultAway = value;
     vote.result = vote.resultHome !== "" && vote.resultAway !== "" ? `${vote.resultHome}-${vote.resultAway}` : "";
+    delete vote.oneXtwo;
     state.matchVotes[state.profile] = vote;
+    const outcome = document.querySelector(".match-vote-card .match-outcome");
+    if (outcome) outcome.textContent = matchOutcome(normalizeMatchResult(vote));
     const hint = document.querySelector(".match-vote-card .hint");
-    if (hint) hint.textContent = vote.oneXtwo || vote.result ? `Sparat: ${vote.oneXtwo || "-"} · ${vote.result || "-"}` : "Rösta innan matchen.";
+    if (hint) hint.textContent = vote.result ? `Sparat: ${matchOutcome(normalizeMatchResult(vote))}` : "Rösta innan matchen.";
     saveState();
   }));
+
+  document.querySelector("[data-match-save]")?.addEventListener("click", () => {
+    const result = normalizeMatchResult(state.matchVotes[state.profile] || {});
+    showToast(result.text ? `Tipp sparat: ${matchOutcome(result)}` : "Fyll i resultat först");
+  });
 
   document.querySelector("[data-spin]")?.addEventListener("click", () => {
     const profile = activeProfile();
