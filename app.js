@@ -19,6 +19,8 @@ const SHARED_STATE_KEYS = [
   "voteCorrected",
   "voteAwarded",
   "matchVotes",
+  "schedule",
+  "content",
 ];
 
 let remoteReady = false;
@@ -75,6 +77,7 @@ const seed = {
   profile: "",
   adminMode: false,
   adminOwner: "",
+  adminEdit: "",
   game: "wheel",
   snapsLang: "sv",
   activeSnapId: "",
@@ -108,6 +111,8 @@ const seed = {
   voteCorrected: {},
   voteAwarded: {},
   matchVotes: {},
+  schedule: [],
+  content: {},
 };
 
 const profileSeed = {
@@ -249,6 +254,67 @@ const bingoLineRewards = [
 ];
 
 const bingoFullReward = "Storpris: full bricka, evig ära och +3 personpoäng.";
+
+function defaultSchedule() {
+  return eventSchedule.map((item, index) => ({ id: `event-${index + 1}`, ...item }));
+}
+
+function ensureEditableContent() {
+  state.schedule = normalizeSchedule(state.schedule);
+  state.content = state.content && typeof state.content === "object" ? state.content : {};
+  if (!Array.isArray(state.content.missions) || !state.content.missions.length) state.content.missions = [...missionPool];
+  if (!Array.isArray(state.content.bingo) || !state.content.bingo.length) state.content.bingo = [...bingoPool];
+  if (!Array.isArray(state.content.voteQuestions) || !state.content.voteQuestions.length) state.content.voteQuestions = [...voteQuestions];
+}
+
+function normalizeSchedule(schedule) {
+  const items = Array.isArray(schedule) && schedule.length ? schedule : defaultSchedule();
+  return items
+    .map((item, index) => {
+      const date = item.date || isoDatePart(item.at) || "2026-06-19";
+      const time = item.time && /^\d{2}:\d{2}$/.test(item.time) ? item.time : timePart(item.at) || "12:00";
+      const at = `${date}T${time}:00+02:00`;
+      return {
+        id: item.id || `event-${Date.now()}-${index}`,
+        at,
+        time,
+        title: item.title || "Ny hÃ¥llpunkt",
+        detail: item.detail || "",
+        color: item.color || ["yellow", "green", "red", "blue"][index % 4],
+      };
+    })
+    .sort((a, b) => new Date(a.at) - new Date(b.at));
+}
+
+function editableSchedule() {
+  ensureEditableContent();
+  return state.schedule;
+}
+
+function editableMissions() {
+  ensureEditableContent();
+  return state.content.missions;
+}
+
+function editableBingo() {
+  ensureEditableContent();
+  return state.content.bingo;
+}
+
+function editableVoteQuestions() {
+  ensureEditableContent();
+  return state.content.voteQuestions;
+}
+
+function isoDatePart(value) {
+  const match = String(value || "").match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : "";
+}
+
+function timePart(value) {
+  const match = String(value || "").match(/T(\d{2}:\d{2})/);
+  return match ? match[1] : "";
+}
 
 let state = loadState();
 
@@ -411,8 +477,8 @@ function activeProfile() {
 
 function makeProfile(name) {
   const profile = structuredClone(profileSeed);
-  profile.voteDeck = shuffle(voteQuestions).slice(0, 4);
-  profile.bingo = shuffle(bingoPool).slice(0, 9);
+  profile.voteDeck = shuffle(editableVoteQuestions()).slice(0, 4);
+  profile.bingo = shuffle(editableBingo()).slice(0, 9);
   profile.missions = getMissionsFor(name);
   return profile;
 }
@@ -426,7 +492,7 @@ function migrateProfile(name, profile) {
   if (!profile.bingoProofs) profile.bingoProofs = {};
   if (!profile.bingoRewards) profile.bingoRewards = {};
   if (!Array.isArray(profile.bingoHits)) profile.bingoHits = [];
-  if (!Array.isArray(profile.bingo) || !profile.bingo.length) profile.bingo = shuffle(bingoPool).slice(0, 9);
+  if (!Array.isArray(profile.bingo) || !profile.bingo.length) profile.bingo = shuffle(editableBingo()).slice(0, 9);
   profile.bingoHits.forEach((item) => {
     if (!profile.bingoProofs[item]) profile.bingoProofs[item] = { photo: "", completedAt: "" };
   });
@@ -439,7 +505,9 @@ function migrateProfile(name, profile) {
 
 function getMissionsFor(name) {
   const guestIndex = Math.max(0, guests.indexOf(originalGuestForDisplay(name) || name));
-  return missionPool.slice(guestIndex * 4, guestIndex * 4 + 4).map((text, index) => ({
+  const source = editableMissions();
+  const start = source.length >= guestIndex * 4 + 4 ? guestIndex * 4 : 0;
+  return source.slice(start, start + 4).map((text, index) => ({
     id: `${name}-${index}`,
     text,
     points: missionPointsFor(text, index),
@@ -456,6 +524,7 @@ function missionPointsFor(text, index = 0) {
 }
 
 function renderAll() {
+  ensureEditableContent();
   activatePartyIfEventStarted();
   renderShell();
   renderForecast();
@@ -690,6 +759,7 @@ function renderParty() {
 
 function renderToday() {
   const next = getNextEvent();
+  const schedule = todaysSchedule();
   return `<div class="dashboard-grid">
     <article class="dash-card dash-card--wide next-activity-card">
       <div class="next-activity-top">
@@ -705,16 +775,124 @@ function renderToday() {
       </div>
       <small>${escapeHtml(next.relative)}</small>
     </article>
-    <article class="dash-card dash-card--wide schedule-card"><span>Dagens schema</span><div class="timeline-mini timeline-mini--rich">${eventSchedule.map((item) => `<i class="dot dot--${escapeHtml(item.color)}"></i><b>${escapeHtml(item.time)}</b><span>${escapeHtml(item.title)}</span>`).join("")}</div></article>
+    <article class="dash-card dash-card--wide schedule-card">
+      <div class="card-title-row"><span>Dagens schema</span>${isAdmin() ? `<button class="inline-admin-button" type="button" data-admin-edit="schedule">Redigera</button>` : ""}</div>
+      <div class="timeline-mini timeline-mini--rich">${schedule.map((item) => `<i class="dot dot--${escapeHtml(item.color)}"></i><b>${escapeHtml(item.time)}</b><span>${escapeHtml(item.title)}</span>`).join("") || `<p class="hint">Inget schema f&ouml;r dagen &auml;n.</p>`}</div>
+      ${isAdmin() ? renderScheduleEditor() : ""}
+    </article>
     <article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>
     <article class="dash-card dash-card--wide start-weather-card"><span>Väder</span>${renderWeatherMini()}</article>
+    <article class="dash-card dash-card--wide activity-feed-card"><span>Senaste h&auml;ndelser</span>${renderActivityFeed()}</article>
   </div>`;
 }
 
 function getNextEvent() {
   const now = new Date();
-  const upcoming = eventSchedule.find((item) => new Date(item.at) >= now) || eventSchedule[eventSchedule.length - 1];
+  const schedule = editableSchedule();
+  const upcoming = schedule.find((item) => new Date(item.at) >= now) || schedule[schedule.length - 1] || defaultSchedule()[0];
   return { ...upcoming, relative: relativeToEvent(upcoming.at) };
+}
+
+function scheduleDayKey(date = new Date()) {
+  const schedule = editableSchedule();
+  const today = localDateKey(date);
+  if (schedule.some((item) => localDateKey(new Date(item.at)) === today)) return today;
+  const next = schedule.find((item) => new Date(item.at) >= date) || schedule[0];
+  return next ? localDateKey(new Date(next.at)) : today;
+}
+
+function todaysSchedule() {
+  const key = scheduleDayKey();
+  return editableSchedule().filter((item) => localDateKey(new Date(item.at)) === key);
+}
+
+function localDateKey(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "2026-06-19";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function renderActivityFeed() {
+  const items = getActivityFeedItems();
+  if (!items.length) return `<div class="activity-feed"><p class="hint">Inga h&auml;ndelser &auml;n. N&auml;r n&aring;gon klarar uppdrag, bingo eller tar ledningen syns det h&auml;r.</p></div>`;
+  return `<div class="activity-feed">${items.map((item) => `<article class="activity-feed-item activity-feed-item--${escapeHtml(item.kind)}">
+    <i>${escapeHtml(item.icon)}</i>
+    <div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.detail)}</span></div>
+    <time>${escapeHtml(item.time)}</time>
+  </article>`).join("")}</div>`;
+}
+
+function getActivityFeedItems() {
+  const items = [];
+  allParticipants().forEach((name) => {
+    const profile = state.profiles[name];
+    if (!profile) return;
+    (profile.missions || []).forEach((mission) => {
+      if (!mission.completedAt) return;
+      items.push({
+        kind: "mission",
+        icon: "!",
+        at: mission.completedAt,
+        title: `${name} gjorde ett uppdrag`,
+        detail: `+${mission.points || missionPointsFor(mission.text)} p`,
+      });
+    });
+    Object.entries(profile.bingoProofs || {}).forEach(([item, proof]) => {
+      if (!proof?.completedAt) return;
+      items.push({
+        kind: "bingo",
+        icon: "#",
+        at: proof.completedAt,
+        title: `${name} fick bingo`,
+        detail: item,
+      });
+    });
+    ["before", "after"].forEach((slot) => {
+      const video = profile.beforeAfter?.[slot];
+      if (!video?.completedAt) return;
+      items.push({
+        kind: "video",
+        icon: "▶",
+        at: video.completedAt,
+        title: `${name} sparade ${slot === "before" ? "f\u00f6re" : "efter"}-video`,
+        detail: "F\u00f6re / efter",
+      });
+    });
+  });
+  const leaders = getPersonalLeaders();
+  if (leaders[0]?.points > 0) {
+    items.push({
+      kind: "lead",
+      icon: "1",
+      at: "1970-01-01T00:00:00.000Z",
+      title: `${leaders[0].name} leder`,
+      detail: `${leaders[0].points} p totalt`,
+    });
+  }
+  return items
+    .sort((a, b) => new Date(b.at) - new Date(a.at))
+    .slice(0, 5)
+    .map((item) => ({ ...item, time: item.kind === "lead" ? "leder" : formatPhotoTime(item.at) }));
+}
+
+function renderScheduleEditor() {
+  if (state.adminEdit !== "schedule") return "";
+  const day = scheduleDayKey();
+  const rows = todaysSchedule();
+  return `<div class="admin-editor schedule-editor">
+    <div class="admin-editor-head"><strong>Redigera schema</strong><small>${escapeHtml(day)}</small></div>
+    <div class="admin-table admin-table--schedule">
+      ${rows.map((item) => `<div class="admin-row" data-schedule-row="${escapeHtml(item.id)}">
+        <input type="time" value="${escapeHtml(item.time)}" data-schedule-field="time" data-schedule-id="${escapeHtml(item.id)}" aria-label="Tid" />
+        <input type="text" value="${escapeHtml(item.title)}" data-schedule-field="title" data-schedule-id="${escapeHtml(item.id)}" aria-label="Titel" />
+        <input type="text" value="${escapeHtml(item.detail)}" data-schedule-field="detail" data-schedule-id="${escapeHtml(item.id)}" aria-label="Detalj" />
+        <button class="admin-delete-button" type="button" data-delete-schedule="${escapeHtml(item.id)}" aria-label="Radera hÃ¥llpunkt">&times;</button>
+      </div>`).join("")}
+    </div>
+    <button class="admin-add-button" type="button" data-add-schedule>LÃ¤gg till hÃ¥llpunkt</button>
+  </div>`;
 }
 
 function relativeToEvent(value) {
@@ -841,7 +1019,8 @@ function renderGames() {
   ${state.game === "snaps" ? renderSnapsGame() : ""}
   ${state.game === "mission" ? renderMission(profile) : ""}
   ${state.game === "bingo" ? renderBingo(profile) : ""}
-  ${state.game === "beforeAfter" ? renderBeforeAfter(profile) : ""}`;
+  ${state.game === "beforeAfter" ? renderBeforeAfter(profile) : ""}
+  ${isAdmin() ? renderGameAdminEditor() : ""}`;
 }
 
 function renderGamePickerButton(game, icon, label) {
@@ -865,8 +1044,30 @@ function renderWheel(profile) {
 }
 
 function renderVote(profile) {
-  const question = profile.voteDeck[0] || voteQuestions[0];
+  const question = profile.voteDeck[0] || editableVoteQuestions()[0];
   return `<article class="game-card"><span class="micro-label">Din fråga</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa egen fråga</button></article>`;
+}
+
+function renderGameAdminEditor() {
+  const config = {
+    vote: { key: "voteQuestions", title: "Pekleken", applyLabel: "Dela ut nya fr&aring;gor" },
+    mission: { key: "missions", title: "Uppdrag", applyLabel: "Dela ut nya uppdrag" },
+    bingo: { key: "bingo", title: "Bingo", applyLabel: "Slumpa nya brickor" },
+  }[state.game];
+  if (!config) {
+    return `<article class="admin-editor game-content-editor">
+      <div class="admin-editor-head"><strong>Admin</strong><small>Inget textinneh&aring;ll f&ouml;r den h&auml;r leken.</small></div>
+    </article>`;
+  }
+  const rows = state.content?.[config.key] || [];
+  return `<article class="admin-editor game-content-editor">
+    <div class="admin-editor-head"><strong>Redigera ${escapeHtml(config.title)}</strong><small>En rad per sak</small></div>
+    <textarea class="admin-textarea" data-content-editor="${escapeHtml(config.key)}">${escapeHtml(rows.join("\n"))}</textarea>
+    <div class="admin-actions">
+      <button class="admin-add-button" type="button" data-save-content="${escapeHtml(config.key)}">Spara lista</button>
+      <button class="admin-secondary-button" type="button" data-apply-content="${escapeHtml(config.key)}">${config.applyLabel}</button>
+    </div>
+  </article>`;
 }
 
 function renderMissionLegacy(profile) {
@@ -1074,7 +1275,27 @@ function renderPentathlon() {
       <h3>${escapeHtml(event.name)}</h3>
       <div class="mini-score-row">${state.teamScores.map((team, teamIndex) => `<button type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}">${escapeHtml(team.team)} +1</button>`).join("")}</div>
     </article>`;
-  }).join("")}</div>`;
+  }).join("")}</div>${isAdmin() ? renderPentathlonEditor() : ""}`;
+}
+
+function renderPentathlonEditor() {
+  return `<article class="admin-editor pentathlon-editor">
+    <div class="admin-editor-head"><strong>Redigera 5-kamp</strong><small>Lag och grenar</small></div>
+    <div class="admin-table admin-table--teams">
+      ${state.teamScores.map((team, index) => `<div class="admin-row">
+        <span>Lag ${index + 1}</span>
+        <input type="text" value="${escapeHtml(team.team)}" data-team-name="${index}" aria-label="Lagnamn ${index + 1}" />
+      </div>`).join("")}
+    </div>
+    <div class="admin-table admin-table--five">
+      ${state.pentathlon.map((event, index) => `<div class="admin-row">
+        <span>${index + 1}</span>
+        <input type="text" value="${escapeHtml(event.name)}" data-five-name="${index}" aria-label="Gren ${index + 1}" />
+        <button class="admin-delete-button" type="button" data-delete-five="${index}" aria-label="Radera gren">&times;</button>
+      </div>`).join("")}
+    </div>
+    <button class="admin-add-button" type="button" data-add-five>L&auml;gg till gren</button>
+  </article>`;
 }
 
 function pentathlonStatus(eventIndex) {
@@ -1269,7 +1490,69 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-game]").forEach((button) => button.addEventListener("click", () => {
     state.game = button.dataset.game;
+    state.adminEdit = "";
     saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-admin-edit]").forEach((button) => button.addEventListener("click", () => {
+    state.adminEdit = state.adminEdit === button.dataset.adminEdit ? "" : button.dataset.adminEdit;
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-schedule-field]").forEach((input) => input.addEventListener("change", () => {
+    const item = state.schedule.find((eventItem) => eventItem.id === input.dataset.scheduleId);
+    if (!item) return;
+    const field = input.dataset.scheduleField;
+    const value = input.value.trim();
+    if (field === "time") {
+      const day = localDateKey(new Date(item.at));
+      item.time = value || "12:00";
+      item.at = `${day}T${item.time}:00+02:00`;
+    } else if (["title", "detail"].includes(field)) {
+      item[field] = value;
+    }
+    state.schedule = normalizeSchedule(state.schedule);
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelector("[data-add-schedule]")?.addEventListener("click", () => {
+    const day = scheduleDayKey();
+    state.schedule.push({
+      id: `event-${Date.now()}`,
+      at: `${day}T12:00:00+02:00`,
+      time: "12:00",
+      title: "Ny hÃ¥llpunkt",
+      detail: "",
+      color: ["yellow", "green", "red", "blue"][state.schedule.length % 4],
+    });
+    state.schedule = normalizeSchedule(state.schedule);
+    saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-delete-schedule]").forEach((button) => button.addEventListener("click", () => {
+    if (!window.confirm("Radera hÃ¥llpunkten?")) return;
+    state.schedule = state.schedule.filter((item) => item.id !== button.dataset.deleteSchedule);
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-save-content]").forEach((button) => button.addEventListener("click", () => {
+    if (!saveContentList(button.dataset.saveContent)) return;
+    showToast("Lista sparad");
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-apply-content]").forEach((button) => button.addEventListener("click", () => {
+    const key = button.dataset.applyContent;
+    if (!saveContentList(key)) return;
+    if (!window.confirm("Applicera listan pÃ¥ profilerna? Det kan skriva Ã¶ver personliga uppdrag, brickor eller frÃ¥gor.")) return;
+    applyContentList(key);
+    saveState();
+    showToast("InnehÃ¥ll uppdaterat");
     renderAll();
   }));
 
@@ -1442,6 +1725,77 @@ function bindDynamicEvents() {
     saveState();
     renderAll();
   }));
+
+  document.querySelectorAll("[data-team-name]").forEach((input) => input.addEventListener("change", () => {
+    const team = state.teamScores[Number(input.dataset.teamName)];
+    if (!team) return;
+    team.team = input.value.trim() || team.team;
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-five-name]").forEach((input) => input.addEventListener("change", () => {
+    const eventItem = state.pentathlon[Number(input.dataset.fiveName)];
+    if (!eventItem) return;
+    eventItem.name = input.value.trim() || eventItem.name;
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelector("[data-add-five]")?.addEventListener("click", () => {
+    state.pentathlon.push({ name: "Ny gren", scores: state.teamScores.map(() => 0) });
+    saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-delete-five]").forEach((button) => button.addEventListener("click", () => {
+    if (state.pentathlon.length <= 1) {
+      showToast("Minst en gren behÃ¶vs");
+      return;
+    }
+    if (!window.confirm("Radera grenen?")) return;
+    state.pentathlon.splice(Number(button.dataset.deleteFive), 1);
+    saveState();
+    renderAll();
+  }));
+}
+
+function saveContentList(key) {
+  ensureEditableContent();
+  const textarea = document.querySelector(`[data-content-editor="${key}"]`);
+  if (!textarea) return false;
+  const rows = textarea.value
+    .split(/\n+/)
+    .map((row) => row.trim())
+    .filter(Boolean);
+  if (!rows.length) {
+    showToast("Listan kan inte vara tom");
+    return false;
+  }
+  state.content[key] = rows;
+  saveState();
+  return true;
+}
+
+function applyContentList(key) {
+  allParticipants().forEach((name) => {
+    const profile = state.profiles[name] || makeProfile(name);
+    if (key === "missions") {
+      profile.missions = getMissionsFor(name);
+      profile.activeMission = null;
+    }
+    if (key === "bingo") {
+      profile.bingo = shuffle(editableBingo()).slice(0, 9);
+      profile.bingoHits = [];
+      profile.bingoProofs = {};
+      profile.bingoRewards = {};
+    }
+    if (key === "voteQuestions") {
+      profile.voteDeck = shuffle(editableVoteQuestions()).slice(0, 4);
+      profile.votes = {};
+    }
+    state.profiles[name] = profile;
+  });
 }
 
 async function loadWeather() {
