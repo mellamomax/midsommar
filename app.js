@@ -251,15 +251,10 @@ const bingoLines = [
 ];
 
 const bingoLineRewards = [
-  "Vinst: välj nästa låt.",
-  "Vinst: dela ut en skål.",
-  "Vinst: välj nästa lek.",
-  "Straff: håll ett 20 sekunders midsommartal.",
-  "Straff: ta ansvar för nästa allsång.",
-  "Straff: byt plats med valfri person i 10 minuter.",
+  "Bingo: 3 i rad ger +3 poäng.",
 ];
 
-const bingoFullReward = "Storpris: full bricka, evig ära och +3 personpoäng.";
+const bingoFullReward = "Full bricka ger +5 poäng.";
 
 function defaultSchedule() {
   return eventSchedule.map((item, index) => ({ id: `event-${index + 1}`, ...item }));
@@ -1016,24 +1011,17 @@ function renderWeatherMini() {
 }
 
 function renderMatch() {
-  const apiData = state.matchApiData;
   const vote = state.matchVotes[state.profile] || {};
   const result = normalizeMatchResult(vote);
   const outcome = matchOutcome(result);
-  return `<div class="match-dashboard">
-    <article class="match-worldcup-card">
+  return `<div class="match-wallpaper">
+    <section class="match-wallpaper-hero">
       <span>VM 2026</span>
-      <h3>Sverige i grupp F</h3>
-      <p>${escapeHtml(apiData?.detail || `${matchFallback.selected.date} · ${matchFallback.selected.time}`)}</p>
-      <div class="match-flags"><strong>🇸🇪</strong><b>Sverige</b></div>
-    </article>
-    <article class="game-card match-list-card">
-      <span class="micro-label">Våra matcher</span>
-      <div class="match-list">
-        ${matchSchedule.map((match) => `<div class="match-row"><span>${escapeHtml(match.date)}</span><strong>Sverige - ${escapeHtml(match.opponent)}</strong><small>${escapeHtml(match.note)}</small></div>`).join("")}
-      </div>
-    </article>
-    <article class="game-card match-vote-card">
+      <h3>Sverige - Netherlands</h3>
+      <p>${escapeHtml(`${matchFallback.selected.date} · ${matchFallback.selected.time}`)}</p>
+      <strong>${escapeHtml(relativeToEvent("2026-06-20T19:00:00+02:00"))}</strong>
+    </section>
+    <article class="match-vote-card match-vote-card--wallpaper">
       <span class="micro-label">Tippa resultat</span>
       <div class="score-inputs">
         <label><span>SWE</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.home)}" data-match-score="home" /></label>
@@ -1161,7 +1149,7 @@ function renderWheel(profile) {
 
 function renderVote(profile) {
   const question = profile.voteDeck[0] || editableVoteQuestions()[0];
-  return `<article class="game-card"><span class="micro-label">Din fråga</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa egen fråga</button></article>`;
+  return `<article class="game-card"><span class="micro-label">Most likely</span><h3>Vem ${escapeHtml(question)}</h3><p class="hint">Rösta på vem du tror är most likely att. Rättning görs dag 2.</p><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa egen fråga</button></article>`;
 }
 
 function renderGameAdminEditor() {
@@ -1213,10 +1201,11 @@ function evaluateBingoRewards(profile) {
   profile.bingoRewards = profile.bingoRewards || {};
   if (hasLine && !profile.bingoRewards.lineText) {
     profile.bingoRewards.lineText = bingoLineRewards[Math.floor(Math.random() * bingoLineRewards.length)];
+    profile.points += 3;
   }
   if (hits.length === profile.bingo.length && !profile.bingoRewards.fullText) {
     profile.bingoRewards.fullText = bingoFullReward;
-    profile.points += 3;
+    profile.points += 5;
   }
 }
 
@@ -1239,8 +1228,8 @@ function renderBingo(profile) {
   }).join("")}</div>
   <div class="bingo-rewards">
     <p class="hint">${hits.length}/9 låsta · unik bricka för ${escapeHtml(state.profile)}</p>
-    <p class="hint">${profile.bingoRewards.lineText ? escapeHtml(profile.bingoRewards.lineText) : "3 i rad ger vinst eller straff."}</p>
-    <p class="hint">${profile.bingoRewards.fullText ? escapeHtml(profile.bingoRewards.fullText) : "Full bricka ger storpris och +3 poäng."}</p>
+    <p class="hint">3 i rad ger +3 poäng.</p>
+    <p class="hint">Full bricka ger +5 poäng.</p>
   </div>`;
 }
 
@@ -1250,9 +1239,8 @@ function renderBeforeAfter(profile) {
   const beforeState = beforeAfterSlotState("before", before, before);
   const afterState = beforeAfterSlotState("after", after, before);
   return `<article class="game-card before-after-card">
-    <span class="micro-label">Videochallenge</span>
-    <h3>Före / efter</h3>
-    <p class="hint">Före-video fram till 11:00. Efter-video öppnar 20:00.</p>
+    <h3>Video challenge</h3>
+    <p class="hint">Spela in en video innan midsommar börjar, och senare på kvällen en video när du är i full gång.</p>
     <div class="before-after-grid">
       ${renderBeforeAfterSlot("before", "Före", before, beforeState)}
       ${renderBeforeAfterSlot("after", "Efter", after, afterState)}
@@ -1293,26 +1281,33 @@ function renderPersonalScore() {
 }
 
 function renderScoreAdmin() {
+  const participants = allParticipants();
+  const selectedPlayer = participants.includes(state.adminScorePlayer) ? state.adminScorePlayer : (state.profile || participants[0]);
+  const selectedTeamIndex = state.teamScores[Number(state.adminScoreTeam)] ? Number(state.adminScoreTeam) : 0;
+  const selectedProfile = state.profiles[selectedPlayer] || makeProfile(selectedPlayer);
+  const selectedTeam = state.teamScores[selectedTeamIndex];
   return `<article class="game-card score-admin-card">
     <span class="micro-label">Admin</span>
     <h3>Justera poäng</h3>
-    <button class="pill-button danger-button" type="button" data-reset-points>Nollställ personpoäng</button>
-    <button class="pill-button danger-button" type="button" data-reset-team-points>Nollställ lagpoäng</button>
-    <div class="score-admin-list">
-      ${allParticipants().map((name) => `<div class="score-admin-row">
-        <strong>${escapeHtml(name)}</strong>
-        <button type="button" data-adjust-player="${escapeHtml(name)}" data-points-delta="-1">-1</button>
-        <span>${(state.profiles[name] || makeProfile(name)).points} p</span>
-        <button type="button" data-adjust-player="${escapeHtml(name)}" data-points-delta="1">+1</button>
-      </div>`).join("")}
+    <div class="score-admin-picker">
+      <label><span>Profil</span><select data-score-player>${participants.map((name) => `<option value="${escapeHtml(name)}" ${name === selectedPlayer ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}</select></label>
+      <div class="score-admin-row score-admin-row--single">
+        <strong>${escapeHtml(selectedPlayer)}</strong>
+        <button type="button" data-adjust-player="${escapeHtml(selectedPlayer)}" data-points-delta="-1">-1</button>
+        <span>${selectedProfile.points} p</span>
+        <button type="button" data-adjust-player="${escapeHtml(selectedPlayer)}" data-points-delta="1">+1</button>
+        <button type="button" data-reset-player="${escapeHtml(selectedPlayer)}">0</button>
+      </div>
     </div>
-    <div class="score-admin-list">
-      ${state.teamScores.map((team, index) => `<div class="score-admin-row">
-        <strong>${escapeHtml(team.team)}</strong>
-        <button type="button" data-adjust-team="${index}" data-points-delta="-1">-1</button>
-        <span>${team.score || 0} p</span>
-        <button type="button" data-adjust-team="${index}" data-points-delta="1">+1</button>
-      </div>`).join("")}
+    <div class="score-admin-picker">
+      <label><span>Lag</span><select data-score-team>${state.teamScores.map((team, index) => `<option value="${index}" ${index === selectedTeamIndex ? "selected" : ""}>${escapeHtml(team.team)}</option>`).join("")}</select></label>
+      <div class="score-admin-row score-admin-row--single">
+        <strong>${escapeHtml(selectedTeam.team)}</strong>
+        <button type="button" data-adjust-team="${selectedTeamIndex}" data-points-delta="-1">-1</button>
+        <span>${selectedTeam.score || 0} p</span>
+        <button type="button" data-adjust-team="${selectedTeamIndex}" data-points-delta="1">+1</button>
+        <button type="button" data-reset-team="${selectedTeamIndex}">0</button>
+      </div>
     </div>
   </article>`;
 }
@@ -1413,15 +1408,11 @@ function renderPhotoViewer(photos) {
 }
 
 function renderPentathlon() {
-  const totals = state.teamScores.map((team, teamIndex) => ({
-    team: team.team,
-    members: team.members || [],
-    score: Number(team.score || 0) + state.pentathlon.reduce((sum, event) => sum + Number(event.scores[teamIndex] || 0), 0),
-  }));
+  const totals = pentathlonTeamRows();
   const started = state.settings.pentathlon?.started;
   const visibleIndex = Number(state.settings.pentathlon?.visibleIndex ?? -1);
   const visibleEvents = started ? state.pentathlon.slice(0, visibleIndex + 1) : [];
-  return `<div class="score-mini pentathlon-totals">${totals.map((row) => `<article><strong>${escapeHtml(row.team)}</strong><span>${row.score} p</span><small>${row.members.length ? escapeHtml(row.members.join(", ")) : "Inga deltagare"}</small></article>`).join("")}</div>
+  return `<div class="pentathlon-summary-grid">${renderOwnTeamCard(totals)}${renderPentathlonRanking(totals)}</div>
   ${isAdmin() ? renderPentathlonRevealControls() : ""}
   ${!started ? `<article class="game-card pentathlon-locked-card"><span class="micro-label">5-kamp</span><h3>Grenarna är hemliga</h3><p class="hint">Admin startar 5-kampen när det är dags.</p></article>` : ""}
   <div class="pentathlon-list">${visibleEvents.map((event, eventIndex) => {
@@ -1429,12 +1420,50 @@ function renderPentathlon() {
     return `<article class="game-card pentathlon-event pentathlon-event--${status.key}">
       <div class="pentathlon-event__head"><span class="micro-label">${eventIndex + 1}/5</span><span class="event-status">${escapeHtml(status.label)}</span></div>
       <h3>${escapeHtml(event.name)}</h3>
-      <div class="five-placement-grid">${state.teamScores.map((team, teamIndex) => `<section>
+      ${isAdmin() ? `<div class="five-placement-grid">${state.teamScores.map((team, teamIndex) => `<section>
         <strong>${escapeHtml(team.team)} <b>${event.scores[teamIndex] || 0} p</b></strong>
         <div>${[5, 3, 1, 0.5].map((points) => `<button type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}" data-five-points="${points}">${points}p</button>`).join("")}</div>
-      </section>`).join("")}</div>
+      </section>`).join("")}</div>` : ""}
     </article>`;
   }).join("")}</div>${isAdmin() ? renderPentathlonEditor() : ""}`;
+}
+
+function pentathlonTeamRows() {
+  return state.teamScores.map((team, teamIndex) => ({
+    team: team.team,
+    index: teamIndex,
+    members: team.members || [],
+    score: Number(team.score || 0) + state.pentathlon.reduce((sum, event) => sum + Number(event.scores[teamIndex] || 0), 0),
+  })).sort((a, b) => b.score - a.score || a.team.localeCompare(b.team, "sv"));
+}
+
+function ownTeamRow(rows) {
+  return rows.find((team) => team.members.includes(state.profile)) || null;
+}
+
+function renderOwnTeamCard(rows) {
+  const ownTeam = ownTeamRow(rows);
+  if (!ownTeam) {
+    return `<article class="game-card own-team-card"><span class="micro-label">Mitt lag</span><h3>Inget lag valt</h3><p class="hint">Admin kopplar deltagare till lag.</p></article>`;
+  }
+  return `<article class="game-card own-team-card">
+    <span class="micro-label">Mitt lag</span>
+    <input class="own-team-name-input" value="${escapeHtml(ownTeam.team)}" data-own-team-name="${ownTeam.index}" aria-label="Ändra lagnamn" />
+    <strong>${ownTeam.score} p</strong>
+    <p>${escapeHtml(ownTeam.members.join(", "))}</p>
+  </article>`;
+}
+
+function renderPentathlonRanking(rows) {
+  return `<article class="game-card pentathlon-ranking-card">
+    <span class="micro-label">Tabell</span>
+    <div class="team-rank-table">${rows.map((row, index) => `<div class="${row.members.includes(state.profile) ? "is-self" : ""}">
+      <b>${index + 1}</b>
+      <strong>${escapeHtml(row.team)}</strong>
+      <span>${escapeHtml(row.members.join(", ") || "-")}</span>
+      <em>${row.score} p</em>
+    </div>`).join("")}</div>
+  </article>`;
 }
 
 function renderPentathlonRevealControls() {
@@ -1788,25 +1817,31 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
-  document.querySelector("[data-reset-points]")?.addEventListener("click", () => {
-    if (!window.confirm("Nollställa alla personpoäng?")) return;
-    allParticipants().forEach((name) => {
-      const profile = state.profiles[name] || makeProfile(name);
-      profile.points = 0;
-      state.profiles[name] = profile;
-    });
+  document.querySelector("[data-score-player]")?.addEventListener("change", (event) => {
+    state.adminScorePlayer = event.target.value;
     saveState();
     renderAll();
   });
 
-  document.querySelector("[data-reset-team-points]")?.addEventListener("click", () => {
-    if (!window.confirm("Nollställa alla lagpoäng och grenpoäng?")) return;
-    state.teamScores.forEach((team) => {
-      team.score = 0;
-    });
-    state.pentathlon.forEach((eventItem) => {
-      eventItem.scores = state.teamScores.map(() => 0);
-    });
+  document.querySelector("[data-score-team]")?.addEventListener("change", (event) => {
+    state.adminScoreTeam = event.target.value;
+    saveState();
+    renderAll();
+  });
+
+  document.querySelector("[data-reset-player]")?.addEventListener("click", (event) => {
+    const name = event.currentTarget.dataset.resetPlayer;
+    const profile = state.profiles[name] || makeProfile(name);
+    profile.points = 0;
+    state.profiles[name] = profile;
+    saveState();
+    renderAll();
+  });
+
+  document.querySelector("[data-reset-team]")?.addEventListener("click", (event) => {
+    const team = state.teamScores[Number(event.currentTarget.dataset.resetTeam)];
+    if (!team) return;
+    team.score = 0;
     saveState();
     renderAll();
   });
@@ -2009,6 +2044,14 @@ function bindDynamicEvents() {
     saveState();
     renderAll();
   }));
+
+  document.querySelector("[data-own-team-name]")?.addEventListener("change", (event) => {
+    const team = state.teamScores[Number(event.target.dataset.ownTeamName)];
+    if (!team) return;
+    team.team = event.target.value.trim() || team.team;
+    saveState();
+    renderAll();
+  });
 
   document.querySelectorAll("[data-team-member]").forEach((button) => button.addEventListener("click", () => {
     const teamIndex = Number(button.dataset.teamMember);

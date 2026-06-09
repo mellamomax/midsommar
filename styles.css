@@ -4960,24 +4960,32 @@ body[data-section="games"] .game-picker {
   background: #111;
 }
 
-.match-dashboard {
+.match-wallpaper {
   display: grid;
-  gap: 10px;
-}
-
-.match-worldcup-card {
-  display: grid;
-  gap: 8px;
-  border-radius: 18px;
-  padding: 18px;
-  color: #fff;
+  align-content: start;
+  gap: 12px;
+  min-height: calc(100dvh - 198px);
+  margin: -10px;
+  padding: 16px 12px 18px;
+  overflow: hidden;
+  border-radius: 0 0 24px 24px;
   background:
-    radial-gradient(circle at 88% 12%, rgba(255, 225, 135, 0.42), transparent 30%),
-    linear-gradient(135deg, #0f5a43, #1d7d5c 54%, #d7b35a);
-  box-shadow: 0 18px 30px rgba(28, 81, 61, 0.18);
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.3), transparent 24%),
+    radial-gradient(circle at 86% 8%, rgba(248, 209, 101, 0.4), transparent 26%),
+    linear-gradient(150deg, #0f5a43 0%, #196f55 48%, #d6b056 100%);
 }
 
-.match-worldcup-card span {
+.match-wallpaper-hero {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-height: 250px;
+  align-content: center;
+  color: #fff;
+  text-align: center;
+}
+
+.match-wallpaper-hero span {
   color: rgba(255, 255, 255, 0.78);
   font-size: 0.72rem;
   font-weight: 950;
@@ -4985,44 +4993,91 @@ body[data-section="games"] .game-picker {
   text-transform: uppercase;
 }
 
-.match-worldcup-card h3 {
+.match-wallpaper-hero h3 {
   margin: 0;
   color: #fff;
-  font-size: 1.45rem;
+  font-size: 2rem;
+  line-height: 1.05;
 }
 
-.match-worldcup-card p {
+.match-wallpaper-hero p {
   margin: 0;
   color: rgba(255, 255, 255, 0.86);
   font-weight: 800;
 }
 
-.match-worldcup-card .match-flags {
-  margin: 4px 0 0;
+.match-wallpaper-hero > strong {
+  display: grid;
+  min-width: 150px;
+  min-height: 54px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  padding: 0 18px;
+  color: #0f5a43;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 1.05rem;
+  font-weight: 950;
 }
 
-.match-worldcup-card .match-flags strong {
-  font-size: 2.2rem;
+.match-vote-card--wallpaper,
+.match-wallpaper .match-admin-card {
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 253, 248, 0.92);
+  box-shadow: 0 18px 32px rgba(18, 60, 45, 0.16);
 }
 
-.match-worldcup-card .match-flags b {
-  color: #fff;
-  font-size: 1rem;
+body[data-section="match"] .panel-content {
+  padding-bottom: 8px;
 }
 
 .score-admin-card {
   gap: 10px;
 }
 
+.score-admin-picker {
+  display: grid;
+  gap: 7px;
+}
+
+.score-admin-picker label {
+  display: grid;
+  gap: 5px;
+}
+
+.score-admin-picker label span {
+  color: #52715d;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.score-admin-picker select {
+  width: 100%;
+  border: 1px solid rgba(49, 72, 58, 0.16);
+  border-radius: 12px;
+  padding: 10px;
+  color: #202a24;
+  background: #fff;
+  font: inherit;
+  font-weight: 900;
+}
+
 .score-admin-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 42px 54px 42px;
+  grid-template-columns: minmax(0, 1fr) 42px 54px 42px 38px;
   align-items: center;
   gap: 6px;
   border: 1px solid rgba(49, 72, 58, 0.1);
   border-radius: 12px;
   padding: 7px;
   background: rgba(255, 255, 255, 0.72);
+}
+
+.score-admin-row--single {
+  grid-template-columns: minmax(0, 1fr) 42px 54px 42px 38px;
 }
 
 .score-admin-row strong {
@@ -5056,6 +5111,86 @@ body[data-section="games"] .game-picker {
 .pentathlon-locked-card,
 .pentathlon-control-card {
   margin-bottom: 10px;
+}
+
+.pentathlon-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.own-team-card,
+.pentathlon-ranking-card {
+  min-width: 0;
+  padding: 12px;
+}
+
+.own-team-name-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(49, 72, 58, 0.14);
+  border-radius: 12px;
+  padding: 10px;
+  color: #202a24;
+  background: #fff;
+  font: inherit;
+  font-size: 1.04rem;
+  font-weight: 950;
+}
+
+.own-team-card > strong {
+  color: #29483a;
+  font-size: 1.35rem;
+}
+
+.own-team-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.team-rank-table {
+  display: grid;
+  gap: 5px;
+}
+
+.team-rank-table div {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 0.8fr) minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 5px;
+  border-radius: 9px;
+  padding: 6px;
+  background: rgba(246, 245, 239, 0.8);
+}
+
+.team-rank-table div.is-self {
+  box-shadow: inset 0 0 0 2px rgba(41, 72, 58, 0.4);
+}
+
+.team-rank-table b,
+.team-rank-table em {
+  color: #29483a;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.team-rank-table strong {
+  min-width: 0;
+  color: #202a24;
+  font-size: 0.78rem;
+}
+
+.team-rank-table span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .five-placement-grid {
@@ -5195,5 +5330,9 @@ body[data-section="games"] .game-picker {
 
   .dashboard-toggle-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pentathlon-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
