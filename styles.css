@@ -4512,3 +4512,75 @@ body[data-section="games"] .game-picker {
   color: #29483a;
   background: rgba(255, 253, 248, 0.9);
 }
+
+/* Structured next activity card */
+.next-activity-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 116px;
+  padding: 13px 14px;
+}
+
+.next-activity-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.next-activity-top span {
+  color: #52715d;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.next-activity-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.next-activity-main strong {
+  color: #202a24;
+  font-size: 1.58rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.next-activity-main h3 {
+  margin: 0;
+  color: #202a24;
+  font-size: 1.12rem;
+  line-height: 1.08;
+}
+
+.next-activity-main p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.2;
+}
+
+.next-activity-card > small {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: #29483a;
+  background: #e7eee3;
+  font-weight: 850;
+}
+
+.next-activity-card > b {
+  display: none;
+}
+
+@media (max-width: 360px) {
+  .next-activity-main {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

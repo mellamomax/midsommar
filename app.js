@@ -692,13 +692,18 @@ function renderToday() {
   const next = getNextEvent();
   return `<div class="dashboard-grid">
     <article class="dash-card dash-card--wide next-activity-card">
-      <div class="next-activity-icon">◷</div>
-      <div>
+      <div class="next-activity-top">
+        <div class="next-activity-icon">◷</div>
         <span>Nästa aktivitet</span>
-        <strong>${escapeHtml(next.time)} ${escapeHtml(next.title)}</strong>
-        <small>${escapeHtml(next.relative)}</small>
       </div>
-      <b>›</b>
+      <div class="next-activity-main">
+        <strong>${escapeHtml(next.time)}</strong>
+        <div>
+          <h3>${escapeHtml(next.title)}</h3>
+          <p>${escapeHtml(next.detail)}</p>
+        </div>
+      </div>
+      <small>${escapeHtml(next.relative)}</small>
     </article>
     <article class="dash-card dash-card--wide schedule-card"><span>Dagens schema</span><div class="timeline-mini timeline-mini--rich">${eventSchedule.map((item) => `<i class="dot dot--${escapeHtml(item.color)}"></i><b>${escapeHtml(item.time)}</b><span>${escapeHtml(item.title)}</span>`).join("")}</div></article>
     <article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>
