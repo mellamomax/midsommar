@@ -5336,3 +5336,146 @@ body[data-section="match"] .panel-content {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+body[data-section="score"] .panel-content,
+body[data-section="pentathlon"] .panel-content {
+  overflow: auto !important;
+  padding-bottom: 104px;
+}
+
+body[data-section="score"] .scoreboard--leaderboard {
+  min-height: 0;
+  height: auto;
+  overflow: visible;
+}
+
+.vote-game-card {
+  gap: 10px;
+}
+
+.vote-game-card h3 {
+  margin-bottom: 2px;
+}
+
+.vote-game-card .vote-options {
+  margin-top: 0;
+}
+
+.mission-point-admin {
+  display: inline-grid;
+  grid-template-columns: auto 54px;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
+  color: #607060;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.mission-point-admin input {
+  min-width: 0;
+  border: 1px solid rgba(49, 72, 58, 0.16);
+  border-radius: 10px;
+  padding: 6px 7px;
+  color: #202a24;
+  background: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.own-team-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 10px;
+}
+
+.own-team-card .micro-label {
+  grid-column: 1 / -1;
+}
+
+.own-team-name-input {
+  max-width: 145px;
+  padding: 7px 9px;
+  font-size: 0.9rem;
+}
+
+.own-team-card > strong {
+  justify-self: end;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #29483a;
+  background: #e7eee3;
+  font-size: 0.96rem;
+  line-height: 1;
+}
+
+.own-team-card p {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  line-height: 1.15;
+}
+
+.match-wallpaper {
+  grid-template-rows: minmax(215px, 1fr) auto;
+  min-height: calc(100dvh - 176px);
+  padding-bottom: 92px;
+}
+
+.match-wallpaper-hero {
+  min-height: 210px;
+  gap: 8px;
+}
+
+.match-wallpaper-hero h3 {
+  font-size: 1.72rem;
+}
+
+.match-vote-card--wallpaper {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.match-vote-card--wallpaper .score-inputs {
+  margin: 0;
+}
+
+.match-points-note {
+  margin: 0;
+  color: #4f604f;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-align: center;
+}
+
+@media (max-width: 430px) {
+  .mission-card--compact {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 52px;
+    padding: 8px;
+  }
+
+  .mission-points {
+    min-width: 38px;
+    min-height: 32px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+  }
+
+  .mission-card--compact h3 {
+    gap: 7px;
+    font-size: 0.82rem;
+  }
+
+  .mission-card--compact .upload-button,
+  .mission-card--compact .done-pill {
+    min-width: 50px;
+    min-height: 34px;
+    padding: 0 9px;
+    font-size: 0.74rem;
+  }
+}
