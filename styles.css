@@ -3609,3 +3609,48 @@ body[data-page="party"] .forecast-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Party header hard override */
+body[data-page="party"] .topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  justify-content: stretch;
+  justify-items: stretch;
+  width: 100%;
+  max-width: none;
+  overflow: hidden;
+}
+
+body[data-page="party"] .topbar .topbar-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-content: stretch;
+  justify-items: stretch;
+  width: 100%;
+  max-width: none;
+}
+
+body[data-page="party"] .topbar .brand-lockup {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+}
+
+body[data-page="party"] .profile-button {
+  justify-self: end;
+}
+
+body[data-page="party"] .forecast-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-self: stretch;
+  width: 100%;
+  max-width: none;
+}
+
+body[data-page="party"] .forecast-strip article {
+  justify-items: center;
+  text-align: center;
+}
