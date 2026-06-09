@@ -1099,18 +1099,6 @@ body {
   gap: 10px;
 }
 
-.brand-mark {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 50%;
-  color: #fff;
-  background: linear-gradient(135deg, var(--leaf), var(--red));
-  font-weight: 950;
-}
-
 .profile-button {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1656,11 +1644,6 @@ body {
   .topbar {
     gap: 6px;
     padding: 7px;
-  }
-
-  .brand-mark {
-    width: 34px;
-    height: 34px;
   }
 
   .topbar strong {
@@ -3173,13 +3156,6 @@ body[data-section="score"] .score-row--rank.is-self {
 }
 
 /* Prep/profile/game polish v34 */
-.brand-profile-button {
-  border: 0;
-  padding: 0;
-  overflow: hidden;
-  isolation: isolate;
-}
-
 .login-photo-picker {
   position: relative;
   display: grid;
@@ -3485,32 +3461,6 @@ body[data-page="party"] .forecast-strip {
   gap: 2px;
 }
 
-.snaps-lang-toggle {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, auto));
-  gap: 3px;
-  border-radius: 999px;
-  padding: 3px;
-  background: rgba(38, 114, 71, 0.11);
-}
-
-.snaps-lang-toggle button {
-  min-height: 30px;
-  border: 0;
-  border-radius: 999px;
-  padding: 0 9px;
-  color: var(--leaf-dark);
-  background: transparent;
-  font-size: 0.68rem;
-  font-weight: 950;
-}
-
-.snaps-lang-toggle button.is-active {
-  color: #fff;
-  background: linear-gradient(135deg, var(--leaf-dark), var(--leaf));
-  box-shadow: 0 8px 18px rgba(23, 74, 52, 0.16);
-}
-
 .snaps-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3627,11 +3577,6 @@ body[data-page="party"] .forecast-strip {
     grid-template-columns: 1fr;
   }
 
-  .snaps-lang-toggle {
-    justify-self: stretch;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .snaps-list {
     max-height: 118px;
   }
@@ -3639,5 +3584,28 @@ body[data-page="party"] .forecast-strip {
   .snap-card {
     border-radius: 22px;
     padding: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  body[data-page="party"] .app-shell {
+    width: 100vw;
+    max-width: none;
+    margin: 0;
+  }
+
+  body[data-page="party"] .topbar {
+    width: 100vw;
+    max-width: none;
+  }
+
+  body[data-page="party"] .topbar .topbar-main,
+  body[data-page="party"] .topbar .forecast-strip {
+    width: 100%;
+    max-width: none;
+  }
+
+  body[data-page="party"] .forecast-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

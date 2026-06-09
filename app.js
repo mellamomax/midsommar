@@ -56,32 +56,6 @@ const snapsSongs = {
       text: ["Kransen tappas snett ner i midsommargräset.", "Någon hittar blommor, någon hittar glas.", "Upp går lilla snapsen, ner går hela väsendet.", "Sen står vi där och skrattar i vårt sommarkalas."],
     },
   ],
-  dk: [
-    {
-      id: "lille-glas",
-      title: "Det lille glas",
-      melody: "Melodi: Jeg ved en lærkerede",
-      text: ["Et lille glas står klart på bordet.", "Vi skålar lätt och håller ordet.", "Med sill och sol och vänners skratt.", "Så blir det fest från dag till natt."],
-    },
-    {
-      id: "hygge-vid-bordet",
-      title: "Hygge vid bordet",
-      melody: "Melodi: I skovens dybe stille ro",
-      text: ["Nu sitter vi vid bordet här.", "Med sommarvind och allt vi har kärt.", "En snaps, ett leende, sen mer musik.", "I kväll blir ingen stund den andra lik."],
-    },
-    {
-      id: "kartoffelpolka",
-      title: "Kartoffelpolka",
-      melody: "Melodi: Den toppede høne",
-      text: ["Potatisen går laget runt.", "Och snapsen väntar, kort och sunt.", "När glaset höjs blir tonen klar.", "Skål för alla som är kvar."],
-    },
-    {
-      id: "dansk-sommarskal",
-      title: "Dansk sommarskål",
-      melody: "Melodi: Midsommervisen",
-      text: ["Solen står högt, och bordet är dukat.", "Alla har sjungit, ingen har trukat.", "Lyft nu ditt glas, låt kvällen få svar.", "Skål för den bästa sommaren vi har."],
-    },
-  ],
 };
 
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
@@ -714,28 +688,23 @@ function renderToday() {
 }
 
 function renderSnapsGame() {
-  const lang = snapsSongs[state.snapsLang] ? state.snapsLang : "sv";
-  const songs = snapsSongs[lang];
+  const songs = snapsSongs.sv;
   const activeSong = songs.find((song) => song.id === state.activeSnapId);
   return `<article class="game-card snaps-card">
     <div class="snaps-card__head">
-      <div><span>Snapsvisor</span><strong>${lang === "dk" ? "Danska visor" : "Svenska visor"}</strong></div>
-      <div class="snaps-lang-toggle" role="group" aria-label="Välj snapsvisor">
-        <button class="${lang === "sv" ? "is-active" : ""}" type="button" data-snaps-lang="sv">Svenska</button>
-        <button class="${lang === "dk" ? "is-active" : ""}" type="button" data-snaps-lang="dk">Danska</button>
-      </div>
+      <div><span>Snapsvisor</span><strong>Svenska snapsvisor</strong></div>
     </div>
     <div class="snaps-list">
       ${songs.map((song) => `<button type="button" data-open-snap="${escapeHtml(song.id)}"><strong>${escapeHtml(song.title)}</strong><small>${escapeHtml(song.melody)}</small></button>`).join("")}
     </div>
-    ${activeSong ? renderSnapViewer(activeSong, lang) : ""}
+    ${activeSong ? renderSnapViewer(activeSong) : ""}
   </article>`;
 }
 
-function renderSnapViewer(song, lang) {
+function renderSnapViewer(song) {
   return `<div class="snap-viewer" data-close-snaps>
     <article class="snap-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(song.title)}">
-      <span>${lang === "dk" ? "Dansk snapsvisa" : "Snapsvisa"}</span>
+      <span>Snapsvisa</span>
       <h3>${escapeHtml(song.title)}</h3>
       <p class="snap-melody">${escapeHtml(song.melody)}</p>
       <div class="snap-lyrics">${song.text.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}</div>
@@ -1193,13 +1162,6 @@ function bindDynamicEvents() {
     document.querySelector("#profile-dialog").showModal();
   }));
 
-  document.querySelectorAll("[data-snaps-lang]").forEach((button) => button.addEventListener("click", () => {
-    state.snapsLang = button.dataset.snapsLang;
-    state.activeSnapId = "";
-    saveState();
-    renderAll();
-  }));
-
   document.querySelectorAll("[data-open-snap]").forEach((button) => button.addEventListener("click", () => {
     state.activeSnapId = button.dataset.openSnap;
     saveState();
@@ -1605,8 +1567,6 @@ function returnToLoginForTest() {
   saveState();
   renderAll();
 }
-
-document.querySelector("#home-profile-button")?.addEventListener("click", returnToLoginForTest);
 
 function openEventAddressInMaps() {
   const address = "Taltrastvägen 12, Eskilstuna";
