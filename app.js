@@ -39,6 +39,7 @@ let toastTimer = null;
 let profileClickTimer = null;
 let lastProfileTap = 0;
 let lastCountdownTap = 0;
+let lastStartTabTap = 0;
 let lastLoginTap = 0;
 let lastAdminCardTap = 0;
 let deferredInstallPrompt = null;
@@ -2473,6 +2474,16 @@ function returnToPrepFromProfile() {
   renderAll();
 }
 
+function returnToPrepFromStartTab() {
+  if (!state.profile) return;
+  state.page = "prep";
+  galleryIndex = null;
+  galleryMotion = "open";
+  showToast("Prepp öppnad");
+  saveState();
+  renderAll();
+}
+
 function returnToLoginForTest() {
   clearTimeout(profileClickTimer);
   document.querySelector("#profile-dialog")?.close();
@@ -2621,6 +2632,21 @@ document.querySelector("#countdown-ring")?.addEventListener("click", (event) => 
     return;
   }
   lastCountdownTap = now;
+});
+document.querySelector('[data-section="today"]')?.addEventListener("dblclick", (event) => {
+  event.preventDefault();
+  returnToPrepFromStartTab();
+});
+document.querySelector('[data-section="today"]')?.addEventListener("pointerup", (event) => {
+  if (event.pointerType === "mouse") return;
+  const now = Date.now();
+  if (now - lastStartTabTap < 420) {
+    event.preventDefault();
+    lastStartTabTap = 0;
+    returnToPrepFromStartTab();
+    return;
+  }
+  lastStartTabTap = now;
 });
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
   if (!state.adminMode) return;
