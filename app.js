@@ -702,6 +702,7 @@ function renderToday() {
     </article>
     <article class="dash-card dash-card--wide schedule-card"><span>Dagens schema</span><div class="timeline-mini timeline-mini--rich">${eventSchedule.map((item) => `<i class="dot dot--${escapeHtml(item.color)}"></i><b>${escapeHtml(item.time)}</b><span>${escapeHtml(item.title)}</span>`).join("")}</div></article>
     <article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>
+    <article class="dash-card dash-card--wide start-weather-card"><span>Väder</span>${renderWeatherMini()}</article>
   </div>`;
 }
 
@@ -753,6 +754,17 @@ function renderScoreMini() {
     .slice(0, 4)
     .map((row) => `<p><strong>${escapeHtml(row.name)}</strong><span>${row.points} p</span></p>`)
     .join("")}</div>`;
+}
+
+function renderWeatherMini() {
+  const days = getWeatherDays();
+  const forecast = days.length ? days : ["Fre", "Lör", "Sön"].map((label) => ({ label, icon: "☁", summary: "Väder", detail: "hämtas" }));
+  return `<div class="weather-mini-list">${forecast.map((day) => `
+    <section>
+      <b>${escapeHtml(day.label)}</b>
+      <strong><span>${day.icon}</span>${escapeHtml(day.summary)}</strong>
+      <small>${escapeHtml(day.detail)}</small>
+    </section>`).join("")}</div>`;
 }
 
 function renderMatch() {

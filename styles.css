@@ -4025,3 +4025,271 @@ body[data-section="games"] .panel-content {
 .game-menu-icon--bingo svg path:first-child {
   fill: transparent;
 }
+
+/* Pastel midsommar identity */
+:root {
+  --ink: #213128;
+  --muted: #6f776e;
+  --paper: #fbf7ea;
+  --panel: #fffdf7;
+  --line: rgba(92, 122, 83, 0.18);
+  --leaf: #4f9c70;
+  --leaf-dark: #246348;
+  --red: #e56f77;
+  --blue: #6faed6;
+  --yellow: #f4d66d;
+  --lilac: #a895cf;
+  --peach: #f1a978;
+  --mint: #bfe7c7;
+  --rose: #f5b3bf;
+  --cream: #fff7dc;
+  --shadow: 0 18px 38px rgba(54, 70, 45, 0.13);
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% 10%, rgba(244, 214, 109, 0.36), transparent 28%),
+    radial-gradient(circle at 92% 18%, rgba(111, 174, 214, 0.24), transparent 30%),
+    radial-gradient(circle at 26% 92%, rgba(245, 179, 191, 0.28), transparent 26%),
+    linear-gradient(135deg, #fffaf0, #eef8e7 56%, #fff4dc);
+}
+
+body[data-page="party"] .party-panel {
+  border: 1px solid rgba(92, 122, 83, 0.14);
+  border-radius: 24px 24px 18px 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.96), rgba(250, 247, 235, 0.94)),
+    var(--panel);
+  box-shadow: 0 16px 34px rgba(54, 70, 45, 0.12);
+}
+
+body[data-page="party"] .panel-head {
+  border-bottom: 1px solid rgba(92, 122, 83, 0.14);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(244, 214, 109, 0.26), transparent 36%),
+    linear-gradient(135deg, rgba(255, 250, 232, 0.96), rgba(237, 249, 231, 0.95));
+}
+
+body[data-page="party"] .panel-head span,
+.dash-card span,
+.dash-card b,
+.micro-label {
+  color: #367153;
+}
+
+body[data-page="party"] .profile-button {
+  background: linear-gradient(135deg, #3f8f68, #2a6e8c);
+  box-shadow: 0 12px 24px rgba(42, 110, 140, 0.18);
+}
+
+.dash-card,
+.game-card,
+.wheel-card,
+.score-row,
+.score-mini article,
+.match-list-card,
+.match-vote-card {
+  border: 1px solid rgba(92, 122, 83, 0.14);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 250, 0.97), rgba(250, 246, 231, 0.96)),
+    #fffdf7;
+  box-shadow: 0 12px 26px rgba(54, 70, 45, 0.08);
+}
+
+.next-activity-card {
+  border-color: rgba(79, 156, 112, 0.34);
+  background:
+    radial-gradient(circle at 82% -12%, rgba(111, 174, 214, 0.22), transparent 34%),
+    radial-gradient(circle at 0% 100%, rgba(244, 214, 109, 0.22), transparent 30%),
+    linear-gradient(135deg, #f8fff0, #fff9df);
+}
+
+.next-activity-icon {
+  border-color: rgba(79, 156, 112, 0.2);
+  background: #dff2dc;
+}
+
+.schedule-card {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(245, 179, 191, 0.18), transparent 32%),
+    linear-gradient(145deg, #fffdf7, #f5faef);
+}
+
+.score-mini-list p {
+  min-height: 25px;
+  align-items: center;
+}
+
+.start-weather-card {
+  background:
+    radial-gradient(circle at 96% 10%, rgba(111, 174, 214, 0.24), transparent 34%),
+    linear-gradient(145deg, #fffdf7, #eef8f5);
+}
+
+.weather-mini-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.weather-mini-list section {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  border-radius: 14px;
+  padding: 8px 5px;
+  background: rgba(255, 255, 255, 0.62);
+  text-align: center;
+}
+
+.weather-mini-list b {
+  color: #3d7a58;
+  font-size: 0.66rem;
+}
+
+.weather-mini-list strong {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  color: var(--ink);
+  font-size: 0.78rem;
+  line-height: 1.05;
+}
+
+.weather-mini-list strong span {
+  font-size: 1.28rem;
+}
+
+.weather-mini-list small {
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
+body[data-section="games"] .game-picker {
+  gap: 10px;
+}
+
+.game-menu-button,
+.game-menu-button:nth-child(1),
+.game-menu-button.is-active {
+  position: relative;
+  overflow: hidden;
+  color: #284134;
+  background: linear-gradient(145deg, #eef8e7, #dff2dc);
+  box-shadow: 0 13px 26px rgba(54, 70, 45, 0.1);
+}
+
+.game-menu-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 78% 10%, rgba(255, 255, 255, 0.38), transparent 34%);
+  pointer-events: none;
+}
+
+.game-menu-button[data-game="wheel"] {
+  background: linear-gradient(145deg, #ffe2c8, #f1a978);
+}
+
+.game-menu-button[data-game="vote"] {
+  background: linear-gradient(145deg, #d9f0ff, #6faed6);
+}
+
+.game-menu-button[data-game="snaps"] {
+  background: linear-gradient(145deg, #fff4b8, #e9c54e);
+}
+
+.game-menu-button[data-game="mission"] {
+  background: linear-gradient(145deg, #dff5df, #4f9c70);
+}
+
+.game-menu-button[data-game="bingo"] {
+  background: linear-gradient(145deg, #ece5ff, #a895cf);
+}
+
+.game-menu-button[data-game="beforeAfter"] {
+  background: linear-gradient(145deg, #d8f3ef, #6bbcad);
+}
+
+.game-menu-button strong,
+.game-menu-button span {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  text-shadow: 0 1px 10px rgba(32, 49, 40, 0.18);
+}
+
+.game-menu-button.is-active {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.9),
+    0 0 0 6px rgba(79, 156, 112, 0.22),
+    0 18px 32px rgba(54, 70, 45, 0.18);
+}
+
+.game-menu-button.is-active::before {
+  content: "";
+  position: absolute;
+  right: 9px;
+  top: 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.32);
+}
+
+.match-summary-card {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(255, 255, 255, 0.26), transparent 28%),
+    linear-gradient(135deg, #e56f77, #7ca7d8);
+}
+
+.match-save-button,
+.spin-button,
+.pill-button {
+  border: 0;
+  background: linear-gradient(135deg, #4f9c70, #2a6e8c);
+}
+
+.pill-button.is-active,
+.vote-button.is-selected,
+.choice-button.is-selected {
+  color: #24543d;
+  background: linear-gradient(135deg, #fff3bf, #bfe7c7);
+  box-shadow: inset 0 0 0 1px rgba(79, 156, 112, 0.25);
+}
+
+.mini-score-row button {
+  background: linear-gradient(135deg, #4f9c70, #6faed6);
+}
+
+#party-page .section-tabs {
+  border-color: rgba(92, 122, 83, 0.12);
+  background: rgba(255, 253, 247, 0.9);
+}
+
+#party-page .section-tab::before {
+  background: linear-gradient(135deg, #bfe7c7, #6faed6);
+}
+
+#party-page .section-tab.is-active {
+  color: #24543d;
+  background: #fff3bf;
+  box-shadow: inset 0 0 0 1px rgba(244, 214, 109, 0.65);
+}
+
+#party-page .section-tab.is-active::before {
+  color: #24543d;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.game-menu-button .game-menu-icon--vote svg circle,
+.game-menu-button .game-menu-icon--wheel svg circle:nth-child(2),
+.game-menu-button .game-menu-icon--people svg circle {
+  fill: currentColor;
+  stroke: currentColor;
+}
