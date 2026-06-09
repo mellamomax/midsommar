@@ -3753,7 +3753,6 @@ body[data-section="games"] .game-picker {
   text-align: center;
 }
 
-.game-menu-button:nth-child(1),
 .game-menu-button.is-active {
   background: linear-gradient(145deg, #d94852, #b52f43);
 }
@@ -4842,17 +4841,13 @@ body[data-section="games"] .game-picker {
 
 .schedule-edit-row {
   display: grid;
-  grid-template-columns: 78px minmax(0, 1fr) 30px;
+  grid-template-columns: 74px minmax(0, 1fr) 30px;
   gap: 6px;
   align-items: center;
   border: 1px solid rgba(49, 72, 58, 0.1);
   border-radius: 12px;
   padding: 6px;
   background: rgba(255, 255, 255, 0.72);
-}
-
-.schedule-detail-input {
-  grid-column: 1 / -1;
 }
 
 .schedule-edit-row input {
@@ -4866,6 +4861,242 @@ body[data-section="games"] .game-picker {
   font: inherit;
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+.rsvp-mini-list,
+.score-admin-list {
+  display: grid;
+  gap: 7px;
+}
+
+.rsvp-mini-group {
+  border: 1px solid rgba(49, 72, 58, 0.1);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.rsvp-mini-group strong {
+  display: flex;
+  justify-content: space-between;
+  color: #202a24;
+  font-size: 0.86rem;
+}
+
+.rsvp-mini-group b {
+  color: #5f7f67;
+}
+
+.rsvp-mini-group p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.pack-row {
+  position: relative;
+}
+
+.pack-row button,
+.pack-admin-row button {
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: #b84b50;
+  font: inherit;
+  font-weight: 950;
+}
+
+.pack-row button {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+}
+
+.pack-admin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pack-admin-row input {
+  min-width: 0;
+  border: 1px solid rgba(49, 72, 58, 0.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 850;
+}
+
+.pack-admin-row button {
+  background: #29483a;
+}
+
+.mission-explain-card {
+  padding: 12px;
+}
+
+.mission-explain-card p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
+.photo-card video {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #111;
+}
+
+.photo-viewer__stage video {
+  max-width: 100%;
+  max-height: 68vh;
+  border-radius: 16px;
+  background: #111;
+}
+
+.match-dashboard {
+  display: grid;
+  gap: 10px;
+}
+
+.match-worldcup-card {
+  display: grid;
+  gap: 8px;
+  border-radius: 18px;
+  padding: 18px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(255, 225, 135, 0.42), transparent 30%),
+    linear-gradient(135deg, #0f5a43, #1d7d5c 54%, #d7b35a);
+  box-shadow: 0 18px 30px rgba(28, 81, 61, 0.18);
+}
+
+.match-worldcup-card span {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.match-worldcup-card h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.45rem;
+}
+
+.match-worldcup-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 800;
+}
+
+.match-worldcup-card .match-flags {
+  margin: 4px 0 0;
+}
+
+.match-worldcup-card .match-flags strong {
+  font-size: 2.2rem;
+}
+
+.match-worldcup-card .match-flags b {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.score-admin-card {
+  gap: 10px;
+}
+
+.score-admin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px 54px 42px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(49, 72, 58, 0.1);
+  border-radius: 12px;
+  padding: 7px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.score-admin-row strong {
+  min-width: 0;
+  color: #202a24;
+  font-size: 0.86rem;
+}
+
+.score-admin-row span {
+  color: #52715d;
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-align: center;
+}
+
+.score-admin-row button {
+  border: 0;
+  border-radius: 999px;
+  min-height: 32px;
+  color: #fff;
+  background: #29483a;
+  font: inherit;
+  font-weight: 950;
+}
+
+.danger-button {
+  color: #fff;
+  background: #b84b50;
+}
+
+.pentathlon-locked-card,
+.pentathlon-control-card {
+  margin-bottom: 10px;
+}
+
+.five-placement-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.five-placement-grid section {
+  border: 1px solid rgba(49, 72, 58, 0.1);
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.five-placement-grid strong {
+  display: flex;
+  justify-content: space-between;
+  color: #202a24;
+  font-size: 0.86rem;
+}
+
+.five-placement-grid b {
+  color: #5f7f67;
+}
+
+.five-placement-grid div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.five-placement-grid button {
+  border: 0;
+  border-radius: 999px;
+  min-height: 30px;
+  color: #29483a;
+  background: #e7eee3;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 950;
 }
 
 .schedule-edit-row .admin-delete-button {

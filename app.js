@@ -19,6 +19,8 @@ const SHARED_STATE_KEYS = [
   "voteCorrected",
   "voteAwarded",
   "matchVotes",
+  "matchResult",
+  "matchAwarded",
   "schedule",
   "content",
   "settings",
@@ -79,7 +81,7 @@ const seed = {
   adminMode: false,
   adminOwner: "",
   adminEdit: "",
-  game: "wheel",
+  game: "vote",
   snapsLang: "sv",
   activeSnapId: "",
   profiles: {},
@@ -112,6 +114,8 @@ const seed = {
   voteCorrected: {},
   voteAwarded: {},
   matchVotes: {},
+  matchResult: { home: "", away: "" },
+  matchAwarded: false,
   schedule: [],
   content: {},
   settings: {},
@@ -268,7 +272,9 @@ function ensureEditableContent() {
   if (!Array.isArray(state.content.bingo) || !state.content.bingo.length) state.content.bingo = [...bingoPool];
   if (!Array.isArray(state.content.voteQuestions) || !state.content.voteQuestions.length) state.content.voteQuestions = [...voteQuestions];
   state.settings = state.settings && typeof state.settings === "object" ? state.settings : {};
-  state.settings.dashboard = { next: true, schedule: true, score: true, weather: true, feed: false, ...(state.settings.dashboard || {}) };
+  state.settings.dashboard = { next: true, schedule: true, score: true, weather: true, rsvp: true, feed: false, ...(state.settings.dashboard || {}) };
+  state.settings.pentathlon = { started: false, visibleIndex: -1, ...(state.settings.pentathlon || {}) };
+  if (state.game === "wheel") state.game = "vote";
   normalizePentathlonTeams();
 }
 
@@ -324,6 +330,7 @@ function timePart(value) {
 function normalizePentathlonTeams() {
   state.teamScores = (Array.isArray(state.teamScores) && state.teamScores.length ? state.teamScores : structuredClone(seed.teamScores))
     .map((team) => ({ team: team.team || "Nytt lag", score: Number(team.score || 0), members: Array.isArray(team.members) ? team.members : [] }));
+  while (state.teamScores.length < 4) state.teamScores.push({ team: `Lag ${state.teamScores.length + 1}`, score: 0, members: [] });
   state.pentathlon = (Array.isArray(state.pentathlon) && state.pentathlon.length ? state.pentathlon : structuredClone(seed.pentathlon))
     .map((event) => {
       const scores = Array.isArray(event.scores) ? [...event.scores] : [];
@@ -743,9 +750,9 @@ function renderPrep() {
   setText("pack-count", `${packLeft} kvar`);
   document.querySelector("#pack-list").innerHTML = state.pack
     .map(
-      (item) => `<label class="pack-row"><input type="checkbox" data-pack="${item.id}" ${item.done ? "checked" : ""} /><span>${escapeHtml(item.text)}</span></label>`,
+      (item) => `<label class="pack-row"><input type="checkbox" data-pack="${item.id}" ${item.done ? "checked" : ""} /><span>${escapeHtml(item.text)}</span>${isAdmin() ? `<button type="button" data-delete-pack="${escapeHtml(item.id)}" aria-label="Radera packpunkt">&times;</button>` : ""}</label>`,
     )
-    .join("");
+    .join("") + (isAdmin() ? `<div class="pack-admin-row"><input id="pack-admin-input" placeholder="Lägg till packning" /><button type="button" data-add-pack>+</button></div>` : "");
 
   if (profile) {
     setText("profile-label", `${state.profile} · ${profile.points} p${isAdmin() ? " · admin" : ""}`);
@@ -804,6 +811,7 @@ function renderToday() {
     </article>`);
   if (dashboardVisible("score")) cards.push(`<article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>`);
   if (dashboardVisible("weather")) cards.push(`<article class="dash-card dash-card--wide start-weather-card"><span>Väder</span>${renderWeatherMini()}</article>`);
+  if (dashboardVisible("rsvp")) cards.push(`<article class="dash-card dash-card--wide rsvp-status-card"><span>OSA</span>${renderRsvpStatusMini()}</article>`);
   if (dashboardVisible("feed")) cards.push(`<article class="dash-card dash-card--wide activity-feed-card"><span>Senaste h&auml;ndelser</span>${renderActivityFeed()}</article>`);
   if (!cards.length) cards.push(`<article class="dash-card dash-card--wide"><p class="hint">Alla startkort &auml;r dolda. Sl&aring; p&aring n&aring;got i adminl&auml;get.</p></article>`);
   return `<div class="dashboard-grid">${cards.join("")}</div>`;
@@ -845,6 +853,22 @@ function renderActivityFeed() {
     <div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.detail)}</span></div>
     <time>${escapeHtml(item.time)}</time>
   </article>`).join("")}</div>`;
+}
+
+function renderRsvpStatusMini() {
+  const groups = [
+    ["yes", "Kommer"],
+    ["maybe", "Kanske"],
+    ["no", "Kan inte"],
+  ].map(([status, label]) => ({
+    status,
+    label,
+    names: allParticipants().filter((name) => rsvpStatus(name) === status),
+  }));
+  return `<div class="rsvp-mini-list">${groups.map((group) => `<section class="rsvp-mini-group rsvp-mini-group--${group.status}">
+    <strong>${escapeHtml(group.label)} <b>${group.names.length}</b></strong>
+    <p>${group.names.length ? escapeHtml(group.names.join(", ")) : "Ingen"}</p>
+  </section>`).join("")}</div>`;
 }
 
 function getActivityFeedItems() {
@@ -911,7 +935,6 @@ function renderScheduleEditor() {
         <input class="schedule-time-input" type="time" value="${escapeHtml(item.time)}" data-schedule-field="time" data-schedule-id="${escapeHtml(item.id)}" aria-label="Tid" />
         <input class="schedule-title-input" type="text" value="${escapeHtml(item.title)}" data-schedule-field="title" data-schedule-id="${escapeHtml(item.id)}" aria-label="Titel" />
         <button class="admin-delete-button" type="button" data-delete-schedule="${escapeHtml(item.id)}" aria-label="Radera hÃ¥llpunkt">&times;</button>
-        <input class="schedule-detail-input" type="text" value="${escapeHtml(item.detail)}" data-schedule-field="detail" data-schedule-id="${escapeHtml(item.id)}" aria-label="Detalj" placeholder="Detalj" />
       </div>`).join("")}
     </div>
     <button class="admin-add-button" type="button" data-add-schedule>LÃ¤gg till hÃ¥llpunkt</button>
@@ -924,6 +947,7 @@ function renderDashboardVisibilityEditor() {
     ["schedule", "Schema"],
     ["score", "Poäng"],
     ["weather", "Väder"],
+    ["rsvp", "OSA"],
     ["feed", "Händelser"],
   ];
   return `<article class="dash-card dash-card--wide dashboard-admin-card">
@@ -996,12 +1020,12 @@ function renderMatch() {
   const vote = state.matchVotes[state.profile] || {};
   const result = normalizeMatchResult(vote);
   const outcome = matchOutcome(result);
-  return `<div class="match-layout match-layout--compact">
-    <article class="game-card match-hero match-summary-card">
-      <span class="micro-label">Nästa match</span>
-      <div class="match-flags"><strong>🇸🇪</strong><span>vs</span><strong>🇳🇱</strong></div>
-      <h3>Sverige vs Netherlands</h3>
-      <p>${escapeHtml(apiData?.detail || `${matchFallback.selected.date} · ${matchFallback.selected.time} · ${matchFallback.selected.venue}`)}</p>
+  return `<div class="match-dashboard">
+    <article class="match-worldcup-card">
+      <span>VM 2026</span>
+      <h3>Sverige i grupp F</h3>
+      <p>${escapeHtml(apiData?.detail || `${matchFallback.selected.date} · ${matchFallback.selected.time}`)}</p>
+      <div class="match-flags"><strong>🇸🇪</strong><b>Sverige</b></div>
     </article>
     <article class="game-card match-list-card">
       <span class="micro-label">Våra matcher</span>
@@ -1018,12 +1042,33 @@ function renderMatch() {
       </div>
       <p class="match-outcome">${escapeHtml(outcome)}</p>
       <button class="pill-button match-save-button" type="button" data-match-save>Spara tipp</button>
-      <p class="hint">Rösta innan matchen.</p>
+      <p class="hint">${vote.result ? `Sparat: ${escapeHtml(outcome)}` : "Rösta innan matchen."}</p>
     </article>
+    ${isAdmin() ? renderMatchAdmin() : ""}
   </div>`;
 }
 
+function renderMatchAdmin() {
+  const actual = normalizeMatchResult(state.matchResult || {});
+  return `<article class="game-card match-admin-card">
+    <span class="micro-label">Admin</span>
+    <h3>Rätta VM-tipset</h3>
+    <div class="score-inputs">
+      <label><span>SWE</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(actual.home)}" data-match-final="home" ${state.matchAwarded ? "disabled" : ""} /></label>
+      <b>-</b>
+      <label><span>NED</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(actual.away)}" data-match-final="away" ${state.matchAwarded ? "disabled" : ""} /></label>
+    </div>
+    <button class="pill-button match-save-button" type="button" data-award-match ${state.matchAwarded ? "disabled" : ""}>${state.matchAwarded ? "Poäng utdelade" : "Dela ut poäng"}</button>
+    <p class="hint">Rätt 1X2 ger 1 p. Exakt resultat ger 5 p.</p>
+  </article>`;
+}
+
 function normalizeMatchResult(vote) {
+  if (vote.home !== undefined || vote.away !== undefined) {
+    const home = vote.home ?? "";
+    const away = vote.away ?? "";
+    return { home, away, text: home !== "" && away !== "" ? `${home}-${away}` : "" };
+  }
   if (vote.resultHome !== undefined || vote.resultAway !== undefined) {
     const home = vote.resultHome ?? "";
     const away = vote.resultAway ?? "";
@@ -1044,18 +1089,48 @@ function matchOutcome(result) {
   return `Oavgjort · ${home}-${away}`;
 }
 
+function matchOutcomeKey(result) {
+  const home = Number(result.home);
+  const away = Number(result.away);
+  if (Number.isNaN(home) || Number.isNaN(away)) return "";
+  if (home > away) return "1";
+  if (home < away) return "2";
+  return "x";
+}
+
+function awardMatchPoints() {
+  if (state.matchAwarded) return 0;
+  const actual = normalizeMatchResult(state.matchResult || {});
+  if (!actual.text) return -1;
+  const actualOutcome = matchOutcomeKey(actual);
+  let awarded = 0;
+  allParticipants().forEach((name) => {
+    const vote = normalizeMatchResult(state.matchVotes[name] || {});
+    if (!vote.text) return;
+    const profile = state.profiles[name] || makeProfile(name);
+    if (vote.text === actual.text) {
+      profile.points += 5;
+      awarded += 5;
+    } else if (matchOutcomeKey(vote) === actualOutcome) {
+      profile.points += 1;
+      awarded += 1;
+    }
+    state.profiles[name] = profile;
+  });
+  state.matchAwarded = true;
+  return awarded;
+}
+
 function renderGames() {
   const profile = activeProfile();
   if (!profile) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
   return `<div class="game-picker">
-    ${renderGamePickerButton("wheel", "wheel", "Hjul")}
-    ${renderGamePickerButton("vote", "vote", "Pekleken")}
+    ${renderGamePickerButton("vote", "vote", "Most likely")}
     ${renderGamePickerButton("snaps", "snaps", "Snaps")}
     ${renderGamePickerButton("mission", "mission", "Uppdrag")}
     ${renderGamePickerButton("bingo", "bingo", "Bingo")}
     ${renderGamePickerButton("beforeAfter", "people", "Före/efter")}
   </div>
-  ${state.game === "wheel" ? renderWheel(profile) : ""}
   ${state.game === "vote" ? renderVote(profile) : ""}
   ${state.game === "snaps" ? renderSnapsGame() : ""}
   ${state.game === "mission" ? renderMission(profile) : ""}
@@ -1091,7 +1166,7 @@ function renderVote(profile) {
 
 function renderGameAdminEditor() {
   const config = {
-    vote: { key: "voteQuestions", title: "Pekleken", applyLabel: "Dela ut nya fr&aring;gor" },
+    vote: { key: "voteQuestions", title: "Most likely", applyLabel: "Dela ut nya fr&aring;gor" },
     mission: { key: "missions", title: "Uppdrag", applyLabel: "Dela ut nya uppdrag" },
     bingo: { key: "bingo", title: "Bingo", applyLabel: "Slumpa nya brickor" },
   }[state.game];
@@ -1146,7 +1221,7 @@ function evaluateBingoRewards(profile) {
 }
 
 function renderMission(profile) {
-  return `<div class="mission-list">${profile.missions.map((mission, index) => `
+  return `<article class="game-card mission-explain-card"><span class="micro-label">Hemliga uppdrag</span><p>Nedan listas dina hemliga uppdrag. Genomf&ouml;r dem utan att avsl&ouml;ja dig f&ouml;r de andra. Bild kr&auml;vs som facit.</p></article><div class="mission-list">${profile.missions.map((mission, index) => `
     <article class="mission-card mission-card--compact ${mission.photo ? "is-complete" : ""}">
       <div class="mission-copy"><h3><span class="mission-points">${mission.points || missionPointsFor(mission.text, index)} p</span><span>${escapeHtml(mission.text)}</span></h3></div>
       ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*" capture="environment" data-mission-upload="${index}" />`}
@@ -1214,7 +1289,32 @@ function renderPersonalScore() {
       <span class="rank-badge">${index + 1}</span>
       <strong>${escapeHtml(row.name)}</strong>
       <span class="score-points">${row.points} p</span>
-    </article>`).join("")}${isAdmin() ? renderVoteAdmin() : ""}</div>`;
+    </article>`).join("")}${isAdmin() ? renderScoreAdmin() + renderVoteAdmin() : ""}</div>`;
+}
+
+function renderScoreAdmin() {
+  return `<article class="game-card score-admin-card">
+    <span class="micro-label">Admin</span>
+    <h3>Justera poäng</h3>
+    <button class="pill-button danger-button" type="button" data-reset-points>Nollställ personpoäng</button>
+    <button class="pill-button danger-button" type="button" data-reset-team-points>Nollställ lagpoäng</button>
+    <div class="score-admin-list">
+      ${allParticipants().map((name) => `<div class="score-admin-row">
+        <strong>${escapeHtml(name)}</strong>
+        <button type="button" data-adjust-player="${escapeHtml(name)}" data-points-delta="-1">-1</button>
+        <span>${(state.profiles[name] || makeProfile(name)).points} p</span>
+        <button type="button" data-adjust-player="${escapeHtml(name)}" data-points-delta="1">+1</button>
+      </div>`).join("")}
+    </div>
+    <div class="score-admin-list">
+      ${state.teamScores.map((team, index) => `<div class="score-admin-row">
+        <strong>${escapeHtml(team.team)}</strong>
+        <button type="button" data-adjust-team="${index}" data-points-delta="-1">-1</button>
+        <span>${team.score || 0} p</span>
+        <button type="button" data-adjust-team="${index}" data-points-delta="1">+1</button>
+      </div>`).join("")}
+    </div>
+  </article>`;
 }
 
 function renderVoteAdmin() {
@@ -1262,16 +1362,24 @@ function getGalleryPhotos() {
     if (!profile?.missions) return [];
     return profile.missions
       .filter((mission) => mission.photo)
-      .map((mission) => ({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt }));
+      .map((mission) => ({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt, media: "image" }));
   });
   const bingoPhotos = allParticipants().flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.bingoProofs) return [];
     return Object.entries(profile.bingoProofs)
       .filter(([, proof]) => proof?.photo)
-      .map(([text, proof]) => ({ name, text, photo: proof.photo, type: "Bingo", takenAt: proof.completedAt }));
+      .map(([text, proof]) => ({ name, text, photo: proof.photo, type: "Bingo", takenAt: proof.completedAt, media: "image" }));
   });
-  return [...missionPhotos, ...bingoPhotos];
+  const beforeAfterVideos = allParticipants().flatMap((name) => {
+    const profile = state.profiles[name];
+    if (!profile?.beforeAfter) return [];
+    return ["before", "after"]
+      .map((slot) => ({ slot, item: profile.beforeAfter[slot] }))
+      .filter(({ item }) => item?.video)
+      .map(({ slot, item }) => ({ name, text: slot === "before" ? "Före-video" : "Efter-video", photo: item.video, type: "Före / efter", takenAt: item.completedAt, media: "video" }));
+  });
+  return [...missionPhotos, ...bingoPhotos, ...beforeAfterVideos];
 }
 
 function renderPhotos() {
@@ -1284,7 +1392,7 @@ function renderPhotos() {
 
   return `<div class="photo-grid">${photos.map((item, index) => `
     <button class="photo-card" type="button" data-photo-index="${index}">
-      <img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />
+      ${item.media === "video" ? `<video src="${item.photo}" muted playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
       <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${escapeHtml(formatPhotoTime(item.takenAt))}</small></div>
     </button>
   `).join("")}</div>`;
@@ -1297,7 +1405,7 @@ function renderPhotoViewer(photos) {
     <button class="photo-close" type="button" data-gallery-close aria-label="Stäng bildvisare">×</button>
     <button class="photo-nav photo-nav--prev" type="button" data-gallery-prev aria-label="Föregående bild">‹</button>
     <figure class="photo-viewer__stage">
-      <img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />
+      ${item.media === "video" ? `<video src="${item.photo}" controls playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
       <figcaption><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${position} · ${escapeHtml(formatPhotoTime(item.takenAt))}</small></figcaption>
     </figure>
     <button class="photo-nav photo-nav--next" type="button" data-gallery-next aria-label="Nästa bild">›</button>
@@ -1308,16 +1416,38 @@ function renderPentathlon() {
   const totals = state.teamScores.map((team, teamIndex) => ({
     team: team.team,
     members: team.members || [],
-    score: state.pentathlon.reduce((sum, event) => sum + event.scores[teamIndex], 0),
+    score: Number(team.score || 0) + state.pentathlon.reduce((sum, event) => sum + Number(event.scores[teamIndex] || 0), 0),
   }));
-  return `<div class="score-mini pentathlon-totals">${totals.map((row) => `<article><strong>${escapeHtml(row.team)}</strong><span>${row.score} p</span><small>${row.members.length ? escapeHtml(row.members.join(", ")) : "Inga deltagare"}</small></article>`).join("")}</div><div class="pentathlon-list">${state.pentathlon.map((event, eventIndex) => {
+  const started = state.settings.pentathlon?.started;
+  const visibleIndex = Number(state.settings.pentathlon?.visibleIndex ?? -1);
+  const visibleEvents = started ? state.pentathlon.slice(0, visibleIndex + 1) : [];
+  return `<div class="score-mini pentathlon-totals">${totals.map((row) => `<article><strong>${escapeHtml(row.team)}</strong><span>${row.score} p</span><small>${row.members.length ? escapeHtml(row.members.join(", ")) : "Inga deltagare"}</small></article>`).join("")}</div>
+  ${isAdmin() ? renderPentathlonRevealControls() : ""}
+  ${!started ? `<article class="game-card pentathlon-locked-card"><span class="micro-label">5-kamp</span><h3>Grenarna är hemliga</h3><p class="hint">Admin startar 5-kampen när det är dags.</p></article>` : ""}
+  <div class="pentathlon-list">${visibleEvents.map((event, eventIndex) => {
     const status = pentathlonStatus(eventIndex);
     return `<article class="game-card pentathlon-event pentathlon-event--${status.key}">
       <div class="pentathlon-event__head"><span class="micro-label">${eventIndex + 1}/5</span><span class="event-status">${escapeHtml(status.label)}</span></div>
       <h3>${escapeHtml(event.name)}</h3>
-      <div class="mini-score-row">${state.teamScores.map((team, teamIndex) => `<button type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}">${escapeHtml(team.team)} +1</button>`).join("")}</div>
+      <div class="five-placement-grid">${state.teamScores.map((team, teamIndex) => `<section>
+        <strong>${escapeHtml(team.team)} <b>${event.scores[teamIndex] || 0} p</b></strong>
+        <div>${[5, 3, 1, 0.5].map((points) => `<button type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}" data-five-points="${points}">${points}p</button>`).join("")}</div>
+      </section>`).join("")}</div>
     </article>`;
   }).join("")}</div>${isAdmin() ? renderPentathlonEditor() : ""}`;
+}
+
+function renderPentathlonRevealControls() {
+  const started = state.settings.pentathlon?.started;
+  const visibleIndex = Number(state.settings.pentathlon?.visibleIndex ?? -1);
+  return `<article class="game-card pentathlon-control-card">
+    <span class="micro-label">Admin</span>
+    <h3>${started ? "5-kampen är igång" : "Starta 5-kampen"}</h3>
+    <div class="admin-actions">
+      <button class="admin-add-button" type="button" data-start-five>${started ? "Startad" : "START"}</button>
+      <button class="admin-secondary-button" type="button" data-next-five ${!started || visibleIndex >= state.pentathlon.length - 1 ? "disabled" : ""}>Visa nästa</button>
+    </div>
+  </article>`;
 }
 
 function renderPentathlonEditor() {
@@ -1524,6 +1654,23 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelector("[data-add-pack]")?.addEventListener("click", () => {
+    const input = document.querySelector("#pack-admin-input");
+    const text = input?.value.trim();
+    if (!text) return;
+    state.pack.push({ id: `pack-${Date.now()}`, text, done: false });
+    saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-delete-pack]").forEach((button) => button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    state.pack = state.pack.filter((item) => item.id !== button.dataset.deletePack);
+    saveState();
+    renderAll();
+  }));
+
   document.querySelectorAll("[data-open-profile]").forEach((button) => button.addEventListener("click", () => {
     document.querySelector("#profile-dialog").showModal();
   }));
@@ -1550,13 +1697,6 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-admin-edit]").forEach((button) => button.addEventListener("click", () => {
     state.adminEdit = state.adminEdit === button.dataset.adminEdit ? "" : button.dataset.adminEdit;
-    saveState();
-    renderAll();
-  }));
-
-  document.querySelectorAll("[data-dashboard-toggle]").forEach((button) => button.addEventListener("click", () => {
-    const key = button.dataset.dashboardToggle;
-    state.settings.dashboard[key] = !dashboardVisible(key);
     saveState();
     renderAll();
   }));
@@ -1648,6 +1788,47 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelector("[data-reset-points]")?.addEventListener("click", () => {
+    if (!window.confirm("Nollställa alla personpoäng?")) return;
+    allParticipants().forEach((name) => {
+      const profile = state.profiles[name] || makeProfile(name);
+      profile.points = 0;
+      state.profiles[name] = profile;
+    });
+    saveState();
+    renderAll();
+  });
+
+  document.querySelector("[data-reset-team-points]")?.addEventListener("click", () => {
+    if (!window.confirm("Nollställa alla lagpoäng och grenpoäng?")) return;
+    state.teamScores.forEach((team) => {
+      team.score = 0;
+    });
+    state.pentathlon.forEach((eventItem) => {
+      eventItem.scores = state.teamScores.map(() => 0);
+    });
+    saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-adjust-player]").forEach((button) => button.addEventListener("click", () => {
+    const name = button.dataset.adjustPlayer;
+    const delta = Number(button.dataset.pointsDelta || 0);
+    const profile = state.profiles[name] || makeProfile(name);
+    profile.points = Math.max(0, Number(profile.points || 0) + delta);
+    state.profiles[name] = profile;
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-adjust-team]").forEach((button) => button.addEventListener("click", () => {
+    const team = state.teamScores[Number(button.dataset.adjustTeam)];
+    if (!team) return;
+    team.score = Math.max(0, Number(team.score || 0) + Number(button.dataset.pointsDelta || 0));
+    saveState();
+    renderAll();
+  }));
+
   document.querySelectorAll("[data-match-pick]").forEach((button) => button.addEventListener("click", () => {
     if (!state.profile) return;
     state.matchVotes[state.profile] = { ...(state.matchVotes[state.profile] || {}), oneXtwo: button.dataset.matchPick };
@@ -1677,6 +1858,25 @@ function bindDynamicEvents() {
     if (hint) hint.textContent = vote.result ? `Sparat: ${matchOutcome(normalizeMatchResult(vote))}` : "Rösta innan matchen.";
     saveState();
   }));
+
+  document.querySelectorAll("[data-match-final]").forEach((input) => input.addEventListener("input", () => {
+    const value = input.value === "" ? "" : String(Math.max(0, Math.min(20, Number(input.value) || 0)));
+    state.matchResult = { ...(state.matchResult || {}) };
+    if (input.dataset.matchFinal === "home") state.matchResult.home = value;
+    if (input.dataset.matchFinal === "away") state.matchResult.away = value;
+    saveState();
+  }));
+
+  document.querySelector("[data-award-match]")?.addEventListener("click", () => {
+    const awarded = awardMatchPoints();
+    if (awarded < 0) {
+      showToast("Fyll i slutresultat först");
+      return;
+    }
+    saveState();
+    showToast(`VM-poäng utdelade: ${awarded} p`);
+    renderAll();
+  });
 
   document.querySelector("[data-match-save]")?.addEventListener("click", () => {
     const result = normalizeMatchResult(state.matchVotes[state.profile] || {});
@@ -1781,10 +1981,26 @@ function bindDynamicEvents() {
   }
 
   document.querySelectorAll("[data-five-event]").forEach((button) => button.addEventListener("click", () => {
-    state.pentathlon[Number(button.dataset.fiveEvent)].scores[Number(button.dataset.fiveTeam)] += 1;
+    const eventItem = state.pentathlon[Number(button.dataset.fiveEvent)];
+    if (!eventItem) return;
+    eventItem.scores[Number(button.dataset.fiveTeam)] = Number(button.dataset.fivePoints ?? 1);
     saveState();
     renderAll();
   }));
+
+  document.querySelector("[data-start-five]")?.addEventListener("click", () => {
+    state.settings.pentathlon.started = true;
+    state.settings.pentathlon.visibleIndex = Math.max(0, Number(state.settings.pentathlon.visibleIndex ?? -1));
+    saveState();
+    renderAll();
+  });
+
+  document.querySelector("[data-next-five]")?.addEventListener("click", () => {
+    if (!state.settings.pentathlon.started) return;
+    state.settings.pentathlon.visibleIndex = Math.min(state.pentathlon.length - 1, Number(state.settings.pentathlon.visibleIndex ?? 0) + 1);
+    saveState();
+    renderAll();
+  });
 
   document.querySelectorAll("[data-team-name]").forEach((input) => input.addEventListener("change", () => {
     const team = state.teamScores[Number(input.dataset.teamName)];
@@ -2042,6 +2258,17 @@ document.querySelectorAll("[data-section]").forEach((button) => button.addEventL
   saveState();
   renderAll();
 }));
+
+document.addEventListener("click", (event) => {
+  const dashboardToggle = event.target.closest("[data-dashboard-toggle]");
+  if (!dashboardToggle) return;
+  event.preventDefault();
+  const key = dashboardToggle.dataset.dashboardToggle;
+  ensureEditableContent();
+  state.settings.dashboard[key] = !dashboardVisible(key);
+  saveState();
+  renderAll();
+});
 
 document.querySelector("#login-form").addEventListener("submit", async (event) => {
   event.preventDefault();
