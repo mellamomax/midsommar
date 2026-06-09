@@ -21,6 +21,7 @@ const SHARED_STATE_KEYS = [
   "matchVotes",
   "schedule",
   "content",
+  "settings",
 ];
 
 let remoteReady = false;
@@ -113,6 +114,7 @@ const seed = {
   matchVotes: {},
   schedule: [],
   content: {},
+  settings: {},
 };
 
 const profileSeed = {
@@ -265,6 +267,9 @@ function ensureEditableContent() {
   if (!Array.isArray(state.content.missions) || !state.content.missions.length) state.content.missions = [...missionPool];
   if (!Array.isArray(state.content.bingo) || !state.content.bingo.length) state.content.bingo = [...bingoPool];
   if (!Array.isArray(state.content.voteQuestions) || !state.content.voteQuestions.length) state.content.voteQuestions = [...voteQuestions];
+  state.settings = state.settings && typeof state.settings === "object" ? state.settings : {};
+  state.settings.dashboard = { next: true, schedule: true, score: true, weather: true, feed: false, ...(state.settings.dashboard || {}) };
+  normalizePentathlonTeams();
 }
 
 function normalizeSchedule(schedule) {
@@ -314,6 +319,22 @@ function isoDatePart(value) {
 function timePart(value) {
   const match = String(value || "").match(/T(\d{2}:\d{2})/);
   return match ? match[1] : "";
+}
+
+function normalizePentathlonTeams() {
+  state.teamScores = (Array.isArray(state.teamScores) && state.teamScores.length ? state.teamScores : structuredClone(seed.teamScores))
+    .map((team) => ({ team: team.team || "Nytt lag", score: Number(team.score || 0), members: Array.isArray(team.members) ? team.members : [] }));
+  state.pentathlon = (Array.isArray(state.pentathlon) && state.pentathlon.length ? state.pentathlon : structuredClone(seed.pentathlon))
+    .map((event) => {
+      const scores = Array.isArray(event.scores) ? [...event.scores] : [];
+      while (scores.length < state.teamScores.length) scores.push(0);
+      return { ...event, scores: scores.slice(0, state.teamScores.length) };
+    });
+}
+
+function dashboardVisible(key) {
+  ensureEditableContent();
+  return state.settings.dashboard?.[key] !== false;
 }
 
 let state = loadState();
@@ -760,8 +781,9 @@ function renderParty() {
 function renderToday() {
   const next = getNextEvent();
   const schedule = todaysSchedule();
-  return `<div class="dashboard-grid">
-    <article class="dash-card dash-card--wide next-activity-card">
+  const cards = [];
+  if (isAdmin()) cards.push(renderDashboardVisibilityEditor());
+  if (dashboardVisible("next")) cards.push(`<article class="dash-card dash-card--wide next-activity-card">
       <div class="next-activity-top">
         <div class="next-activity-icon">◷</div>
         <span>Nästa aktivitet</span>
@@ -774,16 +796,17 @@ function renderToday() {
         </div>
       </div>
       <small>${escapeHtml(next.relative)}</small>
-    </article>
-    <article class="dash-card dash-card--wide schedule-card">
+    </article>`);
+  if (dashboardVisible("schedule")) cards.push(`<article class="dash-card dash-card--wide schedule-card">
       <div class="card-title-row"><span>Dagens schema</span>${isAdmin() ? `<button class="inline-admin-button" type="button" data-admin-edit="schedule">Redigera</button>` : ""}</div>
       <div class="timeline-mini timeline-mini--rich">${schedule.map((item) => `<i class="dot dot--${escapeHtml(item.color)}"></i><b>${escapeHtml(item.time)}</b><span>${escapeHtml(item.title)}</span>`).join("") || `<p class="hint">Inget schema f&ouml;r dagen &auml;n.</p>`}</div>
       ${isAdmin() ? renderScheduleEditor() : ""}
-    </article>
-    <article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>
-    <article class="dash-card dash-card--wide start-weather-card"><span>Väder</span>${renderWeatherMini()}</article>
-    <article class="dash-card dash-card--wide activity-feed-card"><span>Senaste h&auml;ndelser</span>${renderActivityFeed()}</article>
-  </div>`;
+    </article>`);
+  if (dashboardVisible("score")) cards.push(`<article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>`);
+  if (dashboardVisible("weather")) cards.push(`<article class="dash-card dash-card--wide start-weather-card"><span>Väder</span>${renderWeatherMini()}</article>`);
+  if (dashboardVisible("feed")) cards.push(`<article class="dash-card dash-card--wide activity-feed-card"><span>Senaste h&auml;ndelser</span>${renderActivityFeed()}</article>`);
+  if (!cards.length) cards.push(`<article class="dash-card dash-card--wide"><p class="hint">Alla startkort &auml;r dolda. Sl&aring; p&aring n&aring;got i adminl&auml;get.</p></article>`);
+  return `<div class="dashboard-grid">${cards.join("")}</div>`;
 }
 
 function getNextEvent() {
@@ -881,18 +904,36 @@ function renderScheduleEditor() {
   if (state.adminEdit !== "schedule") return "";
   const day = scheduleDayKey();
   const rows = todaysSchedule();
-  return `<div class="admin-editor schedule-editor">
+  return `<div class="admin-editor schedule-editor admin-editor--compact">
     <div class="admin-editor-head"><strong>Redigera schema</strong><small>${escapeHtml(day)}</small></div>
     <div class="admin-table admin-table--schedule">
-      ${rows.map((item) => `<div class="admin-row" data-schedule-row="${escapeHtml(item.id)}">
-        <input type="time" value="${escapeHtml(item.time)}" data-schedule-field="time" data-schedule-id="${escapeHtml(item.id)}" aria-label="Tid" />
-        <input type="text" value="${escapeHtml(item.title)}" data-schedule-field="title" data-schedule-id="${escapeHtml(item.id)}" aria-label="Titel" />
-        <input type="text" value="${escapeHtml(item.detail)}" data-schedule-field="detail" data-schedule-id="${escapeHtml(item.id)}" aria-label="Detalj" />
+      ${rows.map((item) => `<div class="schedule-edit-row" data-schedule-row="${escapeHtml(item.id)}">
+        <input class="schedule-time-input" type="time" value="${escapeHtml(item.time)}" data-schedule-field="time" data-schedule-id="${escapeHtml(item.id)}" aria-label="Tid" />
+        <input class="schedule-title-input" type="text" value="${escapeHtml(item.title)}" data-schedule-field="title" data-schedule-id="${escapeHtml(item.id)}" aria-label="Titel" />
         <button class="admin-delete-button" type="button" data-delete-schedule="${escapeHtml(item.id)}" aria-label="Radera hÃ¥llpunkt">&times;</button>
+        <input class="schedule-detail-input" type="text" value="${escapeHtml(item.detail)}" data-schedule-field="detail" data-schedule-id="${escapeHtml(item.id)}" aria-label="Detalj" placeholder="Detalj" />
       </div>`).join("")}
     </div>
     <button class="admin-add-button" type="button" data-add-schedule>LÃ¤gg till hÃ¥llpunkt</button>
   </div>`;
+}
+
+function renderDashboardVisibilityEditor() {
+  const items = [
+    ["next", "Nästa"],
+    ["schedule", "Schema"],
+    ["score", "Poäng"],
+    ["weather", "Väder"],
+    ["feed", "Händelser"],
+  ];
+  return `<article class="dash-card dash-card--wide dashboard-admin-card">
+    <div class="card-title-row"><span>Startsida</span><small>Visa / dölj</small></div>
+    <div class="dashboard-toggle-grid">
+      ${items.map(([key, label]) => `<button class="dashboard-toggle ${dashboardVisible(key) ? "is-on" : ""}" type="button" data-dashboard-toggle="${key}">
+        <span>${escapeHtml(label)}</span><b>${dashboardVisible(key) ? "På" : "Av"}</b>
+      </button>`).join("")}
+    </div>
+  </article>`;
 }
 
 function relativeToEvent(value) {
@@ -1266,9 +1307,10 @@ function renderPhotoViewer(photos) {
 function renderPentathlon() {
   const totals = state.teamScores.map((team, teamIndex) => ({
     team: team.team,
+    members: team.members || [],
     score: state.pentathlon.reduce((sum, event) => sum + event.scores[teamIndex], 0),
   }));
-  return `<div class="score-mini pentathlon-totals">${totals.map((row) => `<article><strong>${escapeHtml(row.team)}</strong><span>${row.score} p</span></article>`).join("")}</div><div class="pentathlon-list">${state.pentathlon.map((event, eventIndex) => {
+  return `<div class="score-mini pentathlon-totals">${totals.map((row) => `<article><strong>${escapeHtml(row.team)}</strong><span>${row.score} p</span><small>${row.members.length ? escapeHtml(row.members.join(", ")) : "Inga deltagare"}</small></article>`).join("")}</div><div class="pentathlon-list">${state.pentathlon.map((event, eventIndex) => {
     const status = pentathlonStatus(eventIndex);
     return `<article class="game-card pentathlon-event pentathlon-event--${status.key}">
       <div class="pentathlon-event__head"><span class="micro-label">${eventIndex + 1}/5</span><span class="event-status">${escapeHtml(status.label)}</span></div>
@@ -1279,14 +1321,25 @@ function renderPentathlon() {
 }
 
 function renderPentathlonEditor() {
+  const participants = allParticipants();
   return `<article class="admin-editor pentathlon-editor">
-    <div class="admin-editor-head"><strong>Redigera 5-kamp</strong><small>Lag och grenar</small></div>
-    <div class="admin-table admin-table--teams">
-      ${state.teamScores.map((team, index) => `<div class="admin-row">
-        <span>Lag ${index + 1}</span>
-        <input type="text" value="${escapeHtml(team.team)}" data-team-name="${index}" aria-label="Lagnamn ${index + 1}" />
-      </div>`).join("")}
+    <div class="admin-editor-head"><strong>Redigera 5-kamp</strong><small>Lag, deltagare och grenar</small></div>
+    <div class="team-builder">
+      ${state.teamScores.map((team, index) => `<section class="team-builder-card">
+        <div class="team-builder-head">
+          <input type="text" value="${escapeHtml(team.team)}" data-team-name="${index}" aria-label="Lagnamn ${index + 1}" />
+          <button class="admin-delete-button" type="button" data-delete-team="${index}" aria-label="Radera lag">&times;</button>
+        </div>
+        <div class="member-picker">
+          ${participants.map((name) => {
+            const selectedHere = (team.members || []).includes(name);
+            const selectedElsewhere = state.teamScores.some((otherTeam, otherIndex) => otherIndex !== index && (otherTeam.members || []).includes(name));
+            return `<button class="member-chip ${selectedHere ? "is-selected" : ""} ${selectedElsewhere ? "is-other" : ""}" type="button" data-team-member="${index}" data-member="${escapeHtml(name)}">${escapeHtml(name)}</button>`;
+          }).join("")}
+        </div>
+      </section>`).join("")}
     </div>
+    <button class="admin-add-button" type="button" data-add-team>Skapa lag</button>
     <div class="admin-table admin-table--five">
       ${state.pentathlon.map((event, index) => `<div class="admin-row">
         <span>${index + 1}</span>
@@ -1497,6 +1550,13 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-admin-edit]").forEach((button) => button.addEventListener("click", () => {
     state.adminEdit = state.adminEdit === button.dataset.adminEdit ? "" : button.dataset.adminEdit;
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-dashboard-toggle]").forEach((button) => button.addEventListener("click", () => {
+    const key = button.dataset.dashboardToggle;
+    state.settings.dashboard[key] = !dashboardVisible(key);
     saveState();
     renderAll();
   }));
@@ -1730,6 +1790,40 @@ function bindDynamicEvents() {
     const team = state.teamScores[Number(input.dataset.teamName)];
     if (!team) return;
     team.team = input.value.trim() || team.team;
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-team-member]").forEach((button) => button.addEventListener("click", () => {
+    const teamIndex = Number(button.dataset.teamMember);
+    const member = button.dataset.member;
+    const team = state.teamScores[teamIndex];
+    if (!team || !member) return;
+    const alreadySelected = (team.members || []).includes(member);
+    state.teamScores.forEach((item) => {
+      item.members = (item.members || []).filter((name) => name !== member);
+    });
+    if (!alreadySelected) team.members.push(member);
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelector("[data-add-team]")?.addEventListener("click", () => {
+    state.teamScores.push({ team: `Lag ${state.teamScores.length + 1}`, score: 0, members: [] });
+    state.pentathlon.forEach((eventItem) => eventItem.scores.push(0));
+    saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-delete-team]").forEach((button) => button.addEventListener("click", () => {
+    if (state.teamScores.length <= 1) {
+      showToast("Minst ett lag behövs");
+      return;
+    }
+    const index = Number(button.dataset.deleteTeam);
+    if (!window.confirm(`Radera laget ${state.teamScores[index]?.team || ""}?`)) return;
+    state.teamScores.splice(index, 1);
+    state.pentathlon.forEach((eventItem) => eventItem.scores.splice(index, 1));
     saveState();
     renderAll();
   }));
