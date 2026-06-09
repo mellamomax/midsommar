@@ -1,0 +1,19 @@
+{
+  "name": "Midsommar 2026",
+  "short_name": "Midsommar",
+  "description": "Midsommarapp för OSA, lekar, bilder, poäng och match.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fffdf7",
+  "theme_color": "#185c40",
+  "icons": [
+    {
+      "src": "assets/prep-sunny-bg.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
