@@ -266,6 +266,7 @@ function ensureEditableContent() {
   state.schedule = normalizeSchedule(state.schedule);
   state.content = state.content && typeof state.content === "object" ? state.content : {};
   if (!Array.isArray(state.content.missions) || !state.content.missions.length) state.content.missions = [...missionPool];
+  state.content.missions = normalizeMissionContent(state.content.missions);
   if (!Array.isArray(state.content.bingo) || !state.content.bingo.length) state.content.bingo = [...bingoPool];
   if (!Array.isArray(state.content.voteQuestions) || !state.content.voteQuestions.length) state.content.voteQuestions = [...voteQuestions];
   state.settings = state.settings && typeof state.settings === "object" ? state.settings : {};
@@ -302,6 +303,19 @@ function editableSchedule() {
 function editableMissions() {
   ensureEditableContent();
   return state.content.missions;
+}
+
+function normalizeMissionContent(items) {
+  return items
+    .map((item, index) => {
+      if (typeof item === "string") return { text: item, points: missionPointsFor(item, index) };
+      return {
+        text: String(item?.text || "").trim(),
+        points: Math.max(0, Math.min(20, Number(item?.points ?? missionPointsFor(item?.text || "", index)) || 0)),
+      };
+    })
+    .filter((item) => item.text)
+    .sort((a, b) => Number(b.points || 0) - Number(a.points || 0) || a.text.localeCompare(b.text, "sv"));
 }
 
 function editableBingo() {
@@ -532,10 +546,10 @@ function getMissionsFor(name) {
   const guestIndex = Math.max(0, guests.indexOf(originalGuestForDisplay(name) || name));
   const source = editableMissions();
   const start = source.length >= guestIndex * 4 + 4 ? guestIndex * 4 : 0;
-  return source.slice(start, start + 4).map((text, index) => ({
+  return source.slice(start, start + 4).map((mission, index) => ({
     id: `${name}-${index}`,
-    text,
-    points: missionPointsFor(text, index),
+    text: mission.text || String(mission),
+    points: Number(mission.points ?? missionPointsFor(mission.text || mission, index)),
     photo: "",
     completedAt: "",
   }));
@@ -1017,7 +1031,11 @@ function renderMatch() {
   return `<div class="match-wallpaper">
     <section class="match-wallpaper-hero">
       <span>VM 2026</span>
-      <h3>Sverige - Netherlands</h3>
+      <div class="match-versus">
+        <div><b>🇸🇪</b><strong>Sverige</strong></div>
+        <em>vs</em>
+        <div><b>🇳🇱</b><strong>Netherlands</strong></div>
+      </div>
       <p>${escapeHtml(`${matchFallback.selected.date} · ${matchFallback.selected.time}`)}</p>
       <strong>${escapeHtml(relativeToEvent("2026-06-20T19:00:00+02:00"))}</strong>
     </section>
@@ -1155,6 +1173,7 @@ function renderVote(profile) {
 }
 
 function renderGameAdminEditor() {
+  ensureEditableContent();
   const config = {
     vote: { key: "voteQuestions", title: "Most likely", applyLabel: "Dela ut nya fr&aring;gor" },
     mission: { key: "missions", title: "Uppdrag", applyLabel: "Dela ut nya uppdrag" },
@@ -1166,6 +1185,24 @@ function renderGameAdminEditor() {
     </article>`;
   }
   const rows = state.content?.[config.key] || [];
+  if (config.key === "missions") {
+    const missions = normalizeMissionContent(rows);
+    return `<article class="admin-editor game-content-editor mission-admin-editor">
+      <div class="admin-editor-head"><strong>Redigera uppdrag</strong><small>Poäng följer med vid utdelning</small></div>
+      <div class="mission-admin-table">
+        ${missions.map((mission, index) => `<div class="mission-admin-row" data-mission-admin-row>
+          <input class="mission-admin-text" value="${escapeHtml(mission.text)}" data-mission-admin-text aria-label="Uppdrag" />
+          <input class="mission-admin-points" type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(mission.points)}" data-mission-admin-points aria-label="Poäng" />
+          <button class="admin-delete-button" type="button" data-delete-mission-row="${index}" aria-label="Radera uppdrag">&times;</button>
+        </div>`).join("")}
+      </div>
+      <div class="admin-actions">
+        <button class="admin-secondary-button" type="button" data-add-mission-row>Lägg till</button>
+        <button class="admin-add-button" type="button" data-save-content="missions">Spara lista</button>
+        <button class="admin-secondary-button" type="button" data-apply-content="missions">${config.applyLabel}</button>
+      </div>
+    </article>`;
+  }
   return `<article class="admin-editor game-content-editor">
     <div class="admin-editor-head"><strong>Redigera ${escapeHtml(config.title)}</strong><small>En rad per sak</small></div>
     <textarea class="admin-textarea" data-content-editor="${escapeHtml(config.key)}">${escapeHtml(rows.join("\n"))}</textarea>
@@ -1424,7 +1461,7 @@ function renderPentathlon() {
       <h3>${escapeHtml(event.name)}</h3>
       ${isAdmin() ? `<div class="five-placement-grid">${state.teamScores.map((team, teamIndex) => `<section>
         <strong>${escapeHtml(team.team)} <b>${event.scores[teamIndex] || 0} p</b></strong>
-        <div>${[5, 3, 1, 0.5].map((points) => `<button type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}" data-five-points="${points}">${points}p</button>`).join("")}</div>
+        <div>${[5, 3, 1, 0.5].map((points) => `<button class="${Number(event.scores[teamIndex] || 0) === points ? "is-selected" : ""}" type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}" data-five-points="${points}">${points}p</button>`).join("")}</div>
       </section>`).join("")}</div>` : ""}
     </article>`;
   }).join("")}</div>${isAdmin() ? renderPentathlonEditor() : ""}`;
@@ -1476,6 +1513,7 @@ function renderPentathlonRevealControls() {
     <h3>${started ? "5-kampen är igång" : "Starta 5-kampen"}</h3>
     <div class="admin-actions">
       <button class="admin-add-button" type="button" data-start-five>${started ? "Startad" : "START"}</button>
+      <button class="admin-secondary-button" type="button" data-prev-five ${!started || visibleIndex <= 0 ? "disabled" : ""}>Ångra</button>
       <button class="admin-secondary-button" type="button" data-next-five ${!started || visibleIndex >= state.pentathlon.length - 1 ? "disabled" : ""}>Visa nästa</button>
     </div>
   </article>`;
@@ -1777,6 +1815,22 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelector("[data-add-mission-row]")?.addEventListener("click", () => {
+    ensureEditableContent();
+    state.content.missions.push({ text: "Nytt uppdrag", points: 2 });
+    state.content.missions = normalizeMissionContent(state.content.missions);
+    saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-delete-mission-row]").forEach((button) => button.addEventListener("click", () => {
+    ensureEditableContent();
+    state.content.missions.splice(Number(button.dataset.deleteMissionRow), 1);
+    state.content.missions = normalizeMissionContent(state.content.missions);
+    saveState();
+    renderAll();
+  }));
+
   document.querySelectorAll("[data-apply-content]").forEach((button) => button.addEventListener("click", () => {
     const key = button.dataset.applyContent;
     if (!saveContentList(key)) return;
@@ -1904,6 +1958,9 @@ function bindDynamicEvents() {
     delete vote.oneXtwo;
     state.matchVotes[state.profile] = vote;
     saveState();
+    if (input.dataset.matchScore === "home" && value !== "") {
+      document.querySelector('[data-match-score="away"]')?.focus();
+    }
   }));
 
   document.querySelectorAll("[data-match-final]").forEach((input) => input.addEventListener("input", () => {
@@ -2053,6 +2110,13 @@ function bindDynamicEvents() {
     renderAll();
   });
 
+  document.querySelector("[data-prev-five]")?.addEventListener("click", () => {
+    if (!state.settings.pentathlon.started) return;
+    state.settings.pentathlon.visibleIndex = Math.max(0, Number(state.settings.pentathlon.visibleIndex ?? 0) - 1);
+    saveState();
+    renderAll();
+  });
+
   document.querySelectorAll("[data-team-name]").forEach((input) => input.addEventListener("change", () => {
     const team = state.teamScores[Number(input.dataset.teamName)];
     if (!team) return;
@@ -2131,6 +2195,21 @@ function bindDynamicEvents() {
 
 function saveContentList(key) {
   ensureEditableContent();
+  if (key === "missions") {
+    const rows = [...document.querySelectorAll("[data-mission-admin-row]")]
+      .map((row, index) => ({
+        text: row.querySelector("[data-mission-admin-text]")?.value.trim() || "",
+        points: Math.max(0, Math.min(20, Number(row.querySelector("[data-mission-admin-points]")?.value || missionPointsFor("", index)) || 0)),
+      }))
+      .filter((row) => row.text);
+    if (!rows.length) {
+      showToast("Listan kan inte vara tom");
+      return false;
+    }
+    state.content.missions = normalizeMissionContent(rows);
+    saveState();
+    return true;
+  }
   const textarea = document.querySelector(`[data-content-editor="${key}"]`);
   if (!textarea) return false;
   const rows = textarea.value
