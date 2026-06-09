@@ -1245,6 +1245,82 @@ body[data-section="score"] .panel-content {
   display: none;
 }
 
+.install-app-button {
+  border: 1px solid rgba(16, 21, 16, 0.1);
+  border-radius: 999px;
+  min-height: 40px;
+  padding: 0 14px;
+  color: #101510;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 24px rgba(15, 21, 16, 0.14);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 950;
+}
+
+.install-app-button[hidden] {
+  display: none;
+}
+
+.pentathlon-event {
+  gap: 5px;
+  padding: 8px 9px;
+}
+
+.pentathlon-event h3 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.pentathlon-event__head {
+  min-height: 22px;
+}
+
+.pentathlon-event .event-status {
+  padding: 3px 7px;
+  font-size: 0.62rem;
+}
+
+.pentathlon-event .micro-label {
+  font-size: 0.62rem;
+}
+
+.five-placement-grid {
+  gap: 5px;
+}
+
+.five-placement-grid section {
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.five-placement-grid strong {
+  font-size: 0.78rem;
+}
+
+.five-placement-grid div {
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.five-placement-grid button {
+  min-height: 26px;
+  font-size: 0.7rem;
+}
+
+.pentathlon-event--done {
+  gap: 5px;
+  padding: 8px 9px;
+}
+
+.pentathlon-event--done .five-placement-grid {
+  display: grid;
+}
+
+body:not([data-admin="true"]) .pentathlon-event--done .five-placement-grid {
+  display: none;
+}
+
 @media (max-height: 720px) {
   .app-shell,
   body[data-page="party"] .app-shell {
@@ -1308,6 +1384,44 @@ body[data-section="score"] .panel-content {
     min-height: 42px;
     font-size: 0.88rem;
   }
+}
+
+/* Final 5-kamp compact/correction override */
+.pentathlon-event {
+  gap: 5px;
+  padding: 8px 9px;
+}
+
+.pentathlon-event h3 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.pentathlon-event .five-placement-grid {
+  gap: 5px;
+}
+
+.pentathlon-event .five-placement-grid section {
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.pentathlon-event .five-placement-grid div {
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.pentathlon-event .five-placement-grid button {
+  min-height: 26px;
+  font-size: 0.7rem;
+}
+
+body[data-admin="true"] .pentathlon-event--done .five-placement-grid {
+  display: grid;
+}
+
+body:not([data-admin="true"]) .pentathlon-event--done .five-placement-grid {
+  display: none;
 }
 
 /* Makeover v6 */
