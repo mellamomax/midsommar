@@ -2,6 +2,7 @@ const EVENT_START = new Date("2026-06-19T12:00:00+02:00");
 const BEFORE_VIDEO_OPEN = new Date("2026-06-19T00:00:00+02:00");
 const BEFORE_VIDEO_CLOSE = new Date("2026-06-19T11:00:00+02:00");
 const AFTER_VIDEO_OPEN = new Date("2026-06-19T20:00:00+02:00");
+const MATCH_TIP_DEADLINE = new Date("2026-06-20T19:00:00+02:00");
 const STORAGE_KEY = "midsommar-dashboard-v6";
 const WEATHER = { latitude: 59.3333, longitude: 16.4333 };
 const SUPABASE_URL = "https://wugavohwdfuhahbwxcea.supabase.co";
@@ -39,6 +40,7 @@ let profileClickTimer = null;
 let lastProfileTap = 0;
 let lastCountdownTap = 0;
 let lastLoginTap = 0;
+let lastAdminCardTap = 0;
 
 const snapsSongs = {
   sv: [
@@ -701,7 +703,7 @@ function renderProfile() {
   document.querySelector(".admin-name-field").hidden = !canUseAdmin() || !isAdmin();
   document.querySelector("#current-profile-card").hidden = !canUseAdmin();
   document.querySelector("#profile-grid").hidden = false;
-  document.querySelector("#admin-code-row").hidden = !canUseAdmin() || isAdmin();
+  document.querySelector("#admin-code-row").hidden = true;
   document.querySelector("[data-admin-mode]").hidden = !isAdmin();
   document.querySelector("[data-admin-mode]").textContent = "Lämna admin mode";
   setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Du kan byta profil, döpa om aktiv person eller radera testprofiler." : "Byt profil för test.");
@@ -755,9 +757,7 @@ function renderPrep() {
 }
 
 function ensurePackList() {
-  seed.pack.forEach((defaultItem) => {
-    if (!state.pack.some((item) => item.id === defaultItem.id)) state.pack.push({ ...defaultItem });
-  });
+  if (!Array.isArray(state.pack)) state.pack = structuredClone(seed.pack);
 }
 
 function renderParty() {
@@ -1013,7 +1013,7 @@ function renderWeatherMini() {
 function renderMatch() {
   const vote = state.matchVotes[state.profile] || {};
   const result = normalizeMatchResult(vote);
-  const outcome = matchOutcome(result);
+  const closed = matchTipClosed();
   return `<div class="match-wallpaper">
     <section class="match-wallpaper-hero">
       <span>VM 2026</span>
@@ -1022,15 +1022,13 @@ function renderMatch() {
       <strong>${escapeHtml(relativeToEvent("2026-06-20T19:00:00+02:00"))}</strong>
     </section>
     <article class="match-vote-card match-vote-card--wallpaper">
-      <span class="micro-label">Tippa resultat</span>
       <div class="score-inputs">
-        <label><span>SWE</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.home)}" data-match-score="home" /></label>
+        <label><span>SWE</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.home)}" data-match-score="home" ${closed ? "disabled" : ""} /></label>
         <b>-</b>
-        <label><span>NED</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.away)}" data-match-score="away" /></label>
+        <label><span>NED</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.away)}" data-match-score="away" ${closed ? "disabled" : ""} /></label>
       </div>
-      <p class="match-outcome">${escapeHtml(outcome)}</p>
-      <button class="pill-button match-save-button" type="button" data-match-save>Spara tipp</button>
-      <p class="hint">${vote.result ? `Sparat: ${escapeHtml(outcome)}` : "Rösta innan matchen."}</p>
+      <p class="match-points-note">Rätt 1X2 ger 3 p. Rätt resultat ger 5 p.</p>
+      <button class="pill-button match-save-button" type="button" data-match-save ${closed ? "disabled" : ""}>${closed ? "Tippning stängd" : "Spara tipp"}</button>
     </article>
     ${isAdmin() ? renderMatchAdmin() : ""}
   </div>`;
@@ -1047,7 +1045,7 @@ function renderMatchAdmin() {
       <label><span>NED</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(actual.away)}" data-match-final="away" ${state.matchAwarded ? "disabled" : ""} /></label>
     </div>
     <button class="pill-button match-save-button" type="button" data-award-match ${state.matchAwarded ? "disabled" : ""}>${state.matchAwarded ? "Poäng utdelade" : "Dela ut poäng"}</button>
-    <p class="hint">Rätt 1X2 ger 1 p. Exakt resultat ger 5 p.</p>
+    <p class="hint">Rätt 1X2 ger 3 p. Exakt resultat ger 5 p.</p>
   </article>`;
 }
 
@@ -1077,6 +1075,10 @@ function matchOutcome(result) {
   return `Oavgjort · ${home}-${away}`;
 }
 
+function matchTipClosed() {
+  return Date.now() >= MATCH_TIP_DEADLINE.getTime();
+}
+
 function matchOutcomeKey(result) {
   const home = Number(result.home);
   const away = Number(result.away);
@@ -1100,8 +1102,8 @@ function awardMatchPoints() {
       profile.points += 5;
       awarded += 5;
     } else if (matchOutcomeKey(vote) === actualOutcome) {
-      profile.points += 1;
-      awarded += 1;
+      profile.points += 3;
+      awarded += 3;
     }
     state.profiles[name] = profile;
   });
@@ -1149,7 +1151,7 @@ function renderWheel(profile) {
 
 function renderVote(profile) {
   const question = profile.voteDeck[0] || editableVoteQuestions()[0];
-  return `<article class="game-card"><span class="micro-label">Most likely</span><h3>Vem ${escapeHtml(question)}</h3><p class="hint">Rösta på vem du tror är most likely att. Rättning görs dag 2.</p><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa egen fråga</button></article>`;
+  return `<article class="game-card vote-game-card"><span class="micro-label">Most likely</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa påstående</button></article>`;
 }
 
 function renderGameAdminEditor() {
@@ -1212,8 +1214,8 @@ function evaluateBingoRewards(profile) {
 function renderMission(profile) {
   return `<article class="game-card mission-explain-card"><span class="micro-label">Hemliga uppdrag</span><p>Nedan listas dina hemliga uppdrag. Genomf&ouml;r dem utan att avsl&ouml;ja dig f&ouml;r de andra. Bild kr&auml;vs som facit.</p></article><div class="mission-list">${profile.missions.map((mission, index) => `
     <article class="mission-card mission-card--compact ${mission.photo ? "is-complete" : ""}">
-      <div class="mission-copy"><h3><span class="mission-points">${mission.points || missionPointsFor(mission.text, index)} p</span><span>${escapeHtml(mission.text)}</span></h3></div>
-      ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*" capture="environment" data-mission-upload="${index}" />`}
+      <div class="mission-copy"><h3><span class="mission-points">${mission.points || missionPointsFor(mission.text, index)} p</span><span>${escapeHtml(mission.text)}</span></h3>${isAdmin() ? `<label class="mission-point-admin">Poäng <input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(mission.points || missionPointsFor(mission.text, index))}" data-mission-points="${index}" /></label>` : ""}</div>
+      ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*" data-mission-upload="${index}" />`}
     </article>`).join("")}</div>`;
 }
 
@@ -1224,7 +1226,7 @@ function renderBingo(profile) {
     return `<button class="bingo-cell ${isHit ? "is-hit" : ""}" type="button" data-bingo="${escapeHtml(item)}" data-bingo-index="${index}" ${isHit ? "disabled" : ""}>
       <span>${escapeHtml(item)}</span>
       <small>${isHit ? "Klar" : "Ta bild"}</small>
-    </button><input class="capture-input" type="file" accept="image/*" capture="environment" data-bingo-upload="${index}" />`;
+    </button><input class="capture-input" type="file" accept="image/*" data-bingo-upload="${index}" />`;
   }).join("")}</div>
   <div class="bingo-rewards">
     <p class="hint">${hits.length}/9 låsta · unik bricka för ${escapeHtml(state.profile)}</p>
@@ -1792,6 +1794,15 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelectorAll("[data-mission-points]").forEach((input) => input.addEventListener("change", () => {
+    const profile = activeProfile();
+    const mission = profile?.missions?.[Number(input.dataset.missionPoints)];
+    if (!mission) return;
+    mission.points = Math.max(0, Math.min(20, Number(input.value) || 0));
+    saveState();
+    renderAll();
+  }));
+
   document.querySelectorAll("[data-correct-question]").forEach((button) => button.addEventListener("click", () => {
     state.voteCorrections[button.dataset.correctQuestion] = button.dataset.correctTarget;
     saveState();
@@ -1880,6 +1891,11 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-match-score]").forEach((input) => input.addEventListener("input", () => {
     if (!state.profile) return;
+    if (matchTipClosed()) {
+      showToast("Tippningen stängde 19:00");
+      renderAll();
+      return;
+    }
     const vote = { ...(state.matchVotes[state.profile] || {}) };
     const value = input.value === "" ? "" : String(Math.max(0, Math.min(20, Number(input.value) || 0)));
     if (input.dataset.matchScore === "home") vote.resultHome = value;
@@ -1887,10 +1903,6 @@ function bindDynamicEvents() {
     vote.result = vote.resultHome !== "" && vote.resultAway !== "" ? `${vote.resultHome}-${vote.resultAway}` : "";
     delete vote.oneXtwo;
     state.matchVotes[state.profile] = vote;
-    const outcome = document.querySelector(".match-vote-card .match-outcome");
-    if (outcome) outcome.textContent = matchOutcome(normalizeMatchResult(vote));
-    const hint = document.querySelector(".match-vote-card .hint");
-    if (hint) hint.textContent = vote.result ? `Sparat: ${matchOutcome(normalizeMatchResult(vote))}` : "Rösta innan matchen.";
     saveState();
   }));
 
@@ -1914,6 +1926,10 @@ function bindDynamicEvents() {
   });
 
   document.querySelector("[data-match-save]")?.addEventListener("click", () => {
+    if (matchTipClosed()) {
+      showToast("Tippningen stängde 19:00");
+      return;
+    }
     const result = normalizeMatchResult(state.matchVotes[state.profile] || {});
     showToast(result.text ? `Tipp sparat: ${matchOutcome(result)}` : "Fyll i resultat först");
   });
@@ -2306,9 +2322,11 @@ document.addEventListener("click", (event) => {
   const dashboardToggle = event.target.closest("[data-dashboard-toggle]");
   if (!dashboardToggle) return;
   event.preventDefault();
+  event.stopPropagation();
   const key = dashboardToggle.dataset.dashboardToggle;
   ensureEditableContent();
-  state.settings.dashboard[key] = !dashboardVisible(key);
+  const current = state.settings.dashboard?.[key] !== false;
+  state.settings.dashboard[key] = !current;
   saveState();
   renderAll();
 });
@@ -2497,6 +2515,34 @@ document.querySelector("[data-admin-code]").addEventListener("click", () => {
   showToast("Admin mode på");
   saveState();
   renderAll();
+});
+
+function enableAdminForMax() {
+  if (!canUseAdmin()) {
+    showToast("Endast Max kan öppna admin");
+    return;
+  }
+  state.adminMode = true;
+  state.adminOwner = "Max";
+  showToast("Admin mode på");
+  saveState();
+  renderAll();
+}
+
+document.querySelector("#current-profile-card")?.addEventListener("dblclick", (event) => {
+  event.preventDefault();
+  enableAdminForMax();
+});
+document.querySelector("#current-profile-card")?.addEventListener("pointerup", (event) => {
+  if (event.pointerType === "mouse") return;
+  const now = Date.now();
+  if (now - lastAdminCardTap < 420) {
+    event.preventDefault();
+    lastAdminCardTap = 0;
+    enableAdminForMax();
+    return;
+  }
+  lastAdminCardTap = now;
 });
 document.querySelector("#admin-code-input").addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;
