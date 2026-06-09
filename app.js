@@ -41,6 +41,7 @@ let lastProfileTap = 0;
 let lastCountdownTap = 0;
 let lastLoginTap = 0;
 let lastAdminCardTap = 0;
+let deferredInstallPrompt = null;
 
 const snapsSongs = {
   sv: [
@@ -2091,7 +2092,9 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-five-event]").forEach((button) => button.addEventListener("click", () => {
     const eventItem = state.pentathlon[Number(button.dataset.fiveEvent)];
     if (!eventItem) return;
-    eventItem.scores[Number(button.dataset.fiveTeam)] = Number(button.dataset.fivePoints ?? 1);
+    const teamIndex = Number(button.dataset.fiveTeam);
+    const nextPoints = Number(button.dataset.fivePoints ?? 1);
+    eventItem.scores[teamIndex] = Number(eventItem.scores[teamIndex] || 0) === nextPoints ? 0 : nextPoints;
     saveState();
     renderAll();
   }));
@@ -2505,6 +2508,57 @@ function openEventAddressInMaps() {
 }
 
 document.querySelector(".prep-location-pin")?.addEventListener("click", openEventAddressInMaps);
+
+function isStandaloneApp() {
+  return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+}
+
+function updateInstallButton() {
+  const button = document.querySelector("[data-install-app]");
+  if (!button) return;
+  button.hidden = isStandaloneApp();
+}
+
+function showInstallInstructions() {
+  const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+  if (isAppleMobile) {
+    window.alert("På iPhone: tryck på dela-knappen i Safari och välj Lägg till på hemskärmen.");
+    return;
+  }
+  window.alert("Öppna webbläsarens meny och välj Installera app eller Lägg till på hemskärmen.");
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  updateInstallButton();
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
+  showToast("Appen är tillagd");
+});
+
+document.querySelector("[data-install-app]")?.addEventListener("click", async () => {
+  if (isStandaloneApp()) return;
+  if (!deferredInstallPrompt) {
+    showInstallInstructions();
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  updateInstallButton();
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((error) => console.warn("Service worker kunde inte registreras", error));
+  });
+}
+
+updateInstallButton();
 
 function skipLoginForTest() {
   if (state.profile) return;
