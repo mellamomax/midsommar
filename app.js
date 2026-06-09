@@ -58,52 +58,28 @@ const snapsSongs = {
   ],
   dk: [
     {
-      id: "en-nubbejavel",
-      title: "En nubbejävel",
-      melody: "Karsten Torebjer-original",
-      text: ["Karsten-spår. Spela originalet och kör med.", "Texten är inte inlagd här, men titeln räcker långt när bordet är igång."],
+      id: "lille-glas",
+      title: "Det lille glas",
+      melody: "Melodi: Jeg ved en lærkerede",
+      text: ["Et lille glas står klart på bordet.", "Vi skålar lätt och håller ordet.", "Med sill och sol och vänners skratt.", "Så blir det fest från dag till natt."],
     },
     {
-      id: "blottaren",
-      title: "Blottaren",
-      melody: "Karsten Torebjer-original",
-      text: ["Kort Karsten-spår.", "Bra som snabb mellansång när ingen orkar en hel visa."],
+      id: "hygge-vid-bordet",
+      title: "Hygge vid bordet",
+      melody: "Melodi: I skovens dybe stille ro",
+      text: ["Nu sitter vi vid bordet här.", "Med sommarvind och allt vi har kärt.", "En snaps, ett leende, sen mer musik.", "I kväll blir ingen stund den andra lik."],
     },
     {
-      id: "nu-kommer-sommaren",
-      title: "Nu kommer sommaren",
-      melody: "Karsten Torebjer-original",
-      text: ["Karsten-spår för midsommarkänslan.", "Lägg mobilen på bordet, spela originalet och skåla."],
+      id: "kartoffelpolka",
+      title: "Kartoffelpolka",
+      melody: "Melodi: Den toppede høne",
+      text: ["Potatisen går laget runt.", "Och snapsen väntar, kort och sunt.", "När glaset höjs blir tonen klar.", "Skål för alla som är kvar."],
     },
     {
-      id: "vi-tar-oss-en-liten-javel",
-      title: "Vi tar oss en liten jävel",
-      melody: "Karsten Torebjer-original",
-      text: ["Kort Karsten-spår.", "Perfekt när någon säger att nästa skål behöver vara effektiv."],
-    },
-    {
-      id: "helt-dyngrak",
-      title: "Helt dyngrak",
-      melody: "Karsten Torebjer-original",
-      text: ["Karsten-spår.", "Spara den här till senare på kvällen."],
-    },
-    {
-      id: "snart-sa-tar-vi-lille-javeln",
-      title: "Snart så tar vi lille jäveln",
-      melody: "Karsten Torebjer-original",
-      text: ["Kort Karsten-spår.", "Bra uppvärmning innan glasen faktiskt lyfts."],
-    },
-    {
-      id: "ge-levern-vad-den-tal",
-      title: "Ge levern vad den tål",
-      melody: "Karsten Torebjer-original",
-      text: ["Karsten-spår.", "Använd med lagom dåligt omdöme och mycket vatten bredvid."],
-    },
-    {
-      id: "skal-for-fan",
-      title: "Skål för fan",
-      melody: "Karsten Torebjer-original",
-      text: ["Karsten-spår.", "Den subtila finalen. Eller ja, ungefär så subtilt det blir."],
+      id: "dansk-sommarskal",
+      title: "Dansk sommarskål",
+      melody: "Melodi: Midsommervisen",
+      text: ["Solen står högt, och bordet är dukat.", "Alla har sjungit, ingen har trukat.", "Lyft nu ditt glas, låt kvällen få svar.", "Skål för den bästa sommaren vi har."],
     },
   ],
 };
@@ -629,13 +605,12 @@ function renderProfile() {
   const profile = activeProfile();
   setText("profile-label", profile ? `${state.profile} · ${profile.points} p${isAdmin() ? " · admin" : ""}` : "Välj");
   setText("profile-initial", state.profile ? state.profile.slice(0, 1) : "?");
-  setText("brand-profile-initial", state.profile ? state.profile.slice(0, 1) : "M");
-  const brandAvatar = document.querySelector("#brand-profile-avatar");
-  const brandInitial = document.querySelector("#brand-profile-initial");
-  if (brandAvatar && brandInitial) {
-    brandAvatar.hidden = !profile?.avatarUrl;
-    brandInitial.hidden = !!profile?.avatarUrl;
-    if (profile?.avatarUrl) brandAvatar.src = profile.avatarUrl;
+  const profileAvatar = document.querySelector("#profile-avatar");
+  const profileInitial = document.querySelector("#profile-initial");
+  if (profileAvatar && profileInitial) {
+    profileAvatar.hidden = !profile?.avatarUrl;
+    profileInitial.hidden = !!profile?.avatarUrl;
+    if (profile?.avatarUrl) profileAvatar.src = profile.avatarUrl;
   }
   setText("dialog-profile-name", profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
   document.querySelector("#profile-button").disabled = false;
@@ -712,7 +687,7 @@ function ensurePackList() {
 
 function renderParty() {
   if (state.section !== "photos") galleryIndex = null;
-  if (state.section !== "today") state.activeSnapId = "";
+  if (state.section !== "games" || state.game !== "snaps") state.activeSnapId = "";
   document.body.dataset.section = state.section;
   const [kicker, title] = sectionMeta[state.section];
   setText("party-kicker", kicker);
@@ -734,18 +709,17 @@ function renderToday() {
   return `<div class="dashboard-grid">
     <article class="dash-card dash-card--wide"><span>Nästa</span><strong>12:00 Lunch</strong><small>Sill, potatis, kall dryck</small></article>
     <article class="dash-card dash-card--wide"><span>Hållpunkter</span><div class="timeline-mini">${timeline.map((item) => `<b>${escapeHtml(item[0])}</b><span>${escapeHtml(item[1])}</span>`).join("")}</div></article>
-    ${renderSnapsShortcut()}
     <article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>
   </div>`;
 }
 
-function renderSnapsShortcut() {
+function renderSnapsGame() {
   const lang = snapsSongs[state.snapsLang] ? state.snapsLang : "sv";
   const songs = snapsSongs[lang];
   const activeSong = songs.find((song) => song.id === state.activeSnapId);
-  return `<article class="dash-card dash-card--wide snaps-card">
+  return `<article class="game-card snaps-card">
     <div class="snaps-card__head">
-      <div><span>Snapsvisor</span><strong>${lang === "dk" ? "Karsten-läge" : "Svenska klassiker"}</strong></div>
+      <div><span>Snapsvisor</span><strong>${lang === "dk" ? "Danska visor" : "Svenska visor"}</strong></div>
       <div class="snaps-lang-toggle" role="group" aria-label="Välj snapsvisor">
         <button class="${lang === "sv" ? "is-active" : ""}" type="button" data-snaps-lang="sv">Svenska</button>
         <button class="${lang === "dk" ? "is-active" : ""}" type="button" data-snaps-lang="dk">Danska</button>
@@ -761,7 +735,7 @@ function renderSnapsShortcut() {
 function renderSnapViewer(song, lang) {
   return `<div class="snap-viewer" data-close-snaps>
     <article class="snap-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(song.title)}">
-      <span>${lang === "dk" ? "Karsten Torebjer" : "Snapsvisa"}</span>
+      <span>${lang === "dk" ? "Dansk snapsvisa" : "Snapsvisa"}</span>
       <h3>${escapeHtml(song.title)}</h3>
       <p class="snap-melody">${escapeHtml(song.melody)}</p>
       <div class="snap-lyrics">${song.text.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}</div>
@@ -826,12 +800,14 @@ function renderGames() {
   return `<div class="game-picker">
     <button class="pill-button ${state.game === "wheel" ? "is-active" : ""}" type="button" data-game="wheel">Hjul</button>
     <button class="pill-button ${state.game === "vote" ? "is-active" : ""}" type="button" data-game="vote">Pekleken</button>
+    <button class="pill-button ${state.game === "snaps" ? "is-active" : ""}" type="button" data-game="snaps">Snaps</button>
     <button class="pill-button ${state.game === "mission" ? "is-active" : ""}" type="button" data-game="mission">Uppdrag</button>
     <button class="pill-button ${state.game === "bingo" ? "is-active" : ""}" type="button" data-game="bingo">Bingo</button>
     <button class="pill-button ${state.game === "beforeAfter" ? "is-active" : ""}" type="button" data-game="beforeAfter">Före/efter</button>
   </div>
   ${state.game === "wheel" ? renderWheel(profile) : ""}
   ${state.game === "vote" ? renderVote(profile) : ""}
+  ${state.game === "snaps" ? renderSnapsGame() : ""}
   ${state.game === "mission" ? renderMission(profile) : ""}
   ${state.game === "bingo" ? renderBingo(profile) : ""}
   ${state.game === "beforeAfter" ? renderBeforeAfter(profile) : ""}`;
