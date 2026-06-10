@@ -5478,7 +5478,7 @@ body[data-section="match"] .panel-content {
 
 .pentathlon-summary-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   margin-bottom: 10px;
 }
@@ -5754,6 +5754,18 @@ body[data-section="score"] .scoreboard--leaderboard {
   align-items: center;
   gap: 6px 8px;
   padding: 10px;
+}
+
+.pentathlon-summary-grid--stack {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pentathlon-summary-grid--stack .own-team-card {
+  order: 1;
+}
+
+.pentathlon-summary-grid--stack .pentathlon-ranking-card {
+  order: 2;
 }
 
 .own-team-card .micro-label {
