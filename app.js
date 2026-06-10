@@ -25,6 +25,7 @@ const SHARED_STATE_KEYS = [
   "schedule",
   "content",
   "settings",
+  "galleryArchive",
 ];
 
 let remoteReady = false;
@@ -37,12 +38,10 @@ let galleryIndex = null;
 let galleryMotion = "open";
 let toastTimer = null;
 let profileClickTimer = null;
-let lastProfileTap = 0;
-let lastCountdownTap = 0;
-let lastStartTabTap = 0;
 let lastLoginTap = 0;
 let lastAdminCardTap = 0;
 let deferredInstallPrompt = null;
+const tripleTapTrackers = {};
 
 const snapsSongs = {
   sv: [
@@ -123,6 +122,7 @@ const seed = {
   schedule: [],
   content: {},
   settings: {},
+  galleryArchive: [],
 };
 
 const profileSeed = {
@@ -274,6 +274,7 @@ function ensureEditableContent() {
   state.settings = state.settings && typeof state.settings === "object" ? state.settings : {};
   state.settings.dashboard = { next: true, schedule: true, score: true, weather: true, rsvp: true, feed: false, ...(state.settings.dashboard || {}) };
   state.settings.pentathlon = { started: false, visibleIndex: -1, ...(state.settings.pentathlon || {}) };
+  state.galleryArchive = Array.isArray(state.galleryArchive) ? state.galleryArchive : [];
   if (state.game === "wheel") state.game = "vote";
   normalizePentathlonTeams();
 }
@@ -518,7 +519,7 @@ function activeProfile() {
 
 function makeProfile(name) {
   const profile = structuredClone(profileSeed);
-  profile.voteDeck = shuffle(editableVoteQuestions()).slice(0, 4);
+  profile.voteDeck = [...editableVoteQuestions()];
   profile.bingo = shuffle(editableBingo()).slice(0, 9);
   profile.missions = getMissionsFor(name);
   return profile;
@@ -534,6 +535,10 @@ function migrateProfile(name, profile) {
   if (!profile.bingoRewards) profile.bingoRewards = {};
   if (!Array.isArray(profile.bingoHits)) profile.bingoHits = [];
   if (!Array.isArray(profile.bingo) || !profile.bingo.length) profile.bingo = shuffle(editableBingo()).slice(0, 9);
+  const questions = editableVoteQuestions();
+  if (!Array.isArray(profile.voteDeck)) profile.voteDeck = [];
+  profile.voteDeck = [...profile.voteDeck, ...questions.filter((question) => !profile.voteDeck.includes(question))];
+  if (!profile.voteDeck.length) profile.voteDeck = [...questions];
   profile.bingoHits.forEach((item) => {
     if (!profile.bingoProofs[item]) profile.bingoProofs[item] = { photo: "", completedAt: "" };
   });
@@ -631,7 +636,7 @@ function normalizeProfileName(value) {
 }
 
 function isAdmin() {
-  return state.adminMode === true && state.adminOwner === "Max" && canUseAdmin();
+  return state.adminMode === true && state.adminOwner === "Max";
 }
 
 function canUseAdmin() {
@@ -706,7 +711,7 @@ function renderProfile() {
     if (profile?.avatarUrl) profileAvatar.src = profile.avatarUrl;
   }
   setText("dialog-profile-name", profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
-  document.querySelector("#profile-button").disabled = false;
+  document.querySelector("#profile-button").disabled = !isAdmin();
   document.querySelector("#profile-grid").innerHTML = allParticipants()
     .map((name) => isAdmin()
       ? `<div class="profile-manage-row"><button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button><button class="profile-delete-button" type="button" data-delete-profile="${escapeHtml(name)}" aria-label="Radera ${escapeHtml(name)}" ${name === "Max" ? "disabled" : ""}>×</button></div>`
@@ -716,13 +721,13 @@ function renderProfile() {
   if (adminInput && (isAdmin() || !adminInput.value)) adminInput.value = state.profile || "";
   if (adminInput) adminInput.disabled = !isAdmin();
   document.querySelector("[data-admin-login]").disabled = !isAdmin();
-  document.querySelector(".admin-name-field").hidden = !canUseAdmin() || !isAdmin();
-  document.querySelector("#current-profile-card").hidden = !canUseAdmin();
-  document.querySelector("#profile-grid").hidden = false;
+  document.querySelector(".admin-name-field").hidden = !isAdmin();
+  document.querySelector("#current-profile-card").hidden = !isAdmin();
+  document.querySelector("#profile-grid").hidden = !isAdmin();
   document.querySelector("#admin-code-row").hidden = true;
   document.querySelector("[data-admin-mode]").hidden = !isAdmin();
   document.querySelector("[data-admin-mode]").textContent = "Lämna admin mode";
-  setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Du kan byta profil, döpa om aktiv person eller radera testprofiler." : "Byt profil för test.");
+  setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Du kan byta profil, döpa om aktiv person eller radera testprofiler." : "Profilen är låst.");
 }
 
 function renderForecast() {
@@ -1251,7 +1256,7 @@ function evaluateBingoRewards(profile) {
 }
 
 function renderMission(profile) {
-  return `<article class="game-card mission-explain-card"><span class="micro-label">Hemliga uppdrag</span><p>Nedan listas dina hemliga uppdrag. Genomf&ouml;r dem utan att avsl&ouml;ja dig f&ouml;r de andra. Bild kr&auml;vs som facit.</p></article><div class="mission-list">${profile.missions.map((mission, index) => `
+  return `<article class="game-card mission-explain-card"><span class="micro-label">Hemliga uppdrag</span><p>Nedan listas dina hemliga uppdrag. Genomf&ouml;r dem utan att avsl&ouml;ja dig f&ouml;r de andra. Bild bevis kr&auml;vs.</p></article><div class="mission-list">${profile.missions.map((mission, index) => `
     <article class="mission-card mission-card--compact ${mission.photo ? "is-complete" : ""}">
       <div class="mission-copy"><h3><span class="mission-points">${mission.points || missionPointsFor(mission.text, index)} p</span><span>${escapeHtml(mission.text)}</span></h3>${isAdmin() ? `<label class="mission-point-admin">Poäng <input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(mission.points || missionPointsFor(mission.text, index))}" data-mission-points="${index}" /></label>` : ""}</div>
       ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*" data-mission-upload="${index}" />`}
@@ -1393,21 +1398,22 @@ function renderPhotosLegacy() {
 }
 
 function getGalleryPhotos() {
-  const missionPhotos = allParticipants().flatMap((name) => {
+  const names = galleryParticipantNames();
+  const missionPhotos = names.flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.missions) return [];
     return profile.missions
       .filter((mission) => mission.photo)
       .map((mission) => ({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt, media: "image" }));
   });
-  const bingoPhotos = allParticipants().flatMap((name) => {
+  const bingoPhotos = names.flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.bingoProofs) return [];
     return Object.entries(profile.bingoProofs)
       .filter(([, proof]) => proof?.photo)
       .map(([text, proof]) => ({ name, text, photo: proof.photo, type: "Bingo", takenAt: proof.completedAt, media: "image" }));
   });
-  const beforeAfterVideos = allParticipants().flatMap((name) => {
+  const beforeAfterVideos = names.flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.beforeAfter) return [];
     return ["before", "after"]
@@ -1415,7 +1421,25 @@ function getGalleryPhotos() {
       .filter(({ item }) => item?.video)
       .map(({ slot, item }) => ({ name, text: slot === "before" ? "Före-video" : "Efter-video", photo: item.video, type: "Före / efter", takenAt: item.completedAt, media: "video" }));
   });
-  return [...missionPhotos, ...bingoPhotos, ...beforeAfterVideos];
+  return dedupeGalleryPhotos([...(state.galleryArchive || []), ...missionPhotos, ...bingoPhotos, ...beforeAfterVideos]);
+}
+
+function galleryParticipantNames() {
+  return [...new Set([...allParticipants(), ...Object.keys(state.profiles || {})].filter(Boolean))];
+}
+
+function dedupeGalleryPhotos(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = `${item.media || "image"}::${item.photo}::${item.name}::${item.text}`;
+    if (!item.photo || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).sort((a, b) => new Date(b.takenAt || 0) - new Date(a.takenAt || 0));
+}
+
+function archiveGalleryItem(item) {
+  state.galleryArchive = dedupeGalleryPhotos([item, ...(state.galleryArchive || [])]);
 }
 
 function renderPhotos() {
@@ -1453,9 +1477,9 @@ function renderPentathlon() {
   const started = state.settings.pentathlon?.started;
   const visibleIndex = Number(state.settings.pentathlon?.visibleIndex ?? -1);
   const visibleEvents = started ? state.pentathlon.slice(0, visibleIndex + 1) : [];
-  return `<div class="pentathlon-summary-grid">${renderOwnTeamCard(totals)}${renderPentathlonRanking(totals)}</div>
+  return `<div class="pentathlon-summary-grid pentathlon-summary-grid--stack">${renderOwnTeamCard(totals)}${renderPentathlonRanking(totals)}</div>
   ${isAdmin() ? renderPentathlonRevealControls() : ""}
-  ${!started ? `<article class="game-card pentathlon-locked-card"><span class="micro-label">5-kamp</span><h3>Grenarna är hemliga</h3><p class="hint">Admin startar 5-kampen när det är dags.</p></article>` : ""}
+  ${!started || visibleIndex < 0 ? `<article class="game-card pentathlon-locked-card"><span class="micro-label">5-kamp</span><h3>Grenarna är hemliga</h3><p class="hint">Admin visar första grenen när det är dags.</p></article>` : ""}
   <div class="pentathlon-list">${visibleEvents.map((event, eventIndex) => {
     const status = pentathlonStatus(eventIndex);
     return `<article class="game-card pentathlon-event pentathlon-event--${status.key}">
@@ -1515,7 +1539,7 @@ function renderPentathlonRevealControls() {
     <h3>${started ? "5-kampen är igång" : "Starta 5-kampen"}</h3>
     <div class="admin-actions">
       <button class="admin-add-button" type="button" data-start-five>${started ? "Startad" : "START"}</button>
-      <button class="admin-secondary-button" type="button" data-prev-five ${!started || visibleIndex <= 0 ? "disabled" : ""}>Ångra</button>
+      <button class="admin-secondary-button" type="button" data-prev-five ${!started || visibleIndex < 0 ? "disabled" : ""}>Ångra</button>
       <button class="admin-secondary-button" type="button" data-next-five ${!started || visibleIndex >= state.pentathlon.length - 1 ? "disabled" : ""}>Visa nästa</button>
     </div>
   </article>`;
@@ -1649,6 +1673,7 @@ async function completeMissionWithFile(input) {
   }
   mission.photo = photo;
   mission.completedAt = new Date().toISOString();
+  archiveGalleryItem({ name: state.profile, text: mission.text, photo, type: "Uppdrag", takenAt: mission.completedAt, media: "image" });
   profile.activeMission = null;
   profile.points += mission.points || missionPointsFor(mission.text, missionIndex);
   saveState();
@@ -1668,7 +1693,9 @@ async function completeBingoWithFile(input) {
     return;
   }
   profile.bingoProofs = profile.bingoProofs || {};
-  profile.bingoProofs[item] = { photo, completedAt: new Date().toISOString() };
+  const completedAt = new Date().toISOString();
+  profile.bingoProofs[item] = { photo, completedAt };
+  archiveGalleryItem({ name: state.profile, text: item, photo, type: "Bingo", takenAt: completedAt, media: "image" });
   if (!profile.bingoHits.includes(item)) profile.bingoHits.push(item);
   evaluateBingoRewards(profile);
   saveState();
@@ -1693,7 +1720,9 @@ async function completeBeforeAfterVideo(input) {
     window.alert("Videon kunde inte laddas upp. Testa igen med en kortare video.");
     return;
   }
-  profile.beforeAfter[slot] = { video, completedAt: new Date().toISOString() };
+  const completedAt = new Date().toISOString();
+  profile.beforeAfter[slot] = { video, completedAt };
+  archiveGalleryItem({ name: state.profile, text: slot === "before" ? "Före-video" : "Efter-video", photo: video, type: "Före / efter", takenAt: completedAt, media: "video" });
   saveState();
   showToast(slot === "before" ? "Före-videon sparad" : "Efter-videon sparad");
   renderAll();
@@ -2116,7 +2145,7 @@ function bindDynamicEvents() {
 
   document.querySelector("[data-prev-five]")?.addEventListener("click", () => {
     if (!state.settings.pentathlon.started) return;
-    state.settings.pentathlon.visibleIndex = Math.max(0, Number(state.settings.pentathlon.visibleIndex ?? 0) - 1);
+    state.settings.pentathlon.visibleIndex = Math.max(-1, Number(state.settings.pentathlon.visibleIndex ?? 0) - 1);
     saveState();
     renderAll();
   });
@@ -2243,7 +2272,7 @@ function applyContentList(key) {
       profile.bingoRewards = {};
     }
     if (key === "voteQuestions") {
-      profile.voteDeck = shuffle(editableVoteQuestions()).slice(0, 4);
+      profile.voteDeck = [...editableVoteQuestions()];
       profile.votes = {};
     }
     state.profiles[name] = profile;
@@ -2484,6 +2513,22 @@ function returnToPrepFromStartTab() {
   renderAll();
 }
 
+function handleTripleTap(event, key, callback) {
+  const now = Date.now();
+  const tracker = tripleTapTrackers[key] || { count: 0, last: 0, timer: null };
+  tracker.count = now - tracker.last < 520 ? tracker.count + 1 : 1;
+  tracker.last = now;
+  clearTimeout(tracker.timer);
+  tracker.timer = setTimeout(() => {
+    tracker.count = 0;
+  }, 620);
+  tripleTapTrackers[key] = tracker;
+  if (tracker.count < 3) return;
+  event.preventDefault();
+  tracker.count = 0;
+  callback();
+}
+
 function returnToLoginForTest() {
   clearTimeout(profileClickTimer);
   document.querySelector("#profile-dialog")?.close();
@@ -2601,52 +2646,15 @@ document.querySelector("#login-screen")?.addEventListener("pointerup", (event) =
   lastLoginTap = now;
 });
 
-document.querySelector("#profile-button").addEventListener("click", (event) => {
-  const now = Date.now();
-  clearTimeout(profileClickTimer);
-  if (now - lastProfileTap < 360) {
-    event.preventDefault();
-    lastProfileTap = 0;
-    returnToPrepFromProfile();
-    return;
-  }
-  lastProfileTap = now;
-  profileClickTimer = setTimeout(() => {
-    document.querySelector("#profile-dialog").showModal();
-  }, 260);
+document.querySelector("#profile-button").addEventListener("click", () => {
+  if (!isAdmin()) return;
+  document.querySelector("#profile-dialog").showModal();
 });
-document.querySelector("#profile-button").addEventListener("dblclick", (event) => {
-  event.preventDefault();
-  returnToPrepFromProfile();
-});
-document.querySelector("#countdown-ring")?.addEventListener("dblclick", (event) => {
-  event.preventDefault();
-  openPartyForTest();
-});
-document.querySelector("#countdown-ring")?.addEventListener("click", (event) => {
-  const now = Date.now();
-  if (now - lastCountdownTap < 380) {
-    event.preventDefault();
-    lastCountdownTap = 0;
-    openPartyForTest();
-    return;
-  }
-  lastCountdownTap = now;
-});
-document.querySelector('[data-section="today"]')?.addEventListener("dblclick", (event) => {
-  event.preventDefault();
-  returnToPrepFromStartTab();
+document.querySelector("#countdown-ring")?.addEventListener("pointerup", (event) => {
+  handleTripleTap(event, "countdown", openPartyForTest);
 });
 document.querySelector('[data-section="today"]')?.addEventListener("pointerup", (event) => {
-  if (event.pointerType === "mouse") return;
-  const now = Date.now();
-  if (now - lastStartTabTap < 420) {
-    event.preventDefault();
-    lastStartTabTap = 0;
-    returnToPrepFromStartTab();
-    return;
-  }
-  lastStartTabTap = now;
+  handleTripleTap(event, "start-tab", enableAdminForMax);
 });
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
   if (!state.adminMode) return;
@@ -2729,6 +2737,7 @@ document.querySelector("[data-admin-login]").addEventListener("click", () => {
   renderAll();
 });
 document.querySelector("#profile-grid").addEventListener("click", (event) => {
+  if (!isAdmin()) return;
   const deleteButton = event.target.closest("[data-delete-profile]");
   if (deleteButton) {
     const name = deleteButton.dataset.deleteProfile;
@@ -2742,10 +2751,6 @@ document.querySelector("#profile-grid").addEventListener("click", (event) => {
   const button = event.target.closest("[data-profile]");
   if (!button) return;
   state.profile = button.dataset.profile;
-  if (!canUseAdmin()) {
-    state.adminMode = false;
-    state.adminOwner = "";
-  }
   activeProfile();
   showToast(`Profil bytt till ${state.profile}`);
   saveState();
