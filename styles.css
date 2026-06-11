@@ -6298,6 +6298,12 @@ body[data-section="score"] .scoreboard--leaderboard {
   padding: 8px 9px;
 }
 
+.quiz-admin-question {
+  min-height: 56px;
+  resize: vertical;
+  line-height: 1.25;
+}
+
 .quiz-admin-answer {
   height: 36px;
   padding-inline: 6px;
