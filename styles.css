@@ -3803,9 +3803,11 @@ body[data-page="party"] .forecast-strip {
 
 /* Snapsvisor */
 .snaps-card {
-  gap: 9px;
+  gap: 12px;
   min-height: 0;
   background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.58) 0 18px, transparent 18px),
+    repeating-linear-gradient(180deg, rgba(42, 61, 48, 0.04) 0 1px, transparent 1px 34px),
     linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(245, 250, 239, 0.98)),
     #fff;
 }
@@ -3825,35 +3827,57 @@ body[data-page="party"] .forecast-strip {
 
 .snaps-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  max-height: 152px;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  max-height: min(48svh, 430px);
   overflow: auto;
+  padding-right: 3px;
+  overscroll-behavior: contain;
 }
 
 .snaps-list button {
   display: grid;
-  gap: 2px;
-  min-height: 48px;
-  border: 1px solid rgba(38, 114, 71, 0.14);
-  border-radius: 14px;
-  padding: 8px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  min-height: 52px;
+  border: 1px solid rgba(38, 114, 71, 0.12);
+  border-radius: 10px;
+  padding: 8px 10px;
   color: var(--ink);
-  background: #fff;
+  background: rgba(255, 255, 255, 0.76);
   text-align: left;
-  box-shadow: 0 8px 16px rgba(23, 74, 52, 0.06);
+  box-shadow: 0 8px 16px rgba(23, 74, 52, 0.04);
+}
+
+.snaps-list button b {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  color: #fff;
+  background: #285d42;
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.snaps-list button span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
 }
 
 .snaps-list strong {
-  overflow: hidden;
-  font-size: 0.82rem;
-  line-height: 1.08;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.92rem;
+  line-height: 1.12;
+  white-space: normal;
 }
 
 .snaps-list small {
-  font-size: 0.66rem;
+  color: #6a7a6e;
+  font-size: 0.72rem;
+  font-weight: 850;
   white-space: nowrap;
 }
 
@@ -3870,16 +3894,18 @@ body[data-page="party"] .forecast-strip {
 
 .snap-card {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   width: min(336px, calc(100vw - 32px));
-  max-height: min(76svh, 520px);
+  max-height: min(82svh, 620px);
   overflow: auto;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 24px;
-  padding: 18px;
+  border: 1px solid rgba(48, 79, 58, 0.14);
+  border-radius: 18px;
+  padding: 20px 18px;
   color: var(--ink);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 219, 0.94)),
+    linear-gradient(90deg, rgba(40, 93, 66, 0.12) 0 20px, transparent 20px),
+    repeating-linear-gradient(180deg, rgba(42, 61, 48, 0.06) 0 1px, transparent 1px 32px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 219, 0.95)),
     #fff;
   box-shadow: 0 28px 60px rgba(13, 24, 17, 0.28);
   animation: snapPop 180ms ease-out both;
@@ -3896,8 +3922,8 @@ body[data-page="party"] .forecast-strip {
 .snap-card h3 {
   margin: 0;
   color: var(--leaf-dark);
-  font-size: 1.6rem;
-  line-height: 1;
+  font-size: 1.45rem;
+  line-height: 1.05;
 }
 
 .snap-melody {
@@ -3912,7 +3938,8 @@ body[data-page="party"] .forecast-strip {
 
 .snap-lyrics {
   display: grid;
-  gap: 6px;
+  gap: 5px;
+  padding-left: 8px;
 }
 
 .snap-lyrics p {
@@ -3940,7 +3967,7 @@ body[data-page="party"] .forecast-strip {
   }
 
   .snaps-list {
-    max-height: 118px;
+    max-height: min(52svh, 420px);
   }
 
   .snap-card {
