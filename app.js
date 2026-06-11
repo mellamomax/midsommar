@@ -1,4 +1,4 @@
-const EVENT_START = new Date("2026-06-19T12:00:00+02:00");
+const EVENT_START = new Date("2026-06-19T08:00:00+02:00");
 const BEFORE_VIDEO_OPEN = new Date("2026-06-19T00:00:00+02:00");
 const BEFORE_VIDEO_CLOSE = new Date("2026-06-19T11:00:00+02:00");
 const AFTER_VIDEO_OPEN = new Date("2026-06-19T20:00:00+02:00");
@@ -67,6 +67,7 @@ const snapsSongs = {
 };
 
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
+const ADMIN_PROFILE = "Admin";
 
 const sectionMeta = {
   today: ["Start", "Midsommaröversikt"],
@@ -83,6 +84,7 @@ const seed = {
   profile: "",
   adminMode: false,
   adminOwner: "",
+  adminReturnProfile: "",
   adminEdit: "",
   game: "vote",
   snapsLang: "sv",
@@ -133,6 +135,9 @@ const profileSeed = {
   bingoRewards: {},
   votes: {},
   voteDeck: [],
+  quizAnswers: {},
+  quizAwarded: {},
+  quizIndex: 0,
   wheelResult: "Snurra för kvällens twist.",
   missions: [],
   activeMission: null,
@@ -187,6 +192,59 @@ const voteQuestions = [
   "vinner 5-kampen?",
   "tappar bort sitt glas?",
   "får alla att skratta?",
+];
+
+const quizQuestions = [
+  {
+    question: "Vilket datum infaller midsommarafton alltid pa?",
+    options: ["Fredagen mellan 19 och 25 juni", "Alltid 21 juni", "Sista fredagen i juni"],
+    answer: 0,
+  },
+  {
+    question: "Vad kallas stangen man dansar kring?",
+    options: ["Majstang", "Solstang", "Sommarstang"],
+    answer: 0,
+  },
+  {
+    question: "Vilken blomma ar starkt kopplad till midsommar?",
+    options: ["Julros", "Prastkrage", "Pasklilja"],
+    answer: 1,
+  },
+  {
+    question: "Vad sags man kunna dromma om om man plockar sju sorters blommor?",
+    options: ["Sin framtida karlek", "Nasta semester", "Vinnaren i 5-kampen"],
+    answer: 0,
+  },
+  {
+    question: "Vilken mat ar vanlig pa ett klassiskt midsommarbord?",
+    options: ["Surstromming och tunnbrod", "Sill och farskpotatis", "Kalkon och brysselkal"],
+    answer: 1,
+  },
+  {
+    question: "Vilken visa sjungs ofta runt midsommarstangen?",
+    options: ["Sma grodorna", "Staffan stalledrang", "Nu tandas tusen juleljus"],
+    answer: 0,
+  },
+  {
+    question: "Vad betyder 'maj' i majstang?",
+    options: ["Manaden maj", "Att smycka med lov", "En gammal dryck"],
+    answer: 1,
+  },
+  {
+    question: "Vilken dryck brukar ofta serveras till snapsvisor?",
+    options: ["Snaps", "Varm choklad", "Must"],
+    answer: 0,
+  },
+  {
+    question: "Vilken arstid firas midsommar?",
+    options: ["Var", "Sommar", "Host"],
+    answer: 1,
+  },
+  {
+    question: "Vad symboliserar midsommar historiskt mest?",
+    options: ["Arets morkaste natt", "Sommarsolstand och ljus", "Skordefestens slut"],
+    answer: 1,
+  },
 ];
 
 const missionPool = [
@@ -271,6 +329,8 @@ function ensureEditableContent() {
   state.content.missions = normalizeMissionContent(state.content.missions);
   if (!Array.isArray(state.content.bingo) || !state.content.bingo.length) state.content.bingo = [...bingoPool];
   if (!Array.isArray(state.content.voteQuestions) || !state.content.voteQuestions.length) state.content.voteQuestions = [...voteQuestions];
+  if (!Array.isArray(state.content.quizQuestions) || !state.content.quizQuestions.length) state.content.quizQuestions = structuredClone(quizQuestions);
+  state.content.quizQuestions = normalizeQuizContent(state.content.quizQuestions);
   state.settings = state.settings && typeof state.settings === "object" ? state.settings : {};
   state.settings.dashboard = { next: true, schedule: true, score: true, weather: true, rsvp: true, feed: false, ...(state.settings.dashboard || {}) };
   state.settings.pentathlon = { started: false, visibleIndex: -1, ...(state.settings.pentathlon || {}) };
@@ -331,6 +391,39 @@ function editableVoteQuestions() {
   return state.content.voteQuestions;
 }
 
+function editableQuizQuestions() {
+  ensureEditableContent();
+  return state.content.quizQuestions;
+}
+
+function normalizeQuizContent(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item) => {
+      if (typeof item === "string") {
+        const parts = item.split("|").map((part) => part.trim());
+        return {
+          question: parts[0] || "",
+          options: [parts[1] || "1", parts[2] || "X", parts[3] || "2"],
+          answer: Math.max(0, Math.min(2, Number(parts[4] || 0) || 0)),
+        };
+      }
+      const options = Array.isArray(item?.options) ? item.options.slice(0, 3) : [];
+      while (options.length < 3) options.push(["1", "X", "2"][options.length]);
+      return {
+        question: String(item?.question || "").trim(),
+        options: options.map((option) => String(option || "").trim() || "-"),
+        answer: Math.max(0, Math.min(2, Number(item?.answer ?? 0) || 0)),
+      };
+    })
+    .filter((item) => item.question);
+}
+
+function serializeQuizContent(items) {
+  return normalizeQuizContent(items)
+    .map((item) => `${item.question} | ${item.options[0]} | ${item.options[1]} | ${item.options[2]} | ${item.answer}`)
+    .join("\n");
+}
+
 function isoDatePart(value) {
   const match = String(value || "").match(/^\d{4}-\d{2}-\d{2}/);
   return match ? match[0] : "";
@@ -344,7 +437,6 @@ function timePart(value) {
 function normalizePentathlonTeams() {
   state.teamScores = (Array.isArray(state.teamScores) && state.teamScores.length ? state.teamScores : structuredClone(seed.teamScores))
     .map((team) => ({ team: team.team || "Nytt lag", score: Number(team.score || 0), members: Array.isArray(team.members) ? team.members : [] }));
-  while (state.teamScores.length < 4) state.teamScores.push({ team: `Lag ${state.teamScores.length + 1}`, score: 0, members: [] });
   state.pentathlon = (Array.isArray(state.pentathlon) && state.pentathlon.length ? state.pentathlon : structuredClone(seed.pentathlon))
     .map((event) => {
       const scores = Array.isArray(event.scores) ? [...event.scores] : [];
@@ -511,6 +603,7 @@ function applyRemotePayload(data) {
 
 function activeProfile() {
   if (!state.profile) return null;
+  if (isAdminProfileName(state.profile)) return { ...structuredClone(profileSeed), points: 0 };
   if (!state.profiles[state.profile]) state.profiles[state.profile] = makeProfile(state.profile);
   state.profiles[state.profile] = { ...makeProfile(state.profile), ...state.profiles[state.profile] };
   migrateProfile(state.profile, state.profiles[state.profile]);
@@ -539,6 +632,9 @@ function migrateProfile(name, profile) {
   if (!Array.isArray(profile.voteDeck)) profile.voteDeck = [];
   profile.voteDeck = [...profile.voteDeck, ...questions.filter((question) => !profile.voteDeck.includes(question))];
   if (!profile.voteDeck.length) profile.voteDeck = [...questions];
+  if (!profile.quizAnswers || typeof profile.quizAnswers !== "object") profile.quizAnswers = {};
+  if (!profile.quizAwarded || typeof profile.quizAwarded !== "object") profile.quizAwarded = {};
+  profile.quizIndex = Math.max(0, Math.min(editableQuizQuestions().length - 1, Number(profile.quizIndex || 0)));
   profile.bingoHits.forEach((item) => {
     if (!profile.bingoProofs[item]) profile.bingoProofs[item] = { photo: "", completedAt: "" };
   });
@@ -589,6 +685,9 @@ function activatePartyIfEventStarted() {
 }
 
 function openPartyForTest() {
+  try {
+    sessionStorage.setItem("midsommar-prep-bypass", "1");
+  } catch {}
   state.page = "party";
   state.section = "today";
   galleryIndex = null;
@@ -613,7 +712,7 @@ function allParticipants() {
   const overriddenNames = new Set(Object.values(overrides).filter(Boolean));
   const baseGuests = guests.map((name) => overrides[name] || name);
   const extras = [...Object.keys(state.profiles || {}), ...Object.keys(state.rsvp || {})]
-    .filter((name) => name && !guests.includes(name) && !overriddenNames.has(name));
+    .filter((name) => name && !isAdminProfileName(name) && !guests.includes(name) && !overriddenNames.has(name));
   return [...new Set([...baseGuests, ...extras].filter(Boolean))];
 }
 
@@ -636,11 +735,15 @@ function normalizeProfileName(value) {
 }
 
 function isAdmin() {
-  return state.adminMode === true && state.adminOwner === "Max";
+  return state.adminMode === true && state.adminOwner === ADMIN_PROFILE;
 }
 
 function canUseAdmin() {
-  return state.profile?.toLowerCase() === "max";
+  return Boolean(state.profile);
+}
+
+function isAdminProfileName(name) {
+  return String(name || "").toLowerCase() === ADMIN_PROFILE.toLowerCase();
 }
 
 function rsvpStatus(name) {
@@ -680,6 +783,7 @@ function renameProfile(oldName, newName) {
 
 function deleteProfile(name) {
   if (!isAdmin() || !name || name === "Max") return false;
+  archiveProfileGalleryItems(name);
   state.nameOverrides = state.nameOverrides || {};
   Object.entries(state.nameOverrides).forEach(([originalName, displayName]) => {
     if (displayName === name) delete state.nameOverrides[originalName];
@@ -692,6 +796,23 @@ function deleteProfile(name) {
     activeProfile();
   }
   return true;
+}
+
+function archiveProfileGalleryItems(name) {
+  const profile = state.profiles?.[name];
+  if (!profile) return;
+  const items = [];
+  (profile.missions || []).forEach((mission) => {
+    if (mission.photo) items.push({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt, media: "image" });
+  });
+  Object.entries(profile.bingoProofs || {}).forEach(([text, proof]) => {
+    if (proof?.photo) items.push({ name, text, photo: proof.photo, type: "Bingo", takenAt: proof.completedAt, media: "image" });
+  });
+  ["before", "after"].forEach((slot) => {
+    const item = profile.beforeAfter?.[slot];
+    if (item?.video) items.push({ name, text: slot === "before" ? "Fore-video" : "Efter-video", photo: item.video, type: "Fore / efter", takenAt: item.completedAt, media: "video" });
+  });
+  if (items.length) state.galleryArchive = dedupeGalleryPhotos([...items, ...(state.galleryArchive || [])]);
 }
 
 function renderLogin() {
@@ -1141,12 +1262,14 @@ function renderGames() {
   if (!profile) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
   return `<div class="game-picker">
     ${renderGamePickerButton("vote", "vote", "Most likely")}
+    ${renderGamePickerButton("quiz", "quiz", "Quiz")}
     ${renderGamePickerButton("snaps", "snaps", "Snaps")}
     ${renderGamePickerButton("mission", "mission", "Uppdrag")}
     ${renderGamePickerButton("bingo", "bingo", "Bingo")}
     ${renderGamePickerButton("beforeAfter", "people", "Före/efter")}
   </div>
   ${state.game === "vote" ? renderVote(profile) : ""}
+  ${state.game === "quiz" ? renderQuiz(profile) : ""}
   ${state.game === "snaps" ? renderSnapsGame() : ""}
   ${state.game === "mission" ? renderMission(profile) : ""}
   ${state.game === "bingo" ? renderBingo(profile) : ""}
@@ -1162,6 +1285,7 @@ function gameIcon(icon) {
   const icons = {
     wheel: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22"/><circle cx="32" cy="32" r="8"/><path d="M32 10v12M32 42v12M10 32h12M42 32h12M16 16l9 9M39 39l9 9M48 16l-9 9M25 39l-9 9"/></svg>`,
     vote: `<svg viewBox="0 0 64 64"><path d="M12 18c0-5 4-9 9-9h22c5 0 9 4 9 9v14c0 5-4 9-9 9H30L17 53v-12h4c-5 0-9-4-9-9V18Z"/><circle cx="25" cy="25" r="3"/><circle cx="32" cy="25" r="3"/><circle cx="39" cy="25" r="3"/></svg>`,
+    quiz: `<svg viewBox="0 0 64 64"><path d="M16 12h32v40H16z"/><path d="M23 24h18M23 34h18M23 44h10"/><circle cx="44" cy="44" r="5"/></svg>`,
     snaps: `<svg viewBox="0 0 64 64"><path d="M18 12h28l-5 32H23L18 12Z"/><path d="M24 44h16l4 8H20l4-8Z"/><path d="M21 24h22"/></svg>`,
     mission: `<svg viewBox="0 0 64 64"><path d="M18 54V10"/><path d="M18 12h28l-5 11 5 11H18"/><path d="M18 34h20"/></svg>`,
     bingo: `<svg viewBox="0 0 64 64"><path d="M12 12h40v40H12z"/><path d="M25 12v40M39 12v40M12 25h40M12 39h40"/></svg>`,
@@ -1179,10 +1303,33 @@ function renderVote(profile) {
   return `<article class="game-card vote-game-card"><span class="micro-label">Most likely</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa påstående</button></article>`;
 }
 
+function renderQuiz(profile) {
+  const questions = editableQuizQuestions();
+  const index = Math.max(0, Math.min(questions.length - 1, Number(profile.quizIndex || 0)));
+  const question = questions[index];
+  if (!question) return `<article class="game-card"><h3>Quiz saknas</h3><p class="hint">Admin kan lagga till fragor.</p></article>`;
+  const answer = profile.quizAnswers?.[index];
+  const answered = answer !== undefined;
+  const correct = Number(answer) === Number(question.answer);
+  const labels = ["1", "X", "2"];
+  return `<article class="game-card quiz-card">
+    <span class="micro-label">Quiz ${index + 1}/${questions.length}</span>
+    <h3>${escapeHtml(question.question)}</h3>
+    <div class="quiz-options">
+      ${question.options.map((option, optionIndex) => `<button class="${Number(answer) === optionIndex ? "is-selected" : ""} ${answered && Number(question.answer) === optionIndex ? "is-correct" : ""}" type="button" data-quiz-answer="${optionIndex}" data-quiz-index="${index}">
+        <b>${labels[optionIndex]}</b><span>${escapeHtml(option)}</span>
+      </button>`).join("")}
+    </div>
+    <p class="hint">${answered ? (correct ? "Ratt. +1 poang." : `Fel. Ratt svar: ${labels[question.answer]}.`) : "Valj 1, X eller 2."}</p>
+    <button class="pill-button" type="button" data-next-quiz>Nasta fraga</button>
+  </article>`;
+}
+
 function renderGameAdminEditor() {
   ensureEditableContent();
   const config = {
     vote: { key: "voteQuestions", title: "Most likely", applyLabel: "Dela ut nya fr&aring;gor" },
+    quiz: { key: "quizQuestions", title: "Quiz", applyLabel: "Nollst&auml;ll quizsvar" },
     mission: { key: "missions", title: "Uppdrag", applyLabel: "Dela ut nya uppdrag" },
     bingo: { key: "bingo", title: "Bingo", applyLabel: "Slumpa nya brickor" },
   }[state.game];
@@ -1207,6 +1354,16 @@ function renderGameAdminEditor() {
         <button class="admin-secondary-button" type="button" data-add-mission-row>Lägg till</button>
         <button class="admin-add-button" type="button" data-save-content="missions">Spara lista</button>
         <button class="admin-secondary-button" type="button" data-apply-content="missions">${config.applyLabel}</button>
+      </div>
+    </article>`;
+  }
+  if (config.key === "quizQuestions") {
+    return `<article class="admin-editor game-content-editor">
+      <div class="admin-editor-head"><strong>Redigera quiz</strong><small>Fr&aring;ga | 1 | X | 2 | r&auml;tt 0-2</small></div>
+      <textarea class="admin-textarea" data-content-editor="quizQuestions">${escapeHtml(serializeQuizContent(rows))}</textarea>
+      <div class="admin-actions">
+        <button class="admin-add-button" type="button" data-save-content="quizQuestions">Spara quiz</button>
+        <button class="admin-secondary-button" type="button" data-apply-content="quizQuestions">${config.applyLabel}</button>
       </div>
     </article>`;
   }
@@ -1879,6 +2036,33 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelectorAll("[data-quiz-answer]").forEach((button) => button.addEventListener("click", () => {
+    const profile = activeProfile();
+    if (!profile) return;
+    const questionIndex = Number(button.dataset.quizIndex);
+    const answer = Number(button.dataset.quizAnswer);
+    const question = editableQuizQuestions()[questionIndex];
+    if (!question) return;
+    profile.quizAnswers = profile.quizAnswers || {};
+    profile.quizAwarded = profile.quizAwarded || {};
+    profile.quizAnswers[questionIndex] = answer;
+    if (answer === Number(question.answer) && !profile.quizAwarded[questionIndex]) {
+      profile.points = Number(profile.points || 0) + 1;
+      profile.quizAwarded[questionIndex] = true;
+    }
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelector("[data-next-quiz]")?.addEventListener("click", () => {
+    const profile = activeProfile();
+    if (!profile) return;
+    const total = editableQuizQuestions().length || 1;
+    profile.quizIndex = (Number(profile.quizIndex || 0) + 1) % total;
+    saveState();
+    renderAll();
+  });
+
   document.querySelectorAll("[data-mission-points]").forEach((input) => input.addEventListener("change", () => {
     const profile = activeProfile();
     const mission = profile?.missions?.[Number(input.dataset.missionPoints)];
@@ -2243,6 +2427,18 @@ function saveContentList(key) {
     saveState();
     return true;
   }
+  if (key === "quizQuestions") {
+    const textarea = document.querySelector(`[data-content-editor="${key}"]`);
+    if (!textarea) return false;
+    const rows = normalizeQuizContent(textarea.value.split(/\n+/));
+    if (!rows.length) {
+      showToast("Quizet kan inte vara tomt");
+      return false;
+    }
+    state.content.quizQuestions = rows;
+    saveState();
+    return true;
+  }
   const textarea = document.querySelector(`[data-content-editor="${key}"]`);
   if (!textarea) return false;
   const rows = textarea.value
@@ -2274,6 +2470,11 @@ function applyContentList(key) {
     if (key === "voteQuestions") {
       profile.voteDeck = [...editableVoteQuestions()];
       profile.votes = {};
+    }
+    if (key === "quizQuestions") {
+      profile.quizAnswers = {};
+      profile.quizAwarded = {};
+      profile.quizIndex = 0;
     }
     state.profiles[name] = profile;
   });
@@ -2473,6 +2674,7 @@ document.querySelector("#login-form").addEventListener("submit", async (event) =
   state.profile = name;
   state.adminMode = false;
   state.adminOwner = "";
+  state.adminReturnProfile = "";
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
   const profile = activeProfile();
   profile.avatarUrl = avatarUrl;
@@ -2529,12 +2731,29 @@ function handleTripleTap(event, key, callback) {
   callback();
 }
 
+function handleDoubleTap(event, key, callback) {
+  const now = Date.now();
+  const tracker = tripleTapTrackers[key] || { count: 0, last: 0, timer: null };
+  tracker.count = now - tracker.last < 520 ? tracker.count + 1 : 1;
+  tracker.last = now;
+  clearTimeout(tracker.timer);
+  tracker.timer = setTimeout(() => {
+    tracker.count = 0;
+  }, 620);
+  tripleTapTrackers[key] = tracker;
+  if (tracker.count < 2) return;
+  event.preventDefault();
+  tracker.count = 0;
+  callback();
+}
+
 function returnToLoginForTest() {
   clearTimeout(profileClickTimer);
   document.querySelector("#profile-dialog")?.close();
   state.profile = "";
   state.adminMode = false;
   state.adminOwner = "";
+  state.adminReturnProfile = "";
   state.page = "prep";
   galleryIndex = null;
   galleryMotion = "open";
@@ -2621,6 +2840,7 @@ function skipLoginForTest() {
   state.profile = "Test";
   state.adminMode = false;
   state.adminOwner = "";
+  state.adminReturnProfile = "";
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
   activeProfile();
   showToast("Testläge öppnat");
@@ -2651,16 +2871,14 @@ document.querySelector("#profile-button").addEventListener("click", () => {
   document.querySelector("#profile-dialog").showModal();
 });
 document.querySelector("#countdown-ring")?.addEventListener("pointerup", (event) => {
-  handleTripleTap(event, "countdown", openPartyForTest);
+  handleDoubleTap(event, "countdown", openPartyForTest);
 });
 document.querySelector('[data-section="today"]')?.addEventListener("pointerup", (event) => {
-  handleTripleTap(event, "start-tab", enableAdminForMax);
+  handleTripleTap(event, "start-tab", toggleAdminFromStartTab);
 });
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
   if (!state.adminMode) return;
-  state.adminMode = !state.adminMode;
-  state.adminOwner = "";
-  showToast("Admin mode av");
+  leaveAdminMode();
   saveState();
   document.querySelector("#profile-dialog").close();
   renderAll();
@@ -2676,40 +2894,53 @@ document.querySelector("[data-admin-code]").addEventListener("click", () => {
     input.select();
     return;
   }
-  state.adminMode = true;
-  state.adminOwner = "Max";
+  enterAdminMode();
   input.value = "";
-  showToast("Admin mode på");
   saveState();
   renderAll();
 });
 
-function enableAdminForMax() {
-  if (!canUseAdmin()) {
-    showToast("Endast Max kan öppna admin");
+function enterAdminMode() {
+  if (!state.profile) {
+    showToast("VÃ¤lj profil fÃ¶rst");
     return;
   }
+  if (!isAdmin()) state.adminReturnProfile = isAdminProfileName(state.profile) ? "" : state.profile;
   state.adminMode = true;
-  state.adminOwner = "Max";
-  showToast("Admin mode på");
+  state.adminOwner = ADMIN_PROFILE;
+  state.profile = ADMIN_PROFILE;
+  showToast("Admin mode pÃ¥");
+  activeProfile();
+}
+
+function leaveAdminMode() {
+  const returnProfile = state.adminReturnProfile && !isAdminProfileName(state.adminReturnProfile) ? state.adminReturnProfile : "";
+  state.adminMode = false;
+  state.adminOwner = "";
+  state.adminReturnProfile = "";
+  state.profile = returnProfile;
+  if (state.profile) activeProfile();
+  showToast(state.profile ? `Tillbaka som ${state.profile}` : "Admin mode av");
+}
+
+function toggleAdminFromStartTab() {
+  if (isAdmin()) {
+    state.page = "prep";
+    galleryIndex = null;
+    galleryMotion = "open";
+    showToast("Prepp oppnad");
+  } else {
+    enterAdminMode();
+  }
   saveState();
   renderAll();
 }
 
 document.querySelector("#current-profile-card")?.addEventListener("dblclick", (event) => {
   event.preventDefault();
-  enableAdminForMax();
 });
 document.querySelector("#current-profile-card")?.addEventListener("pointerup", (event) => {
-  if (event.pointerType === "mouse") return;
-  const now = Date.now();
-  if (now - lastAdminCardTap < 420) {
-    event.preventDefault();
-    lastAdminCardTap = 0;
-    enableAdminForMax();
-    return;
-  }
-  lastAdminCardTap = now;
+  event.preventDefault();
 });
 document.querySelector("#admin-code-input").addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;
@@ -2721,8 +2952,8 @@ document.querySelector("[data-admin-login]").addEventListener("click", () => {
   const name = normalizeProfileName(document.querySelector("#admin-name-input").value);
   if (!name) return;
   const oldName = state.profile;
-  if (oldName === "Max" && name !== "Max") {
-    showToast("Max måste heta Max för admin");
+  if (isAdminProfileName(oldName)) {
+    showToast("Välj en profil att byta namn på");
     return;
   }
   if (name !== oldName && allParticipants().includes(name)) {
@@ -2778,7 +3009,13 @@ document.addEventListener("keydown", (event) => {
 function showToast(message) {
   const toast = document.querySelector("#toast");
   if (!toast) return;
-  toast.textContent = message;
+  toast.textContent = String(message)
+    .replaceAll("ÃƒÂ¥", "å")
+    .replaceAll("ÃƒÂ¤", "ä")
+    .replaceAll("ÃƒÂ¶", "ö")
+    .replaceAll("Ãƒâ€¦", "Å")
+    .replaceAll("Ãƒâ€ž", "Ä")
+    .replaceAll("Ãƒâ€“", "Ö");
   toast.classList.add("is-visible");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 1600);
