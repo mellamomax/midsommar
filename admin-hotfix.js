@@ -69,6 +69,26 @@
     }
   }
 
+  function hasAdminPrepView() {
+    try {
+      return sessionStorage.getItem("midsommar-admin-prep-view") === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function setAdminPrepView() {
+    try {
+      sessionStorage.setItem("midsommar-admin-prep-view", "1");
+    } catch {}
+  }
+
+  function clearAdminPrepView() {
+    try {
+      sessionStorage.removeItem("midsommar-admin-prep-view");
+    } catch {}
+  }
+
   function headers(extra) {
     return { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, ...(extra || {}) };
   }
@@ -116,6 +136,7 @@
   function bypassPrep() {
     const state = readState();
     setPrepBypass();
+    clearAdminPrepView();
     if (state.profile === ADMIN_PROFILE || state.adminMode === true) {
       state.profile = ADMIN_PROFILE;
       state.adminMode = true;
@@ -136,6 +157,7 @@
     state.adminMode = true;
     state.adminOwner = ADMIN_PROFILE;
     setPrepBypass();
+    clearAdminPrepView();
     delete state.prepBypassed;
     state.page = "party";
     state.section = "today";
@@ -146,10 +168,23 @@
   function adminOpenPrep() {
     const state = readState();
     if (!isAdminState(state)) return;
+    setAdminPrepView();
     state.page = "prep";
     state.section = "today";
     writeState(state);
     window.location.reload();
+  }
+
+  function releaseAdminFromPrepLock() {
+    const state = readState();
+    if (!isAdminState(state) || state.page !== "prep" || hasAdminPrepView()) return;
+    state.page = "party";
+    state.section = "today";
+    writeState(state);
+    if (document.body.dataset.page === "prep" && !prepLockReloading) {
+      prepLockReloading = true;
+      window.location.reload();
+    }
   }
 
   function unlockProfileCardForTripleTap() {
@@ -398,6 +433,7 @@
 
   function tick() {
     unlockProfileCardForTripleTap();
+    releaseAdminFromPrepLock();
     enforcePrepLock(document.body.dataset.page === "party");
     showQuiz();
   }
