@@ -6118,3 +6118,127 @@ body[data-section="score"] .scoreboard--leaderboard {
     font-size: 0.88rem;
   }
 }
+.quiz-card h3 {
+  margin-bottom: 12px;
+}
+
+.quiz-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+
+.quiz-options button {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid rgba(28, 91, 61, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #17251d;
+  padding: 10px 12px;
+  text-align: left;
+  font: inherit;
+  font-weight: 800;
+}
+
+.quiz-options button b {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: #e9f2dc;
+  color: #185c40;
+  flex: 0 0 auto;
+}
+
+.quiz-option-text {
+  display: block;
+  min-width: 0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.quiz-options button.is-selected {
+  border-color: #185c40;
+  box-shadow: inset 0 0 0 2px rgba(24, 92, 64, 0.18);
+}
+
+.quiz-options button.is-correct b {
+  background: #185c40;
+  color: #fff;
+}
+
+.quiz-admin-editor {
+  gap: 10px;
+}
+
+.quiz-admin-table {
+  display: grid;
+  gap: 8px;
+}
+
+.quiz-admin-row {
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid rgba(49, 72, 58, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.quiz-admin-row-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 30px;
+  gap: 6px;
+  align-items: center;
+}
+
+.quiz-admin-options {
+  display: grid;
+  gap: 6px;
+}
+
+.quiz-admin-options label {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+
+.quiz-admin-options span {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  border-radius: 999px;
+  background: #e9f2dc;
+  color: #185c40;
+  font-weight: 900;
+}
+
+.quiz-admin-question,
+.quiz-admin-answer,
+.quiz-admin-options input {
+  min-width: 0;
+  border: 1px solid rgba(49, 72, 58, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.quiz-admin-question,
+.quiz-admin-options input {
+  padding: 8px 9px;
+}
+
+.quiz-admin-answer {
+  height: 36px;
+  padding-inline: 6px;
+  text-align: center;
+}
