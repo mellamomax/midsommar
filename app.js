@@ -1351,7 +1351,7 @@ function renderQuiz(profile) {
   const questions = editableQuizQuestions();
   const index = Math.max(0, Math.min(questions.length - 1, Number(profile.quizIndex || 0)));
   const question = questions[index];
-  if (!question) return `<article class="game-card"><h3>Quiz saknas</h3><p class="hint">Admin kan lagga till fragor.</p></article>`;
+  if (!question) return `<article class="game-card"><h3>Quiz saknas</h3><p class="hint">Admin kan lägga till frågor.</p></article>`;
   const answer = profile.quizAnswers?.[index];
   const answered = answer !== undefined;
   const correct = Number(answer) === Number(question.answer);
@@ -1361,11 +1361,11 @@ function renderQuiz(profile) {
     <h3>${escapeHtml(question.question)}</h3>
     <div class="quiz-options">
       ${question.options.map((option, optionIndex) => `<button class="${Number(answer) === optionIndex ? "is-selected" : ""} ${answered && Number(question.answer) === optionIndex ? "is-correct" : ""}" type="button" data-quiz-answer="${optionIndex}" data-quiz-index="${index}">
-        <b>${labels[optionIndex]}</b><span>${escapeHtml(option)}</span>
+        <b>${labels[optionIndex]}</b><span class="quiz-option-text">${escapeHtml(option)}</span>
       </button>`).join("")}
     </div>
-    <p class="hint">${answered ? (correct ? "Ratt. +1 poang." : `Fel. Ratt svar: ${labels[question.answer]}.`) : "Valj 1, X eller 2."}</p>
-    <button class="pill-button" type="button" data-next-quiz>Nasta fraga</button>
+    <p class="hint">${answered ? (correct ? "Rätt. +1 poäng." : `Fel. Rätt svar: ${labels[question.answer]}.`) : "Välj 1, X eller 2."}</p>
+    <button class="pill-button" type="button" data-next-quiz>Nästa fråga</button>
   </article>`;
 }
 
@@ -1402,10 +1402,26 @@ function renderGameAdminEditor() {
     </article>`;
   }
   if (config.key === "quizQuestions") {
-    return `<article class="admin-editor game-content-editor">
-      <div class="admin-editor-head"><strong>Redigera quiz</strong><small>Fr&aring;ga | 1 | X | 2 | r&auml;tt 0-2</small></div>
-      <textarea class="admin-textarea" data-content-editor="quizQuestions">${escapeHtml(serializeQuizContent(rows))}</textarea>
+    const questions = normalizeQuizContent(rows);
+    const labels = ["1", "X", "2"];
+    return `<article class="admin-editor game-content-editor quiz-admin-editor">
+      <div class="admin-editor-head"><strong>Redigera quiz</strong><small>Fråga, svar och rätt alternativ</small></div>
+      <div class="quiz-admin-table">
+        ${questions.map((question, index) => `<div class="quiz-admin-row" data-quiz-admin-row>
+          <div class="quiz-admin-row-head">
+            <input class="quiz-admin-question" value="${escapeHtml(question.question)}" data-quiz-admin-question aria-label="Fråga ${index + 1}" />
+            <select class="quiz-admin-answer" data-quiz-admin-answer aria-label="Rätt svar">
+              ${labels.map((label, answerIndex) => `<option value="${answerIndex}" ${Number(question.answer) === answerIndex ? "selected" : ""}>${label}</option>`).join("")}
+            </select>
+            <button class="admin-delete-button" type="button" data-delete-quiz-row="${index}" aria-label="Radera fråga">&times;</button>
+          </div>
+          <div class="quiz-admin-options">
+            ${question.options.map((option, optionIndex) => `<label><span>${labels[optionIndex]}</span><input value="${escapeHtml(option)}" data-quiz-admin-option="${optionIndex}" aria-label="Svar ${labels[optionIndex]}" /></label>`).join("")}
+          </div>
+        </div>`).join("")}
+      </div>
       <div class="admin-actions">
+        <button class="admin-secondary-button" type="button" data-add-quiz-row>Lägg till</button>
         <button class="admin-add-button" type="button" data-save-content="quizQuestions">Spara quiz</button>
         <button class="admin-secondary-button" type="button" data-apply-content="quizQuestions">${config.applyLabel}</button>
       </div>
@@ -2063,6 +2079,30 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelector("[data-add-quiz-row]")?.addEventListener("click", () => {
+    ensureEditableContent();
+    state.content.quizQuestions.push({
+      question: "Ny fråga",
+      options: ["Alternativ 1", "Alternativ X", "Alternativ 2"],
+      answer: 0,
+    });
+    state.content.quizQuestions = normalizeQuizContent(state.content.quizQuestions);
+    saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-delete-quiz-row]").forEach((button) => button.addEventListener("click", () => {
+    ensureEditableContent();
+    if (state.content.quizQuestions.length <= 1) {
+      showToast("Minst en fråga behövs");
+      return;
+    }
+    state.content.quizQuestions.splice(Number(button.dataset.deleteQuizRow), 1);
+    state.content.quizQuestions = normalizeQuizContent(state.content.quizQuestions);
+    saveState();
+    renderAll();
+  }));
+
   document.querySelectorAll("[data-apply-content]").forEach((button) => button.addEventListener("click", () => {
     const key = button.dataset.applyContent;
     if (!saveContentList(key)) return;
@@ -2472,14 +2512,18 @@ function saveContentList(key) {
     return true;
   }
   if (key === "quizQuestions") {
-    const textarea = document.querySelector(`[data-content-editor="${key}"]`);
-    if (!textarea) return false;
-    const rows = normalizeQuizContent(textarea.value.split(/\n+/));
+    const rows = [...document.querySelectorAll("[data-quiz-admin-row]")]
+      .map((row) => ({
+        question: row.querySelector("[data-quiz-admin-question]")?.value.trim() || "",
+        options: [0, 1, 2].map((index) => row.querySelector(`[data-quiz-admin-option="${index}"]`)?.value.trim() || ""),
+        answer: Number(row.querySelector("[data-quiz-admin-answer]")?.value || 0),
+      }))
+      .filter((row) => row.question && row.options.every(Boolean));
     if (!rows.length) {
       showToast("Quizet kan inte vara tomt");
       return false;
     }
-    state.content.quizQuestions = rows;
+    state.content.quizQuestions = normalizeQuizContent(rows);
     saveState();
     return true;
   }
