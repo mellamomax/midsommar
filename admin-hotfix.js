@@ -2,7 +2,7 @@
   const STORAGE_KEY = "midsommar-dashboard-v6";
   const QUIZ_KEY = "midsommar-quiz-v1";
   const ADMIN_PROFILE = "Admin";
-  const EVENT_START = new Date("2026-06-19T12:00:00+02:00");
+  const EVENT_START = new Date("2026-06-19T08:00:00+02:00");
   const SUPABASE_URL = "https://wugavohwdfuhahbwxcea.supabase.co";
   const SUPABASE_KEY = "sb_publishable_DWh8fecFXYWycKx1mLwCbQ_GYKfLqz5";
   const REMOTE_STATE_ID = "main";
@@ -116,6 +116,11 @@
   function bypassPrep() {
     const state = readState();
     setPrepBypass();
+    if (state.profile === ADMIN_PROFILE || state.adminMode === true) {
+      state.profile = ADMIN_PROFILE;
+      state.adminMode = true;
+      state.adminOwner = ADMIN_PROFILE;
+    }
     delete state.prepBypassed;
     state.page = "party";
     state.section = "today";
@@ -130,6 +135,7 @@
     state.profile = ADMIN_PROFILE;
     state.adminMode = true;
     state.adminOwner = ADMIN_PROFILE;
+    setPrepBypass();
     delete state.prepBypassed;
     state.page = "party";
     state.section = "today";
