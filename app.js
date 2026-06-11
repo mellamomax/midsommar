@@ -22,6 +22,8 @@ const SHARED_STATE_KEYS = [
   "matchVotes",
   "matchResult",
   "matchAwarded",
+  "quizCorrected",
+  "quizAwarded",
   "schedule",
   "content",
   "settings",
@@ -121,6 +123,8 @@ const seed = {
   matchVotes: {},
   matchResult: { home: "", away: "" },
   matchAwarded: false,
+  quizCorrected: false,
+  quizAwarded: false,
   schedule: [],
   content: {},
   settings: {},
@@ -138,6 +142,9 @@ const profileSeed = {
   quizAnswers: {},
   quizAwarded: {},
   quizIndex: 0,
+  quizSubmitted: false,
+  quizSubmittedAt: "",
+  quizScore: 0,
   wheelResult: "Snurra för kvällens twist.",
   missions: [],
   activeMission: null,
@@ -334,6 +341,8 @@ function ensureEditableContent() {
   state.settings = state.settings && typeof state.settings === "object" ? state.settings : {};
   state.settings.dashboard = { next: true, schedule: true, score: true, weather: true, rsvp: true, feed: false, ...(state.settings.dashboard || {}) };
   state.settings.pentathlon = { started: false, visibleIndex: -1, ...(state.settings.pentathlon || {}) };
+  state.quizCorrected = Boolean(state.quizCorrected);
+  state.quizAwarded = Boolean(state.quizAwarded);
   state.galleryArchive = Array.isArray(state.galleryArchive) ? state.galleryArchive : [];
   if (state.game === "wheel") state.game = "vote";
   normalizePentathlonTeams();
@@ -422,6 +431,53 @@ function serializeQuizContent(items) {
   return normalizeQuizContent(items)
     .map((item) => `${item.question} | ${item.options[0]} | ${item.options[1]} | ${item.options[2]} | ${item.answer}`)
     .join("\n");
+}
+
+function quizAnsweredCount(profile) {
+  const answers = profile?.quizAnswers || {};
+  return editableQuizQuestions().filter((_, index) => answers[index] !== undefined).length;
+}
+
+function quizIsComplete(profile) {
+  const total = editableQuizQuestions().length;
+  return total > 0 && quizAnsweredCount(profile) === total;
+}
+
+function quizSubmittedCount() {
+  return allParticipants().filter((name) => state.profiles[name]?.quizSubmitted).length;
+}
+
+function quizEveryoneSubmitted() {
+  const participants = allParticipants();
+  return participants.length > 0 && participants.every((name) => state.profiles[name]?.quizSubmitted);
+}
+
+function resetQuizProgress(profile) {
+  profile.quizAnswers = {};
+  profile.quizAwarded = {};
+  profile.quizIndex = 0;
+  profile.quizSubmitted = false;
+  profile.quizSubmittedAt = "";
+  profile.quizScore = 0;
+}
+
+function awardQuizResults(force = false) {
+  if (state.quizAwarded || state.quizCorrected) return false;
+  if (!force && !quizEveryoneSubmitted()) return false;
+  const questions = editableQuizQuestions();
+  allParticipants().forEach((name) => {
+    const profile = state.profiles[name];
+    if (!profile?.quizSubmitted) return;
+    let score = 0;
+    questions.forEach((question, index) => {
+      if (Number(profile.quizAnswers?.[index]) === Number(question.answer)) score += 1;
+    });
+    profile.quizScore = score;
+    profile.points = Number(profile.points || 0) + score;
+  });
+  state.quizCorrected = true;
+  state.quizAwarded = true;
+  return true;
 }
 
 function isoDatePart(value) {
@@ -635,6 +691,9 @@ function migrateProfile(name, profile) {
   if (!profile.quizAnswers || typeof profile.quizAnswers !== "object") profile.quizAnswers = {};
   if (!profile.quizAwarded || typeof profile.quizAwarded !== "object") profile.quizAwarded = {};
   profile.quizIndex = Math.max(0, Math.min(editableQuizQuestions().length - 1, Number(profile.quizIndex || 0)));
+  profile.quizSubmitted = Boolean(profile.quizSubmitted);
+  profile.quizSubmittedAt = profile.quizSubmittedAt || "";
+  profile.quizScore = Math.max(0, Number(profile.quizScore || 0));
   profile.bingoHits.forEach((item) => {
     if (!profile.bingoProofs[item]) profile.bingoProofs[item] = { photo: "", completedAt: "" };
   });
@@ -1352,20 +1411,48 @@ function renderQuiz(profile) {
   const index = Math.max(0, Math.min(questions.length - 1, Number(profile.quizIndex || 0)));
   const question = questions[index];
   if (!question) return `<article class="game-card"><h3>Quiz saknas</h3><p class="hint">Admin kan lägga till frågor.</p></article>`;
+  if (state.quizCorrected) return renderQuizResults(profile, questions);
   const answer = profile.quizAnswers?.[index];
   const answered = answer !== undefined;
-  const correct = Number(answer) === Number(question.answer);
+  const submitted = Boolean(profile.quizSubmitted);
+  const complete = quizIsComplete(profile);
   const labels = ["1", "X", "2"];
   return `<article class="game-card quiz-card">
     <span class="micro-label">Quiz ${index + 1}/${questions.length}</span>
     <h3>${escapeHtml(question.question)}</h3>
     <div class="quiz-options">
-      ${question.options.map((option, optionIndex) => `<button class="${Number(answer) === optionIndex ? "is-selected" : ""} ${answered && Number(question.answer) === optionIndex ? "is-correct" : ""}" type="button" data-quiz-answer="${optionIndex}" data-quiz-index="${index}">
+      ${question.options.map((option, optionIndex) => `<button class="${Number(answer) === optionIndex ? "is-selected" : ""}" type="button" data-quiz-answer="${optionIndex}" data-quiz-index="${index}" ${submitted ? "disabled" : ""}>
         <b>${labels[optionIndex]}</b><span class="quiz-option-text">${escapeHtml(option)}</span>
       </button>`).join("")}
     </div>
-    <p class="hint">${answered ? (correct ? "Rätt. +1 poäng." : `Fel. Rätt svar: ${labels[question.answer]}.`) : "Välj 1, X eller 2."}</p>
-    <button class="pill-button" type="button" data-next-quiz>Nästa fråga</button>
+    <p class="hint">${submitted ? "Inskickat. Väntar på rättning." : answered ? `${quizAnsweredCount(profile)}/${questions.length} svarade.` : "Välj 1, X eller 2."}</p>
+    <div class="quiz-nav">
+      <button class="pill-button" type="button" data-prev-quiz ${index === 0 ? "disabled" : ""}>Tillbaka</button>
+      ${index < questions.length - 1
+        ? `<button class="pill-button" type="button" data-next-quiz>Nästa fråga</button>`
+        : `<button class="pill-button" type="button" data-submit-quiz ${submitted || !complete ? "disabled" : ""}>${submitted ? "Inskickat" : "Skicka in"}</button>`}
+    </div>
+  </article>`;
+}
+
+function renderQuizResults(profile, questions) {
+  const labels = ["1", "X", "2"];
+  const score = questions.reduce((sum, question, index) => sum + (Number(profile.quizAnswers?.[index]) === Number(question.answer) ? 1 : 0), 0);
+  return `<article class="game-card quiz-card quiz-results-card">
+    <span class="micro-label">Quiz rättat</span>
+    <h3>Dina svar</h3>
+    <p class="hint">${score}/${questions.length} rätt. Poängen är inräknade i poängställningen.</p>
+    <div class="quiz-review-list">
+      ${questions.map((question, index) => {
+        const answer = profile.quizAnswers?.[index];
+        const correct = Number(question.answer);
+        return `<section class="quiz-review-item ${Number(answer) === correct ? "is-correct" : "is-wrong"}">
+          <strong>${escapeHtml(question.question)}</strong>
+          <span>Ditt svar: ${answer === undefined ? "Ej svarat" : `${labels[answer]} ${escapeHtml(question.options[answer])}`}</span>
+          <span>Rätt svar: ${labels[correct]} ${escapeHtml(question.options[correct])}</span>
+        </section>`;
+      }).join("")}
+    </div>
   </article>`;
 }
 
@@ -1404,8 +1491,14 @@ function renderGameAdminEditor() {
   if (config.key === "quizQuestions") {
     const questions = normalizeQuizContent(rows);
     const labels = ["1", "X", "2"];
+    const submitted = quizSubmittedCount();
+    const total = allParticipants().length;
     return `<article class="admin-editor game-content-editor quiz-admin-editor">
       <div class="admin-editor-head"><strong>Redigera quiz</strong><small>Fråga, svar och rätt alternativ</small></div>
+      <div class="quiz-admin-status">
+        <span>${submitted}/${total} inskickade</span>
+        <button class="admin-add-button" type="button" data-correct-quiz ${state.quizCorrected ? "disabled" : ""}>${state.quizCorrected ? "Rättat" : "Rätta quiz"}</button>
+      </div>
       <div class="quiz-admin-table">
         ${questions.map((question, index) => `<div class="quiz-admin-row" data-quiz-admin-row>
           <div class="quiz-admin-row-head">
@@ -2122,18 +2215,13 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-quiz-answer]").forEach((button) => button.addEventListener("click", () => {
     const profile = activeProfile();
-    if (!profile) return;
+    if (!profile || profile.quizSubmitted || state.quizCorrected) return;
     const questionIndex = Number(button.dataset.quizIndex);
     const answer = Number(button.dataset.quizAnswer);
     const question = editableQuizQuestions()[questionIndex];
     if (!question) return;
     profile.quizAnswers = profile.quizAnswers || {};
-    profile.quizAwarded = profile.quizAwarded || {};
     profile.quizAnswers[questionIndex] = answer;
-    if (answer === Number(question.answer) && !profile.quizAwarded[questionIndex]) {
-      profile.points = Number(profile.points || 0) + 1;
-      profile.quizAwarded[questionIndex] = true;
-    }
     saveState();
     renderAll();
   }));
@@ -2142,8 +2230,37 @@ function bindDynamicEvents() {
     const profile = activeProfile();
     if (!profile) return;
     const total = editableQuizQuestions().length || 1;
-    profile.quizIndex = (Number(profile.quizIndex || 0) + 1) % total;
+    profile.quizIndex = Math.min(total - 1, Number(profile.quizIndex || 0) + 1);
     saveState();
+    renderAll();
+  });
+
+  document.querySelector("[data-prev-quiz]")?.addEventListener("click", () => {
+    const profile = activeProfile();
+    if (!profile) return;
+    profile.quizIndex = Math.max(0, Number(profile.quizIndex || 0) - 1);
+    saveState();
+    renderAll();
+  });
+
+  document.querySelector("[data-submit-quiz]")?.addEventListener("click", () => {
+    const profile = activeProfile();
+    if (!profile || profile.quizSubmitted || !quizIsComplete(profile)) return;
+    if (!window.confirm("Skicka in quizet? Efter inskickning kan du inte ändra svaren.")) return;
+    profile.quizSubmitted = true;
+    profile.quizSubmittedAt = new Date().toISOString();
+    awardQuizResults(false);
+    saveState();
+    showToast(state.quizCorrected ? "Alla har svarat. Quizet är rättat." : "Quiz inskickat");
+    renderAll();
+  });
+
+  document.querySelector("[data-correct-quiz]")?.addEventListener("click", () => {
+    if (!isAdmin() || state.quizCorrected) return;
+    if (!window.confirm("Rätta quizet och dela ut poäng nu?")) return;
+    awardQuizResults(true);
+    saveState();
+    showToast("Quizet är rättat");
     renderAll();
   });
 
@@ -2560,12 +2677,14 @@ function applyContentList(key) {
       profile.votes = {};
     }
     if (key === "quizQuestions") {
-      profile.quizAnswers = {};
-      profile.quizAwarded = {};
-      profile.quizIndex = 0;
+      resetQuizProgress(profile);
     }
     state.profiles[name] = profile;
   });
+  if (key === "quizQuestions") {
+    state.quizCorrected = false;
+    state.quizAwarded = false;
+  }
 }
 
 async function loadWeather() {
