@@ -1343,10 +1343,10 @@ function renderSnapsGame() {
   const activeSong = songs.find((song) => song.id === state.activeSnapId);
   return `<article class="game-card snaps-card">
     <div class="snaps-card__head">
-      <div><span>Snapsvisor</span><strong>Svenska snapsvisor</strong></div>
+      <div><span>Sånghäfte</span><strong>Snapsvisor</strong></div>
     </div>
     <div class="snaps-list">
-      ${songs.map((song) => `<button type="button" data-open-snap="${escapeHtml(song.id)}"><strong>${escapeHtml(song.title)}</strong><small>${escapeHtml(song.melody)}</small></button>`).join("")}
+      ${songs.map((song, index) => `<button type="button" data-open-snap="${escapeHtml(song.id)}"><b>${index + 1}</b><span><strong>${escapeHtml(song.title)}</strong><small>${escapeHtml(song.melody)}</small></span></button>`).join("")}
     </div>
     ${activeSong ? renderSnapViewer(activeSong) : ""}
   </article>`;
@@ -1355,7 +1355,7 @@ function renderSnapsGame() {
 function renderSnapViewer(song) {
   return `<div class="snap-viewer" data-close-snaps>
     <article class="snap-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(song.title)}">
-      <span>Snapsvisa</span>
+      <span>Sånghäfte</span>
       <h3>${escapeHtml(song.title)}</h3>
       <p class="snap-melody">${escapeHtml(song.melody)}</p>
       <div class="snap-lyrics">${song.text.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}</div>
