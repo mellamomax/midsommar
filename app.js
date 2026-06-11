@@ -677,6 +677,12 @@ function renderAll() {
 }
 
 function activatePartyIfEventStarted() {
+  if (isAdmin() && state.page === "prep" && !hasAdminPrepView()) {
+    state.page = "party";
+    state.section = "today";
+    if (!applyingRemoteState) saveState();
+    return;
+  }
   if (Date.now() < EVENT_START.getTime()) return;
   if (state.page === "party") return;
   state.page = "party";
@@ -687,6 +693,7 @@ function activatePartyIfEventStarted() {
 function openPartyForTest() {
   try {
     sessionStorage.setItem("midsommar-prep-bypass", "1");
+    sessionStorage.removeItem("midsommar-admin-prep-view");
   } catch {}
   state.page = "party";
   state.section = "today";
@@ -694,6 +701,26 @@ function openPartyForTest() {
   galleryMotion = "open";
   saveState();
   renderAll();
+}
+
+function hasAdminPrepView() {
+  try {
+    return sessionStorage.getItem("midsommar-admin-prep-view") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setAdminPrepView() {
+  try {
+    sessionStorage.setItem("midsommar-admin-prep-view", "1");
+  } catch {}
+}
+
+function clearAdminPrepView() {
+  try {
+    sessionStorage.removeItem("midsommar-admin-prep-view");
+  } catch {}
 }
 
 function renderShell() {
@@ -2906,9 +2933,12 @@ function enterAdminMode() {
     return;
   }
   if (!isAdmin()) state.adminReturnProfile = isAdminProfileName(state.profile) ? "" : state.profile;
+  clearAdminPrepView();
   state.adminMode = true;
   state.adminOwner = ADMIN_PROFILE;
   state.profile = ADMIN_PROFILE;
+  state.page = "party";
+  state.section = "today";
   showToast("Admin mode pÃ¥");
   activeProfile();
 }
@@ -2925,6 +2955,7 @@ function leaveAdminMode() {
 
 function toggleAdminFromStartTab() {
   if (isAdmin()) {
+    setAdminPrepView();
     state.page = "prep";
     galleryIndex = null;
     galleryMotion = "open";
