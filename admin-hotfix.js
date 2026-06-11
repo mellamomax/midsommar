@@ -7,6 +7,7 @@
   const SUPABASE_KEY = "sb_publishable_DWh8fecFXYWycKx1mLwCbQ_GYKfLqz5";
   const REMOTE_STATE_ID = "main";
   const taps = {};
+  let prepLockReloading = false;
 
   const defaultQuiz = [
     ["Vilket datum infaller midsommarafton alltid pa?", "Fredagen mellan 19 och 25 juni", "Alltid 21 juni", "Sista fredagen i juni", 0],
@@ -105,7 +106,10 @@
       state.section = "today";
       delete state.prepBypassed;
       writeState(state);
-      if (reload) window.location.reload();
+      if (reload && !prepLockReloading) {
+        prepLockReloading = true;
+        window.location.reload();
+      }
     }
   }
 
@@ -145,8 +149,9 @@
   function unlockProfileCardForTripleTap() {
     const button = document.querySelector("#profile-button");
     if (!button) return;
-    button.disabled = false;
-    button.setAttribute("aria-disabled", isAdminState() ? "false" : "true");
+    if (button.disabled) button.disabled = false;
+    const ariaValue = isAdminState() ? "false" : "true";
+    if (button.getAttribute("aria-disabled") !== ariaValue) button.setAttribute("aria-disabled", ariaValue);
   }
 
   function archiveProfileImages(state, name) {
@@ -393,5 +398,5 @@
 
   tick();
   setInterval(tick, 600);
-  new MutationObserver(tick).observe(document.body, { childList: true, subtree: true, attributes: true });
+  new MutationObserver(tick).observe(document.body, { childList: true, subtree: true });
 })();
