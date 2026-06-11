@@ -2,10 +2,11 @@
   const STORAGE_KEY = "midsommar-dashboard-v6";
   const QUIZ_KEY = "midsommar-quiz-v1";
   const ADMIN_PROFILE = "Admin";
+  const EVENT_START = new Date("2026-06-19T12:00:00+02:00");
   const SUPABASE_URL = "https://wugavohwdfuhahbwxcea.supabase.co";
   const SUPABASE_KEY = "sb_publishable_DWh8fecFXYWycKx1mLwCbQ_GYKfLqz5";
   const REMOTE_STATE_ID = "main";
-  const tripleTap = { count: 0, last: 0, timer: null };
+  const taps = {};
 
   const defaultQuiz = [
     ["Vilket datum infaller midsommarafton alltid pa?", "Fredagen mellan 19 och 25 juni", "Alltid 21 juni", "Sista fredagen i juni", 0],
@@ -43,6 +44,30 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
+  function isBeforeMidsommar() {
+    return Date.now() < EVENT_START.getTime();
+  }
+
+  function isAdminState(state = readState()) {
+    return state.adminMode === true && (state.profile === ADMIN_PROFILE || state.adminOwner === ADMIN_PROFILE || state.adminOwner === "Max");
+  }
+
+  function hasPrepBypass() {
+    try {
+      return sessionStorage.getItem("midsommar-prep-bypass") === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function setPrepBypass() {
+    try {
+      sessionStorage.setItem("midsommar-prep-bypass", "1");
+    } catch {
+      // Session storage can be unavailable in strict browser modes; the state write below still lets the current render move on.
+    }
+  }
+
   function headers(extra) {
     return { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, ...(extra || {}) };
   }
@@ -57,18 +82,71 @@
     });
   }
 
-  function isAdminState(state) {
-    return state.adminMode === true && (state.profile === ADMIN_PROFILE || state.adminOwner);
+  function tapCount(key, limit, ms = 520) {
+    const now = Date.now();
+    const tap = taps[key] || { count: 0, last: 0, timer: null };
+    tap.count = now - tap.last < ms ? tap.count + 1 : 1;
+    tap.last = now;
+    clearTimeout(tap.timer);
+    tap.timer = setTimeout(() => {
+      tap.count = 0;
+    }, ms + 120);
+    taps[key] = tap;
+    if (tap.count < limit) return false;
+    tap.count = 0;
+    return true;
   }
 
-  function dedupeGallery(items) {
-    const seen = new Set();
-    return items.filter((item) => {
-      const key = `${item.media || "image"}::${item.photo}::${item.name}::${item.text}`;
-      if (!item.photo || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+  function enforcePrepLock(reload = false) {
+    const state = readState();
+    if (!isBeforeMidsommar() || isAdminState(state) || hasPrepBypass()) return;
+    if (state.page !== "prep") {
+      state.page = "prep";
+      state.section = "today";
+      delete state.prepBypassed;
+      writeState(state);
+      if (reload) window.location.reload();
+    }
+  }
+
+  function bypassPrep() {
+    const state = readState();
+    setPrepBypass();
+    delete state.prepBypassed;
+    state.page = "party";
+    state.section = "today";
+    writeState(state);
+    window.location.reload();
+  }
+
+  function enterAdmin() {
+    const state = readState();
+    if (!state.profile && !state.adminReturnProfile) return;
+    if (!isAdminState(state)) state.adminReturnProfile = state.profile;
+    state.profile = ADMIN_PROFILE;
+    state.adminMode = true;
+    state.adminOwner = ADMIN_PROFILE;
+    delete state.prepBypassed;
+    state.page = "party";
+    state.section = "today";
+    writeState(state);
+    window.location.reload();
+  }
+
+  function adminOpenPrep() {
+    const state = readState();
+    if (!isAdminState(state)) return;
+    state.page = "prep";
+    state.section = "today";
+    writeState(state);
+    window.location.reload();
+  }
+
+  function unlockProfileCardForTripleTap() {
+    const button = document.querySelector("#profile-button");
+    if (!button) return;
+    button.disabled = false;
+    button.setAttribute("aria-disabled", isAdminState() ? "false" : "true");
   }
 
   function archiveProfileImages(state, name) {
@@ -85,38 +163,13 @@
       const item = profile.beforeAfter?.[slot];
       if (item?.video) items.push({ name, text: slot === "before" ? "Fore-video" : "Efter-video", photo: item.video, type: "Fore / efter", takenAt: item.completedAt, media: "video" });
     });
-    state.galleryArchive = dedupeGallery([...items, ...(state.galleryArchive || [])]);
-  }
-
-  function toggleAdminOrPrep() {
-    const state = readState();
-    if (!state.profile && !state.adminReturnProfile) return;
-    if (isAdminState(state)) {
-      state.page = "prep";
-      state.section = "today";
-    } else {
-      state.adminReturnProfile = state.profile;
-      state.profile = ADMIN_PROFILE;
-      state.adminMode = true;
-      state.adminOwner = ADMIN_PROFILE;
-    }
-    writeState(state);
-    window.location.reload();
-  }
-
-  function handleTripleTap(event) {
-    const now = Date.now();
-    tripleTap.count = now - tripleTap.last < 520 ? tripleTap.count + 1 : 1;
-    tripleTap.last = now;
-    clearTimeout(tripleTap.timer);
-    tripleTap.timer = setTimeout(() => {
-      tripleTap.count = 0;
-    }, 620);
-    if (tripleTap.count < 3) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    tripleTap.count = 0;
-    toggleAdminOrPrep();
+    const seen = new Set();
+    state.galleryArchive = [...items, ...(state.galleryArchive || [])].filter((item) => {
+      const key = `${item.media || "image"}::${item.photo}::${item.name}::${item.text}`;
+      if (!item.photo || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   function quizState() {
@@ -130,6 +183,10 @@
 
   function saveQuiz(value) {
     localStorage.setItem(QUIZ_KEY, JSON.stringify(value));
+  }
+
+  function escapeHtml(value) {
+    return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
   }
 
   function quizRowsToText(questions) {
@@ -153,8 +210,8 @@
     const data = quizState();
     const index = Math.max(0, Math.min(data.questions.length - 1, Number(data.index || 0)));
     const item = data.questions[index] || data.questions[0];
-    const answerKey = `${state.profile || "guest"}::${index}`;
-    const answer = data.answers[answerKey];
+    const key = `${state.profile || "guest"}::${index}`;
+    const answer = data.answers[key];
     const labels = ["1", "X", "2"];
     const answered = answer !== undefined;
     const correct = Number(answer) === Number(item.answer);
@@ -178,15 +235,13 @@
 
   function showQuiz() {
     const content = document.querySelector("#party-content");
-    if (!content || document.body.dataset.page !== "party") return;
-    if (!document.querySelector('[data-section="games"].is-active')) return;
+    if (!content || document.body.dataset.page !== "party" || !document.querySelector('[data-section="games"].is-active')) return;
     const picker = content.querySelector(".game-picker");
     if (!picker) return;
     if (!picker.querySelector("[data-hotfix-game-quiz]")) {
       picker.insertAdjacentHTML("beforeend", '<button class="game-menu-button" type="button" data-hotfix-game-quiz><span class="game-menu-icon game-menu-icon--quiz" aria-hidden="true">?</span><strong>Quiz</strong></button>');
     }
-    if (localStorage.getItem("midsommar-hotfix-game") !== "quiz") return;
-    if (content.querySelector("[data-hotfix-quiz-card]")) return;
+    if (localStorage.getItem("midsommar-hotfix-game") !== "quiz" || content.querySelector("[data-hotfix-quiz-card]")) return;
     [...content.children].forEach((child) => {
       if (!child.classList.contains("game-picker")) child.remove();
     });
@@ -195,15 +250,52 @@
     content.insertAdjacentHTML("beforeend", renderQuiz());
   }
 
-  function escapeHtml(value) {
-    return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
-  }
-
   document.addEventListener("pointerup", (event) => {
-    if (event.target.closest('[data-section="today"]')) handleTripleTap(event);
+    if (event.target.closest("#countdown-ring") && tapCount("countdown", 2)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      bypassPrep();
+      return;
+    }
+    if (event.target.closest("#profile-button") && tapCount("profile", 3)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      enterAdmin();
+      return;
+    }
+    if (event.target.closest('[data-section="today"]') && isAdminState() && tapCount("start", 2)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      adminOpenPrep();
+    }
+  }, true);
+
+  document.addEventListener("dblclick", (event) => {
+    if (event.target.closest("#countdown-ring")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      bypassPrep();
+    }
+    if (event.target.closest('[data-section="today"]') && isAdminState()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      adminOpenPrep();
+    }
   }, true);
 
   document.addEventListener("click", async (event) => {
+    if (event.target.closest('[data-page="party"]') && isBeforeMidsommar() && !isAdminState() && !hasPrepBypass()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      enforcePrepLock(true);
+      return;
+    }
+    if (event.target.closest("#profile-button") && !isAdminState()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+
     const deleteProfile = event.target.closest("[data-delete-profile]");
     if (deleteProfile) {
       event.preventDefault();
@@ -280,15 +372,9 @@
     }
 
     if (event.target.closest("[data-hotfix-save-quiz]")) {
-      const editor = document.querySelector("[data-hotfix-quiz-editor]");
-      const rows = quizTextToRows(editor?.value || "");
+      const rows = quizTextToRows(document.querySelector("[data-hotfix-quiz-editor]")?.value || "");
       if (!rows.length) return;
-      const data = quizState();
-      data.questions = rows;
-      data.answers = {};
-      data.awarded = {};
-      data.index = 0;
-      saveQuiz(data);
+      saveQuiz({ questions: rows, answers: {}, awarded: {}, index: 0 });
       document.querySelector("[data-hotfix-quiz-card]")?.remove();
       document.querySelector("[data-hotfix-quiz-admin]")?.remove();
       showQuiz();
@@ -299,6 +385,13 @@
     if (event.target.closest("[data-game]")) localStorage.removeItem("midsommar-hotfix-game");
   });
 
-  new MutationObserver(showQuiz).observe(document.body, { childList: true, subtree: true });
-  setTimeout(showQuiz, 500);
+  function tick() {
+    unlockProfileCardForTripleTap();
+    enforcePrepLock(document.body.dataset.page === "party");
+    showQuiz();
+  }
+
+  tick();
+  setInterval(tick, 600);
+  new MutationObserver(tick).observe(document.body, { childList: true, subtree: true, attributes: true });
 })();
