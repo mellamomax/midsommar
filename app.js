@@ -683,7 +683,14 @@ function activatePartyIfEventStarted() {
     if (!applyingRemoteState) saveState();
     return;
   }
-  if (Date.now() < EVENT_START.getTime()) return;
+  if (Date.now() < EVENT_START.getTime()) {
+    if (!isAdmin() && state.page === "party" && !hasPrepBypass()) {
+      state.page = "prep";
+      state.section = "today";
+      if (!applyingRemoteState) saveState();
+    }
+    return;
+  }
   if (state.page === "party") return;
   state.page = "party";
   state.section = "today";
@@ -706,6 +713,14 @@ function openPartyForTest() {
 function hasAdminPrepView() {
   try {
     return sessionStorage.getItem("midsommar-admin-prep-view") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function hasPrepBypass() {
+  try {
+    return sessionStorage.getItem("midsommar-prep-bypass") === "1";
   } catch {
     return false;
   }
@@ -859,7 +874,9 @@ function renderProfile() {
     if (profile?.avatarUrl) profileAvatar.src = profile.avatarUrl;
   }
   setText("dialog-profile-name", profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
-  document.querySelector("#profile-button").disabled = !isAdmin();
+  const profileButton = document.querySelector("#profile-button");
+  profileButton.disabled = false;
+  profileButton.setAttribute("aria-disabled", isAdmin() ? "false" : "true");
   document.querySelector("#profile-grid").innerHTML = allParticipants()
     .map((name) => isAdmin()
       ? `<div class="profile-manage-row"><button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button><button class="profile-delete-button" type="button" data-delete-profile="${escapeHtml(name)}" aria-label="Radera ${escapeHtml(name)}" ${name === "Max" ? "disabled" : ""}>×</button></div>`
@@ -2897,11 +2914,20 @@ document.querySelector("#profile-button").addEventListener("click", () => {
   if (!isAdmin()) return;
   document.querySelector("#profile-dialog").showModal();
 });
+document.querySelector("#profile-button").addEventListener("pointerup", (event) => {
+  if (isAdmin()) return;
+  handleTripleTap(event, "profile-button", () => {
+    enterAdminMode();
+    saveState();
+    renderAll();
+  });
+});
 document.querySelector("#countdown-ring")?.addEventListener("pointerup", (event) => {
   handleDoubleTap(event, "countdown", openPartyForTest);
 });
 document.querySelector('[data-section="today"]')?.addEventListener("pointerup", (event) => {
-  handleTripleTap(event, "start-tab", toggleAdminFromStartTab);
+  if (!isAdmin()) return;
+  handleDoubleTap(event, "start-tab", toggleAdminFromStartTab);
 });
 document.querySelector("[data-admin-mode]").addEventListener("click", () => {
   if (!state.adminMode) return;
