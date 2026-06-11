@@ -1,10 +1,9 @@
-const CACHE_NAME = "midsommar-app-v8";
+const CACHE_NAME = "midsommar-app-v9";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/styles.css",
   "/app.js",
-  "/admin-hotfix.js",
   "/manifest.webmanifest",
   "/assets/prep-sunny-bg.png"
 ];
