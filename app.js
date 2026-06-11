@@ -68,6 +68,63 @@ const snapsSongs = {
   ],
 };
 
+snapsSongs.sv = [
+  {
+    id: "helan-gar",
+    title: "Helan går",
+    melody: "Melodi: Helan går",
+    text: ["Helan går", "Sjung hopp fallerallan lallan lej", "Helan går", "Sjung hopp fallerallan lej", "Och den som inte helan tar,", "Han heller inte Halvan får", "Helan går...", "(Helan tages)", "Sjung hopp faderallan lej."],
+  },
+  {
+    id: "lille-sup",
+    title: "Lille sup",
+    melody: "Melodi: Lille katt",
+    text: ["Lille sup, lille sup,", "Lille söte supen", "Nu ska du, nu ska du,", "Ner igenom strupen"],
+  },
+  {
+    id: "min-sup-den-har-sin-fyllning",
+    title: "Min sup den har sin fyllning",
+    melody: "Melodi: Min hatt den har tre kanter",
+    text: ["Min sup den har sin fyllning,", "Sin fyllning har min sup.", "O har den ej nån fyllning,", "Så e de ej min sup."],
+  },
+  {
+    id: "du-ar-full",
+    title: "Du är full",
+    melody: "Melodi: Det gör ont",
+    text: ["Full, du är fall", "Och så dum", "Att du knappt kan tugga tuggummi", "Ens en sekund.", "Du är så himla full,", "Ja, så full", "Att du snart", "Tar ett steg rakt ut i intet", "Och snubblar omkull.", "Sen ligger du där,", "Ser stjärnornas färd.", "Du är full."],
+  },
+  {
+    id: "san-ar-spriten",
+    title: "Sån är spriten",
+    melody: "Melodi: Sånt är livet",
+    text: ["Sån är spriten, ja sån är spriten", "Så mycket brännvin finns det här", "Den sup man ratar, den tar nån annan", "Så ta nu snapsen som du har kär."],
+  },
+  {
+    id: "drick-nu",
+    title: "Drick nu",
+    melody: "Melodi: IQ",
+    text: ["Drick nu!", "För glaset upp till munnen!", "Drick nu!", "Ta allt i ett svep!", "Drick nu!", "Släng prästerna i brunnen!", "Drick nu!", "Rid till helvetet på en get!", "Bli aldrig fet!"],
+  },
+  {
+    id: "jag-hade-en-snaps",
+    title: "Jag hade en snaps en gång",
+    melody: "Melodi: Jag hade en gång en båt",
+    text: ["Jag hade en snaps en gång", "jag hörde en ton slås an", "så sjöng vi en liten sång", "och snapsen försvann!", "Svara mej Du: Var är den nu?", "Jag bara undrar: Var är den nu?"],
+  },
+  {
+    id: "fyllebjornarna",
+    title: "Fyllebjörnarna",
+    melody: "Melodi: Bumbibjörnarna",
+    text: ["HICK HURRA!", "För här kommer fyllebjörnarna,", "ramlar fram igenom sagorna.", "Å vi får supa mer!", "Fyllebjörnssaften, den magiska kraften.", "O visst blir man full, om man dricker utav den.", "Ondska och törnar, det klarar fyllebjörnar.", "De kämpar och spriten och segrar igen!", "HICK HURRA!", "För här kommer fyllebjörnarna,", "ramlar fram igenom sagorna.", "Å vi får supa mer!", "SKÅL!"],
+  },
+  {
+    id: "ett-litet-glas-till-maten",
+    title: "Ett litet glas till maten",
+    melody: "Melodi: Den Blomstertid",
+    text: ["Ett litet glas till maten,", "vår törst den är så stor.", "Nu nalkas det en nubbe,", "i frostad flaska bor.", "Med bild och livlig värma,", "den stilla rinner ner.", "När man sen sig närma,", "Vi tar oss några fler."],
+  },
+];
+
 const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor", "Lisa"];
 const ADMIN_PROFILE = "Admin";
 
@@ -254,6 +311,59 @@ const quizQuestions = [
   },
 ];
 
+quizQuestions.splice(0, quizQuestions.length, ...[
+  {
+    question: "Vilket datum infaller midsommarafton alltid på?",
+    options: ["Fredagen mellan 19 och 25 juni", "Alltid 21 juni", "Sista fredagen i juni"],
+    answer: 0,
+  },
+  {
+    question: "Vad kallas stången man dansar kring?",
+    options: ["Majstång", "Solstång", "Sommarstång"],
+    answer: 0,
+  },
+  {
+    question: "Vilken blomma är starkt kopplad till midsommar?",
+    options: ["Julros", "Prästkrage", "Påsklilja"],
+    answer: 1,
+  },
+  {
+    question: "Vad sägs man kunna drömma om om man plockar sju sorters blommor?",
+    options: ["Sin framtida kärlek", "Nästa semester", "Vinnaren i 5-kampen"],
+    answer: 0,
+  },
+  {
+    question: "Vilken mat är vanlig på ett klassiskt midsommarbord?",
+    options: ["Surströmming och tunnbröd", "Sill och färskpotatis", "Kalkon och brysselkål"],
+    answer: 1,
+  },
+  {
+    question: "Vilken visa sjungs ofta runt midsommarstången?",
+    options: ["Små grodorna", "Staffan stalledräng", "Nu tändas tusen juleljus"],
+    answer: 0,
+  },
+  {
+    question: "Vad betyder 'maj' i majstång?",
+    options: ["Månaden maj", "Att smycka med löv", "En gammal dryck"],
+    answer: 1,
+  },
+  {
+    question: "Vilken dryck brukar ofta serveras till snapsvisor?",
+    options: ["Snaps", "Varm choklad", "Must"],
+    answer: 0,
+  },
+  {
+    question: "Vilken årstid firas midsommar?",
+    options: ["Vår", "Sommar", "Höst"],
+    answer: 1,
+  },
+  {
+    question: "Vad symboliserar midsommar historiskt mest?",
+    options: ["Årets mörkaste natt", "Sommarsolstånd och ljus", "Skördefestens slut"],
+    answer: 1,
+  },
+]);
+
 const missionPool = [
   "Ta en bild på någon som gör årets första skål.",
   "Fånga en midsommarkrans i bild.",
@@ -338,6 +448,7 @@ function ensureEditableContent() {
   if (!Array.isArray(state.content.voteQuestions) || !state.content.voteQuestions.length) state.content.voteQuestions = [...voteQuestions];
   if (!Array.isArray(state.content.quizQuestions) || !state.content.quizQuestions.length) state.content.quizQuestions = structuredClone(quizQuestions);
   state.content.quizQuestions = normalizeQuizContent(state.content.quizQuestions);
+  state.content.quizQuestions = localizeQuizQuestions(state.content.quizQuestions);
   state.settings = state.settings && typeof state.settings === "object" ? state.settings : {};
   state.settings.dashboard = { next: true, schedule: true, score: true, weather: true, rsvp: true, feed: false, ...(state.settings.dashboard || {}) };
   state.settings.pentathlon = { started: false, visibleIndex: -1, ...(state.settings.pentathlon || {}) };
@@ -425,6 +536,21 @@ function normalizeQuizContent(items) {
       };
     })
     .filter((item) => item.question);
+}
+
+function localizeQuizQuestions(items) {
+  const fixes = new Map([
+    ["Vilket datum infaller midsommarafton alltid pa?", "Vilket datum infaller midsommarafton alltid på?"],
+    ["Vad kallas stangen man dansar kring?", "Vad kallas stången man dansar kring?"],
+    ["Vilken blomma ar starkt kopplad till midsommar?", "Vilken blomma är starkt kopplad till midsommar?"],
+    ["Vad sags man kunna dromma om om man plockar sju sorters blommor?", "Vad sägs man kunna drömma om om man plockar sju sorters blommor?"],
+    ["Vilken mat ar vanlig pa ett klassiskt midsommarbord?", "Vilken mat är vanlig på ett klassiskt midsommarbord?"],
+    ["Vilken visa sjungs ofta runt midsommarstangen?", "Vilken visa sjungs ofta runt midsommarstången?"],
+    ["Vad betyder 'maj' i majstang?", "Vad betyder 'maj' i majstång?"],
+    ["Vilken arstid firas midsommar?", "Vilken årstid firas midsommar?"],
+    ["Vad symboliserar midsommar historiskt mest?", "Vad symboliserar midsommar historiskt mest?"],
+  ]);
+  return items.map((item) => ({ ...item, question: fixes.get(item.question) || item.question }));
 }
 
 function serializeQuizContent(items) {
@@ -1502,7 +1628,7 @@ function renderGameAdminEditor() {
       <div class="quiz-admin-table">
         ${questions.map((question, index) => `<div class="quiz-admin-row" data-quiz-admin-row>
           <div class="quiz-admin-row-head">
-            <input class="quiz-admin-question" value="${escapeHtml(question.question)}" data-quiz-admin-question aria-label="Fråga ${index + 1}" />
+            <textarea class="quiz-admin-question" data-quiz-admin-question aria-label="Fråga ${index + 1}">${escapeHtml(question.question)}</textarea>
             <select class="quiz-admin-answer" data-quiz-admin-answer aria-label="Rätt svar">
               ${labels.map((label, answerIndex) => `<option value="${answerIndex}" ${Number(question.answer) === answerIndex ? "selected" : ""}>${label}</option>`).join("")}
             </select>
