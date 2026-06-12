@@ -3804,8 +3804,12 @@ body[data-page="party"] .forecast-strip {
 /* Snapsvisor */
 .snaps-card {
   position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 10px;
   min-height: 0;
+  height: min(100%, calc(100svh - 318px));
+  max-height: calc(100svh - 318px);
   overflow: hidden;
   border-color: rgba(40, 93, 66, 0.14);
   background:
@@ -3816,6 +3820,17 @@ body[data-page="party"] .forecast-strip {
     repeating-linear-gradient(180deg, rgba(42, 61, 48, 0.045) 0 1px, transparent 1px 32px),
     linear-gradient(135deg, #fffdf5, #f8f4df);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65), 0 12px 26px rgba(23, 74, 52, 0.08);
+}
+
+body[data-section="games"] #party-content:has(.snaps-card) {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+body[data-section="games"] #party-content:has(.snaps-card) .snaps-card {
+  height: auto;
+  max-height: none;
 }
 
 .snaps-card > * {
@@ -3858,7 +3873,8 @@ body[data-page="party"] .forecast-strip {
   display: grid;
   grid-template-columns: 1fr;
   gap: 5px;
-  max-height: min(30svh, 214px);
+  min-height: 0;
+  max-height: none;
   overflow: auto;
   padding-right: 3px;
   overscroll-behavior: contain;
@@ -3983,12 +3999,14 @@ body[data-page="party"] .forecast-strip {
 
 .snap-melody {
   margin: 0;
-  border-radius: 999px;
-  padding: 8px 11px;
-  color: #7b3b3b;
-  background: rgba(201, 61, 71, 0.13);
+  border-left: 3px solid rgba(201, 61, 71, 0.36);
+  border-radius: 0;
+  padding: 2px 0 2px 10px;
+  color: #7c514f;
+  background: transparent;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-style: italic;
+  font-weight: 750;
 }
 
 .snap-lyrics {
@@ -4002,7 +4020,7 @@ body[data-page="party"] .forecast-strip {
   color: #223229;
   min-height: 32px;
   font-size: 0.98rem;
-  font-weight: 780;
+  font-weight: 520;
   line-height: 32px;
 }
 
@@ -4023,7 +4041,7 @@ body[data-page="party"] .forecast-strip {
   }
 
   .snaps-list {
-    max-height: min(27svh, 174px);
+    max-height: none;
   }
 
   .snap-card {

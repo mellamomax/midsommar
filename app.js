@@ -1355,7 +1355,6 @@ function renderSnapsGame() {
 function renderSnapViewer(song) {
   return `<div class="snap-viewer" data-close-snaps>
     <article class="snap-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(song.title)}">
-      <span>Sånghäfte</span>
       <h3>${escapeHtml(song.title)}</h3>
       <p class="snap-melody">${escapeHtml(song.melody)}</p>
       <div class="snap-lyrics">${song.text.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}</div>
