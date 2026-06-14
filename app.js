@@ -46,6 +46,7 @@ let lastLoginTap = 0;
 let lastAdminCardTap = 0;
 let lastProfileGridAction = { key: "", at: 0 };
 let lastGameSelectAction = { game: "", at: 0 };
+let activePentathlonInfoIndex = null;
 let deferredInstallPrompt = null;
 const tripleTapTrackers = {};
 
@@ -170,11 +171,11 @@ const seed = {
     { team: "Björk", score: 0 },
   ],
   pentathlon: [
-    { name: "Kubb-straffar", scores: [0, 0, 0] },
-    { name: "Säcklöpning", scores: [0, 0, 0] },
-    { name: "Quiz", scores: [0, 0, 0] },
-    { name: "Prickkast", scores: [0, 0, 0] },
-    { name: "Finalgren", scores: [0, 0, 0] },
+    { name: "Flytta vattnet", scores: [0, 0, 0] },
+    { name: "Tältet", scores: [0, 0, 0] },
+    { name: "Tornet", scores: [0, 0, 0] },
+    { name: "Memory", scores: [0, 0, 0] },
+    { name: "Blindfolded", scores: [0, 0, 0] },
   ],
   weather: null,
   matchApiStatus: "API ej hämtat",
@@ -216,6 +217,40 @@ const profileSeed = {
     after: { video: "", completedAt: "" },
   },
 };
+
+const legacyPentathlonNames = ["Kubb-straffar", "Säcklöpning", "Quiz", "Prickkast", "Finalgren"];
+const defaultPentathlonEvents = [
+  {
+    name: "Flytta vattnet",
+    description: "Välj verktyg ur potten och flytta så mycket vatten som möjligt från en hink till nästa station.",
+    rules: ["Alla lag väljer verktyg ur samma pott.", "Vatten ska transporteras mellan stationerna utan att bära själva hinken.", "När tiden är ute mäts vattnet som kommit fram."],
+    win: "Laget med mest vatten i målhinken vinner grenen.",
+  },
+  {
+    name: "Tältet",
+    description: "Sätt upp tältet på kortast tid.",
+    rules: ["Hela tältet ska vara uppsatt.", "Alla delar ska vara använda.", "Tältet måste stå stabilt när tiden stoppas."],
+    win: "Snabbast godkända tält vinner.",
+  },
+  {
+    name: "Tornet",
+    description: "Bygg det högsta tornet ni kan.",
+    rules: ["Ni får bara använda veden som är framtagen.", "Tornet ska stå av sig självt när domaren mäter.", "Rasar tornet innan mätning räknas höjden som 0."],
+    win: "Högst stående torn vinner.",
+  },
+  {
+    name: "Memory",
+    description: "Memorisera alla bilder. En och en säger ni vilken bild som har blivit vänd.",
+    rules: ["Alla får titta på bilderna innan de vänds.", "När det är din tur ska du säga en bild som är vänd.", "Fel svar eller upprepning gör att du åker ut."],
+    win: "Sist kvar vinner.",
+  },
+  {
+    name: "Blindfolded",
+    description: "Din kompis är blindfolded och du är vägledare.",
+    rules: ["Vägledaren får bara guida med ord som vänster, höger, framåt och stopp.", "Den blindfolded ska följa stegen och undvika markörerna.", "Går man på en markör får laget börja om."],
+    win: "Bäst tid vinner.",
+  },
+];
 
 const timeline = [
   ["12:00", "Lunch"],
@@ -661,11 +696,27 @@ function normalizePentathlonTeams() {
   state.teamScores = (Array.isArray(state.teamScores) && state.teamScores.length ? state.teamScores : structuredClone(seed.teamScores))
     .map((team) => ({ team: team.team || "Nytt lag", score: Number(team.score || 0), members: Array.isArray(team.members) ? team.members : [] }));
   state.pentathlon = (Array.isArray(state.pentathlon) && state.pentathlon.length ? state.pentathlon : structuredClone(seed.pentathlon))
-    .map((event) => {
+    .map((event, index) => {
       const scores = Array.isArray(event.scores) ? [...event.scores] : [];
       while (scores.length < state.teamScores.length) scores.push(0);
-      return { ...event, scores: scores.slice(0, state.teamScores.length) };
+      const defaults = defaultPentathlonEvents[index] || defaultPentathlonEvents[0];
+      const shouldReplaceLegacy = legacyPentathlonNames.includes(event.name);
+      const name = shouldReplaceLegacy ? defaults.name : (event.name || defaults.name);
+      const preset = pentathlonPresetFor(name) || defaults;
+      return {
+        ...event,
+        name,
+        description: event.description || preset.description,
+        rules: Array.isArray(event.rules) && event.rules.length ? event.rules : [...preset.rules],
+        win: event.win || preset.win,
+        scores: scores.slice(0, state.teamScores.length),
+      };
     });
+}
+
+function pentathlonPresetFor(name) {
+  const key = String(name || "").trim().toLowerCase();
+  return defaultPentathlonEvents.find((event) => event.name.toLowerCase() === key) || null;
 }
 
 function dashboardVisible(key) {
@@ -1237,6 +1288,7 @@ function ensurePackList() {
 function renderParty() {
   if (state.section !== "photos") galleryIndex = null;
   if (state.section !== "games" || state.game !== "snaps") state.activeSnapId = "";
+  if (state.section !== "pentathlon") activePentathlonInfoIndex = null;
   document.body.dataset.section = state.section;
   const [kicker, title] = sectionMeta[state.section];
   setText("party-kicker", kicker);
@@ -2106,12 +2158,32 @@ function renderPentathlon() {
     return `<article class="game-card pentathlon-event pentathlon-event--${status.key}">
       <div class="pentathlon-event__head"><span class="micro-label">${eventIndex + 1}/5</span><span class="event-status">${escapeHtml(status.label)}</span></div>
       <h3>${escapeHtml(event.name)}</h3>
+      ${!isAdmin() ? `<button class="pentathlon-info-button" type="button" data-five-info="${eventIndex}">Regler &amp; vinst</button>` : ""}
       ${isAdmin() ? `<div class="five-placement-grid">${state.teamScores.map((team, teamIndex) => `<section>
         <strong>${escapeHtml(team.team)} <b>${event.scores[teamIndex] || 0} p</b></strong>
         <div>${[5, 3, 1, 0.5].map((points) => `<button class="${Number(event.scores[teamIndex] || 0) === points ? "is-selected" : ""}" type="button" data-five-event="${eventIndex}" data-five-team="${teamIndex}" data-five-points="${points}">${points}p</button>`).join("")}</div>
       </section>`).join("")}</div>` : ""}
     </article>`;
-  }).join("")}</div>${isAdmin() ? renderPentathlonEditor() : ""}`;
+  }).join("")}</div>${renderPentathlonInfoDialog()}${isAdmin() ? renderPentathlonEditor() : ""}`;
+}
+
+function renderPentathlonInfoDialog() {
+  if (activePentathlonInfoIndex === null) return "";
+  const event = state.pentathlon[activePentathlonInfoIndex];
+  if (!event) return "";
+  const preset = pentathlonPresetFor(event.name) || defaultPentathlonEvents[0];
+  const rules = Array.isArray(event.rules) && event.rules.length ? event.rules : preset.rules;
+  return `<div class="five-info-overlay" data-close-five-info>
+    <article class="five-info-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(event.name)} regler">
+      <span class="micro-label">5-kamp</span>
+      <h3>${escapeHtml(event.name)}</h3>
+      <p>${escapeHtml(event.description || preset.description)}</p>
+      <strong>Regler</strong>
+      <ul>${rules.map((rule) => `<li>${escapeHtml(rule)}</li>`).join("")}</ul>
+      <strong>Hur man vinner</strong>
+      <p>${escapeHtml(event.win || preset.win)}</p>
+    </article>
+  </div>`;
 }
 
 function pentathlonTeamRows() {
@@ -2187,10 +2259,17 @@ function renderPentathlonEditor() {
     </div>
     <button class="admin-add-button" type="button" data-add-team>Skapa lag</button>
     <div class="admin-table admin-table--five">
-      ${state.pentathlon.map((event, index) => `<div class="admin-row">
+      ${state.pentathlon.map((event, index) => `<div class="admin-row admin-row--five">
         <span>${index + 1}</span>
-        <input type="text" value="${escapeHtml(event.name)}" data-five-name="${index}" aria-label="Gren ${index + 1}" />
-        <button class="admin-delete-button" type="button" data-delete-five="${index}" aria-label="Radera gren">&times;</button>
+        <div class="five-edit-fields">
+          <input type="text" value="${escapeHtml(event.name)}" data-five-name="${index}" aria-label="Gren ${index + 1}" />
+          <textarea data-five-description="${index}" aria-label="Beskrivning ${index + 1}">${escapeHtml(event.description || "")}</textarea>
+        </div>
+        <div class="five-row-actions">
+          <button class="admin-secondary-button" type="button" data-move-five="${index}" data-direction="-1" ${index === 0 ? "disabled" : ""} aria-label="Flytta upp">↑</button>
+          <button class="admin-secondary-button" type="button" data-move-five="${index}" data-direction="1" ${index === state.pentathlon.length - 1 ? "disabled" : ""} aria-label="Flytta ner">↓</button>
+          <button class="admin-delete-button" type="button" data-delete-five="${index}" aria-label="Radera gren">&times;</button>
+        </div>
       </div>`).join("")}
     </div>
     <button class="admin-add-button" type="button" data-add-five>L&auml;gg till gren</button>
@@ -2859,6 +2938,17 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelectorAll("[data-five-info]").forEach((button) => button.addEventListener("click", () => {
+    activePentathlonInfoIndex = Number(button.dataset.fiveInfo);
+    renderAll();
+  }));
+
+  document.querySelector("[data-close-five-info]")?.addEventListener("click", (event) => {
+    if (event.target !== event.currentTarget) return;
+    activePentathlonInfoIndex = null;
+    renderAll();
+  });
+
   document.querySelector("[data-start-five]")?.addEventListener("click", () => {
     state.settings.pentathlon.started = true;
     state.settings.pentathlon.visibleIndex = Math.max(0, Number(state.settings.pentathlon.visibleIndex ?? -1));
@@ -2933,13 +3023,42 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-five-name]").forEach((input) => input.addEventListener("change", () => {
     const eventItem = state.pentathlon[Number(input.dataset.fiveName)];
     if (!eventItem) return;
-    eventItem.name = input.value.trim() || eventItem.name;
+    const nextName = input.value.trim() || eventItem.name;
+    eventItem.name = nextName;
+    const preset = pentathlonPresetFor(nextName);
+    if (preset) {
+      eventItem.description = preset.description;
+      eventItem.rules = [...preset.rules];
+      eventItem.win = preset.win;
+    }
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-five-description]").forEach((input) => input.addEventListener("change", () => {
+    const eventItem = state.pentathlon[Number(input.dataset.fiveDescription)];
+    if (!eventItem) return;
+    eventItem.description = input.value.trim() || eventItem.description;
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-move-five]").forEach((button) => button.addEventListener("click", () => {
+    const index = Number(button.dataset.moveFive);
+    const nextIndex = index + Number(button.dataset.direction || 0);
+    if (nextIndex < 0 || nextIndex >= state.pentathlon.length) return;
+    const [eventItem] = state.pentathlon.splice(index, 1);
+    state.pentathlon.splice(nextIndex, 0, eventItem);
+    if (state.settings.pentathlon?.visibleIndex >= 0) {
+      state.settings.pentathlon.visibleIndex = Math.min(state.settings.pentathlon.visibleIndex, state.pentathlon.length - 1);
+    }
     saveState();
     renderAll();
   }));
 
   document.querySelector("[data-add-five]")?.addEventListener("click", () => {
-    state.pentathlon.push({ name: "Ny gren", scores: state.teamScores.map(() => 0) });
+    const preset = defaultPentathlonEvents[state.pentathlon.length % defaultPentathlonEvents.length];
+    state.pentathlon.push({ ...structuredClone(preset), scores: state.teamScores.map(() => 0) });
     saveState();
     renderAll();
   });
@@ -3725,6 +3844,11 @@ function selectGame(game) {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && activePentathlonInfoIndex !== null) {
+    activePentathlonInfoIndex = null;
+    renderAll();
+    return;
+  }
   if (event.key === "Escape" && state.activeSnapId) {
     state.activeSnapId = "";
     saveState();

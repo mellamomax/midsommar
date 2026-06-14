@@ -4427,6 +4427,72 @@ body[data-section="games"] .game-picker {
   opacity: 0.78;
 }
 
+.pentathlon-info-button {
+  justify-self: start;
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  color: #fff;
+  background: var(--leaf-dark);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.five-info-overlay {
+  position: fixed;
+  z-index: 96;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(23, 33, 27, 0.42);
+  backdrop-filter: blur(9px);
+}
+
+.five-info-card {
+  display: grid;
+  gap: 10px;
+  width: min(352px, calc(100vw - 34px));
+  max-height: min(78svh, 620px);
+  overflow: auto;
+  border: 1px solid rgba(49, 72, 58, 0.16);
+  border-radius: 18px;
+  padding: 18px;
+  background: #fffdf8;
+  box-shadow: 0 26px 60px rgba(13, 24, 17, 0.28);
+}
+
+.five-info-card h3,
+.five-info-card p,
+.five-info-card ul {
+  margin: 0;
+}
+
+.five-info-card h3 {
+  color: var(--leaf-dark);
+  font-size: 1.35rem;
+  line-height: 1.05;
+}
+
+.five-info-card p,
+.five-info-card li {
+  color: #334037;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.five-info-card strong {
+  color: var(--leaf-dark);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.five-info-card ul {
+  padding-left: 18px;
+}
+
 @media (max-width: 430px) {
   body[data-section="games"] .game-picker {
     gap: 9px;
@@ -5263,6 +5329,46 @@ body[data-section="games"] .game-picker {
 .admin-table--teams .admin-row,
 .admin-table--five .admin-row {
   grid-template-columns: 54px minmax(0, 1fr) 34px;
+}
+
+.admin-table--five .admin-row--five {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+
+.five-edit-fields {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.five-edit-fields textarea {
+  width: 100%;
+  min-height: 58px;
+  min-width: 0;
+  border: 1px solid rgba(49, 72, 58, 0.18);
+  border-radius: 10px;
+  padding: 9px;
+  color: #202a24;
+  background: #fff;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 550;
+  line-height: 1.3;
+  resize: vertical;
+}
+
+.five-row-actions {
+  display: grid;
+  grid-template-columns: 30px;
+  gap: 4px;
+}
+
+.five-row-actions button {
+  min-height: 30px;
+  min-width: 30px;
+  border-radius: 9px;
+  padding: 0;
 }
 
 .admin-table--teams .admin-row {
