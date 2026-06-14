@@ -831,16 +831,30 @@ function migrateProfile(name, profile) {
 }
 
 function getMissionsFor(name) {
-  const guestIndex = Math.max(0, guests.indexOf(originalGuestForDisplay(name) || name));
   const source = editableMissions();
-  const start = source.length >= guestIndex * 4 + 4 ? guestIndex * 4 : 0;
-  return source.slice(start, start + 4).map((mission, index) => ({
-    id: `${name}-${index}`,
-    text: mission.text || String(mission),
-    points: Number(mission.points ?? missionPointsFor(mission.text || mission, index)),
-    photo: "",
-    completedAt: "",
-  }));
+  const participants = allParticipants().filter((participant) => participant !== ADMIN_PROFILE);
+  const participantIndex = Math.max(0, participants.indexOf(originalGuestForDisplay(name) || name));
+  const pointGroups = source.reduce((groups, mission, index) => {
+    const points = Number(mission.points ?? missionPointsFor(mission.text || mission, index));
+    if (!groups.has(points)) groups.set(points, []);
+    groups.get(points).push({ ...mission, points });
+    return groups;
+  }, new Map());
+  const pointLevels = [...pointGroups.keys()].sort((a, b) => a - b);
+  if (!pointLevels.length) return [];
+  return Array.from({ length: Math.min(4, source.length || 4) }, (_, index) => {
+    const level = pointLevels[index % pointLevels.length];
+    const round = Math.floor(index / pointLevels.length);
+    const group = pointGroups.get(level) || source;
+    const mission = group[(participantIndex + round * Math.max(1, participants.length)) % group.length];
+    return {
+      id: `${name}-${index}-${level}`,
+      text: mission.text || String(mission),
+      points: Number(mission.points ?? level),
+      photo: "",
+      completedAt: "",
+    };
+  }).sort((a, b) => Number(b.points || 0) - Number(a.points || 0) || a.text.localeCompare(b.text, "sv"));
 }
 
 function missionPointsFor(text, index = 0) {
@@ -1082,7 +1096,7 @@ function renderProfile() {
 
 function renderForecast() {
   const days = getWeatherDays();
-  document.querySelector("#forecast-strip").innerHTML = (days.length ? days : ["Fre", "Lör", "Sön"].map((label) => ({ label, icon: "☁", summary: "Väder", detail: "hämtas" })))
+  document.querySelector("#forecast-strip").innerHTML = (days.length ? days : ["Tor", "Fre", "Lör"].map((label) => ({ label, icon: "☁", summary: "Väder", detail: "hämtas" })))
     .map(
       (day) => `<article><span>${escapeHtml(day.label)}</span><strong><b>${day.icon}</b>${escapeHtml(day.summary)}</strong><small>${escapeHtml(day.detail)}</small></article>`,
     )
@@ -1215,10 +1229,19 @@ function renderActivityFeed() {
   const items = getActivityFeedItems();
   if (!items.length) return `<div class="activity-feed"><p class="hint">Inga h&auml;ndelser &auml;n. N&auml;r n&aring;gon klarar uppdrag, bingo eller tar ledningen syns det h&auml;r.</p></div>`;
   return `<div class="activity-feed">${items.map((item) => `<article class="activity-feed-item activity-feed-item--${escapeHtml(item.kind)}">
-    <i>${escapeHtml(item.icon)}</i>
+    ${renderActivityAvatar(item)}
     <div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.detail)}</span></div>
     <time>${escapeHtml(item.time)}</time>
   </article>`).join("")}</div>`;
+}
+
+function renderActivityAvatar(item) {
+  const profile = item.name ? state.profiles[item.name] : null;
+  if (profile?.avatarUrl) {
+    return `<i class="activity-avatar"><img src="${escapeHtml(profile.avatarUrl)}" alt="${escapeHtml(item.name)}" /></i>`;
+  }
+  const initial = (item.name || item.title || "?").trim().slice(0, 1).toUpperCase();
+  return `<i class="activity-avatar"><span>${escapeHtml(initial)}</span></i>`;
 }
 
 function renderRsvpStatusMini() {
@@ -1247,6 +1270,7 @@ function getActivityFeedItems() {
       items.push({
         kind: "mission",
         icon: "!",
+        name,
         at: mission.completedAt,
         title: `${name} gjorde ett uppdrag`,
         detail: `+${mission.points || missionPointsFor(mission.text)} p`,
@@ -1257,6 +1281,7 @@ function getActivityFeedItems() {
       items.push({
         kind: "bingo",
         icon: "#",
+        name,
         at: proof.completedAt,
         title: `${name} fick bingo`,
         detail: item,
@@ -1268,6 +1293,7 @@ function getActivityFeedItems() {
       items.push({
         kind: "video",
         icon: "▶",
+        name,
         at: video.completedAt,
         title: `${name} sparade ${slot === "before" ? "f\u00f6re" : "efter"}-video`,
         detail: "F\u00f6re / efter",
@@ -1279,6 +1305,7 @@ function getActivityFeedItems() {
     items.push({
       kind: "lead",
       icon: "1",
+      name: leaders[0].name,
       at: "1970-01-01T00:00:00.000Z",
       title: `${leaders[0].name} leder`,
       detail: `${leaders[0].points} p totalt`,
@@ -1286,7 +1313,7 @@ function getActivityFeedItems() {
   }
   return items
     .sort((a, b) => new Date(b.at) - new Date(a.at))
-    .slice(0, 5)
+    .slice(0, 20)
     .map((item) => ({ ...item, time: item.kind === "lead" ? "leder" : formatPhotoTime(item.at) }));
 }
 
@@ -1371,7 +1398,7 @@ function renderScoreMini() {
 
 function renderWeatherMini() {
   const days = getWeatherDays();
-  const forecast = days.length ? days : ["Fre", "Lör", "Sön"].map((label) => ({ label, icon: "☁", summary: "Väder", detail: "hämtas" }));
+  const forecast = days.length ? days : ["Tor", "Fre", "Lör"].map((label) => ({ label, icon: "☁", summary: "Väder", detail: "hämtas" }));
   return `<div class="weather-mini-list">${forecast.map((day) => `
     <section>
       <b>${escapeHtml(day.label)}</b>
@@ -1491,7 +1518,7 @@ function renderGames() {
   return `<div class="game-picker">
     ${renderGamePickerButton("vote", "vote", "Most likely")}
     ${renderGamePickerButton("quiz", "quiz", "Quiz")}
-    ${renderGamePickerButton("snaps", "snaps", "Snaps")}
+    ${renderGamePickerButton("snaps", "snaps", "Snapsvisor")}
     ${renderGamePickerButton("mission", "mission", "Uppdrag")}
     ${renderGamePickerButton("bingo", "bingo", "Bingo")}
     ${renderGamePickerButton("beforeAfter", "people", "Före/efter")}
@@ -1511,13 +1538,13 @@ function renderGamePickerButton(game, icon, label) {
 
 function gameIcon(icon) {
   const icons = {
-    wheel: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22"/><circle cx="32" cy="32" r="8"/><path d="M32 10v12M32 42v12M10 32h12M42 32h12M16 16l9 9M39 39l9 9M48 16l-9 9M25 39l-9 9"/></svg>`,
-    vote: `<svg viewBox="0 0 64 64"><path d="M12 18c0-5 4-9 9-9h22c5 0 9 4 9 9v14c0 5-4 9-9 9H30L17 53v-12h4c-5 0-9-4-9-9V18Z"/><circle cx="25" cy="25" r="3"/><circle cx="32" cy="25" r="3"/><circle cx="39" cy="25" r="3"/></svg>`,
-    quiz: `<svg viewBox="0 0 64 64"><path d="M16 12h32v40H16z"/><path d="M23 24h18M23 34h18M23 44h10"/><circle cx="44" cy="44" r="5"/></svg>`,
-    snaps: `<svg viewBox="0 0 64 64"><path d="M18 12h28l-5 32H23L18 12Z"/><path d="M24 44h16l4 8H20l4-8Z"/><path d="M21 24h22"/></svg>`,
-    mission: `<svg viewBox="0 0 64 64"><path d="M18 54V10"/><path d="M18 12h28l-5 11 5 11H18"/><path d="M18 34h20"/></svg>`,
-    bingo: `<svg viewBox="0 0 64 64"><path d="M12 12h40v40H12z"/><path d="M25 12v40M39 12v40M12 25h40M12 39h40"/></svg>`,
-    people: `<svg viewBox="0 0 64 64"><circle cx="24" cy="21" r="9"/><circle cx="43" cy="24" r="7"/><path d="M9 52c2-12 9-19 15-19s13 7 15 19"/><path d="M33 52c2-9 6-14 11-14 6 0 10 5 12 14"/></svg>`,
+    wheel: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22"/><circle cx="32" cy="32" r="4"/><path d="M32 10v22l16-16M32 32h22M32 32l16 16M32 32v22M32 32 16 48M32 32H10M32 32 16 16"/></svg>`,
+    vote: `<svg viewBox="0 0 64 64"><path d="M17 18h30c4 0 7 3 7 7v13c0 4-3 7-7 7H35l-12 9v-9h-6c-4 0-7-3-7-7V25c0-4 3-7 7-7Z"/><path d="M22 31h20M22 38h13"/><circle cx="45" cy="31" r="3"/></svg>`,
+    quiz: `<svg viewBox="0 0 64 64"><path d="M18 10h28l8 8v36H18z"/><path d="M46 10v10h8"/><path d="M26 27c1-5 5-8 10-7 5 1 8 4 8 9 0 7-9 7-9 13"/><path d="M35 50h.1"/></svg>`,
+    snaps: `<svg viewBox="0 0 64 64"><path d="M20 13h24l-4 30H24L20 13Z"/><path d="M25 43h14l4 9H21l4-9Z"/><path d="M24 24h16"/><path d="M48 15v18"/><path d="M48 15c6 0 8 4 7 8"/></svg>`,
+    mission: `<svg viewBox="0 0 64 64"><path d="M14 18h36v28H14z"/><path d="m14 20 18 15 18-15"/><path d="M43 11v10M38 16h10"/><path d="m22 45-8 8M42 45l8 8"/></svg>`,
+    bingo: `<svg viewBox="0 0 64 64"><path d="M13 13h38v38H13z"/><path d="M26 13v38M38 13v38M13 26h38M13 38h38"/><path d="m20 33 4 4 8-9"/><circle cx="45" cy="45" r="3"/></svg>`,
+    people: `<svg viewBox="0 0 64 64"><path d="M15 16h34v32H15z"/><path d="M32 16v32"/><circle cx="24" cy="28" r="5"/><path d="M17 42c2-6 5-9 7-9s5 3 7 9"/><path d="M39 24h7M39 32h7M39 40h5"/></svg>`,
   };
   return icons[icon] || icons.wheel;
 }
@@ -1642,6 +1669,23 @@ function renderGameAdminEditor() {
         <button class="admin-secondary-button" type="button" data-add-quiz-row>Lägg till</button>
         <button class="admin-add-button" type="button" data-save-content="quizQuestions">Spara quiz</button>
         <button class="admin-secondary-button" type="button" data-apply-content="quizQuestions">${config.applyLabel}</button>
+      </div>
+    </article>`;
+  }
+  if (config.key === "bingo") {
+    const bingoRows = editableBingo();
+    return `<article class="admin-editor game-content-editor bingo-admin-editor">
+      <div class="admin-editor-head"><strong>Redigera bingo</strong><small>En ruta per rad</small></div>
+      <div class="bingo-admin-table">
+        ${bingoRows.map((item, index) => `<div class="bingo-admin-row" data-bingo-admin-row>
+          <input class="bingo-admin-text" value="${escapeHtml(item)}" data-bingo-admin-text aria-label="Bingo ${index + 1}" />
+          <button class="admin-delete-button" type="button" data-delete-bingo-row="${index}" aria-label="Radera bingoruta">&times;</button>
+        </div>`).join("")}
+      </div>
+      <div class="admin-actions">
+        <button class="admin-secondary-button" type="button" data-add-bingo-row>Lägg till</button>
+        <button class="admin-add-button" type="button" data-save-content="bingo">Spara bingo</button>
+        <button class="admin-secondary-button" type="button" data-apply-content="bingo">${config.applyLabel}</button>
       </div>
     </article>`;
   }
@@ -2321,6 +2365,24 @@ function bindDynamicEvents() {
     renderAll();
   }));
 
+  document.querySelector("[data-add-bingo-row]")?.addEventListener("click", () => {
+    ensureEditableContent();
+    state.content.bingo.push("Ny bingoruta");
+    saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-delete-bingo-row]").forEach((button) => button.addEventListener("click", () => {
+    ensureEditableContent();
+    if (state.content.bingo.length <= 9) {
+      showToast("Minst nio bingorutor behövs");
+      return;
+    }
+    state.content.bingo.splice(Number(button.dataset.deleteBingoRow), 1);
+    saveState();
+    renderAll();
+  }));
+
   document.querySelectorAll("[data-apply-content]").forEach((button) => button.addEventListener("click", () => {
     const key = button.dataset.applyContent;
     if (!saveContentList(key)) return;
@@ -2769,6 +2831,18 @@ function saveContentList(key) {
     saveState();
     return true;
   }
+  if (key === "bingo") {
+    const rows = [...document.querySelectorAll("[data-bingo-admin-row]")]
+      .map((row) => row.querySelector("[data-bingo-admin-text]")?.value.trim() || "")
+      .filter(Boolean);
+    if (rows.length < 9) {
+      showToast("Minst nio bingorutor behövs");
+      return false;
+    }
+    state.content.bingo = [...new Set(rows)];
+    saveState();
+    return true;
+  }
   const textarea = document.querySelector(`[data-content-editor="${key}"]`);
   if (!textarea) return false;
   const rows = textarea.value
@@ -2813,6 +2887,34 @@ function applyContentList(key) {
 }
 
 async function loadWeather() {
+  try {
+    state.weather = await fetchSmhiWeather();
+  } catch {
+    state.weather = await fetchOpenMeteoWeather();
+  }
+  renderAll();
+}
+
+async function fetchSmhiWeather() {
+  const lon = Number(WEATHER.longitude).toFixed(6);
+  const lat = Number(WEATHER.latitude).toFixed(6);
+  const response = await fetch(`https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`);
+  if (!response.ok) throw new Error("smhi-weather");
+  const data = await response.json();
+  const targets = [
+    ["2026-06-18", "Tor"],
+    ["2026-06-19", "Fre"],
+    ["2026-06-20", "Lör"],
+  ];
+  const days = targets.map(([date, label]) => smhiDayFromSeries(data.timeSeries || [], date, label)).filter(Boolean);
+  if (!days.length) throw new Error("smhi-empty");
+  return {
+    source: "SMHI",
+    days,
+  };
+}
+
+async function fetchOpenMeteoWeather() {
   const params = new URLSearchParams({
     latitude: WEATHER.latitude,
     longitude: WEATHER.longitude,
@@ -2822,11 +2924,37 @@ async function loadWeather() {
   });
   try {
     const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
-    state.weather = response.ok ? await response.json() : null;
+    return response.ok ? { source: "Open-Meteo", ...(await response.json()) } : null;
   } catch {
-    state.weather = null;
+    return null;
   }
-  renderAll();
+}
+
+function smhiDayFromSeries(series, date, label) {
+  const entries = series.filter((entry) => localDateKey(new Date(entry.validTime)) === date);
+  if (!entries.length) return null;
+  const noonEntry = entries.find((entry) => new Date(entry.validTime).getHours() === 12) || entries[Math.floor(entries.length / 2)];
+  const temps = entries.map((entry) => smhiParam(entry, "t")).filter((value) => Number.isFinite(value));
+  const precip = entries.reduce((sum, entry) => sum + Math.max(0, smhiParam(entry, "pmean") || 0), 0);
+  const symbol = smhiParam(noonEntry, "Wsymb2") || 0;
+  const temperature = temps.length ? Math.max(...temps) : smhiParam(noonEntry, "t");
+  return {
+    label,
+    icon: smhiWeatherIcon(symbol),
+    summary: `${smhiWeatherName(symbol)} ${Math.round(temperature)}°`,
+    detail: `${formatRainAmount(precip)} mm regn`,
+  };
+}
+
+function smhiParam(entry, name) {
+  const param = entry?.parameters?.find((item) => item.name === name);
+  const value = Number(param?.values?.[0]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function formatRainAmount(value) {
+  const rounded = Math.round(Number(value || 0) * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
 async function loadWorldCupMatch() {
@@ -2859,16 +2987,17 @@ function extractTeams(match) {
 }
 
 function getWeatherDays() {
+  if (Array.isArray(state.weather?.days)) return state.weather.days;
   const daily = state.weather?.daily;
   if (!daily?.time) return [];
-  return ["2026-06-19", "2026-06-20", "2026-06-21"]
+  return ["2026-06-18", "2026-06-19", "2026-06-20"]
     .map((date, dayIndex) => ({ dayIndex, index: daily.time.indexOf(date) }))
     .filter((item) => item.index >= 0)
     .map(({ dayIndex, index }) => ({
-      label: ["Fre", "Lör", "Sön"][dayIndex],
+      label: ["Tor", "Fre", "Lör"][dayIndex],
       icon: weatherIcon(daily.weather_code[index]),
       summary: `${weatherName(daily.weather_code[index])} ${Math.round(daily.temperature_2m_max[index])}°`,
-      detail: `${daily.precipitation_probability_max[index] ?? 0}% regn`,
+      detail: `${formatRainAmount(daily.precipitation_sum?.[index] || 0)} mm regn`,
     }));
 }
 
@@ -2916,6 +3045,31 @@ function weatherName(code) {
   if ([51, 53, 55, 56, 57].includes(code)) return "Dugg";
   if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Regn";
   if ([95, 96, 99].includes(code)) return "Åska";
+  return "Väder";
+}
+
+function smhiWeatherIcon(code) {
+  if ([1, 2].includes(code)) return "☀";
+  if ([3, 4].includes(code)) return "🌤";
+  if ([5, 6].includes(code)) return "☁";
+  if (code === 7) return "🌫";
+  if ([8, 9, 10, 18, 19, 20].includes(code)) return "🌧";
+  if ([11, 21].includes(code)) return "⛈";
+  if ([12, 13, 22, 23].includes(code)) return "🌨";
+  if ([14, 15, 24, 25].includes(code)) return "❄";
+  return "☁";
+}
+
+function smhiWeatherName(code) {
+  if ([1, 2].includes(code)) return "Sol";
+  if ([3, 4].includes(code)) return "Sol/moln";
+  if ([5, 6].includes(code)) return "Moln";
+  if (code === 7) return "Dimma";
+  if ([8, 9, 10].includes(code)) return "Skurar";
+  if ([18, 19, 20].includes(code)) return "Regn";
+  if ([11, 21].includes(code)) return "Åska";
+  if ([12, 13, 22, 23].includes(code)) return "Snöblandat";
+  if ([14, 15, 24, 25].includes(code)) return "Snö";
   return "Väder";
 }
 
