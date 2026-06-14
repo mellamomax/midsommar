@@ -1247,8 +1247,7 @@ function renderPrep() {
   const profile = activeProfile();
   ensurePackList();
   const parts = countdownParts();
-  setText("countdown-days", parts.days);
-  setText("countdown-time", `${parts.days === 1 ? "dag" : "dagar"} · ${pad(parts.hours)} tim ${pad(parts.minutes)} min ${pad(parts.seconds)} sek`);
+  renderCountdownValues(parts);
 
   const participants = allParticipants();
   const rsvpDone = participants.filter((name) => rsvpStatus(name)).length;
@@ -3318,8 +3317,15 @@ function countdownParts() {
 
 function renderCountdown() {
   const parts = countdownParts();
+  renderCountdownValues(parts);
+}
+
+function renderCountdownValues(parts) {
   setText("countdown-days", parts.days);
-  setText("countdown-time", `${parts.days === 1 ? "dag" : "dagar"} · ${pad(parts.hours)} tim ${pad(parts.minutes)} min ${pad(parts.seconds)} sek`);
+  setText("countdown-hours", pad(parts.hours));
+  setText("countdown-minutes", pad(parts.minutes));
+  setText("countdown-seconds", pad(parts.seconds));
+  setText("countdown-time", "Till midsommar");
 }
 
 function shuffle(items) {
