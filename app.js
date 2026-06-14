@@ -44,6 +44,7 @@ let toastTimer = null;
 let profileClickTimer = null;
 let lastLoginTap = 0;
 let lastAdminCardTap = 0;
+let lastProfileGridAction = { key: "", at: 0 };
 let deferredInstallPrompt = null;
 const tripleTapTrackers = {};
 
@@ -1155,6 +1156,7 @@ function renderProfile() {
     profileInitial.hidden = !!displayProfile?.avatarUrl;
     if (displayProfile?.avatarUrl) profileAvatar.src = displayProfile.avatarUrl;
   }
+  if (isAdmin() && state.adminActiveProfile && !allParticipants().includes(state.adminActiveProfile)) state.adminActiveProfile = "";
   const adminTarget = state.adminActiveProfile || "";
   const targetProfile = adminTarget ? state.profiles[adminTarget] || makeProfile(adminTarget) : null;
   setText("dialog-profile-name", isAdmin() ? `Admin${adminTarget ? ` · jobbar med ${adminTarget}` : ""}` : profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
@@ -1616,8 +1618,9 @@ function awardMatchPoints() {
 }
 
 function renderGames() {
-  const profile = activeProfile();
-  if (!profile) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
+  const profile = gameProfileForRender();
+  const adminNotice = isAdmin() ? `<article class="game-card admin-game-context"><span class="micro-label">Admin</span><p>${state.adminActiveProfile ? `Visar lekar som ${escapeHtml(state.adminActiveProfile)}. Admin är inte med i spelen.` : "Välj profil i adminpanelen för att förhandsvisa personliga lekar. Redigeringarna funkar ändå."}</p></article>` : "";
+  if (!profile && !isAdmin()) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
   return `<div class="game-picker">
     ${renderGamePickerButton("vote", "vote", "Most likely")}
     ${renderGamePickerButton("quiz", "quiz", "Quiz")}
@@ -1626,13 +1629,25 @@ function renderGames() {
     ${renderGamePickerButton("bingo", "bingo", "Bingo")}
     ${renderGamePickerButton("beforeAfter", "people", "Före/efter")}
   </div>
-  ${state.game === "vote" ? renderVote(profile) : ""}
-  ${state.game === "quiz" ? renderQuiz(profile) : ""}
+  ${adminNotice}
+  ${profile && state.game === "vote" ? renderVote(profile) : ""}
+  ${profile && state.game === "quiz" ? renderQuiz(profile) : ""}
   ${state.game === "snaps" ? renderSnapsGame() : ""}
-  ${state.game === "mission" ? renderMission(profile) : ""}
-  ${state.game === "bingo" ? renderBingo(profile) : ""}
-  ${state.game === "beforeAfter" ? renderBeforeAfter(profile) : ""}
+  ${profile && state.game === "mission" ? renderMission(profile) : ""}
+  ${profile && state.game === "bingo" ? renderBingo(profile) : ""}
+  ${profile && state.game === "beforeAfter" ? renderBeforeAfter(profile) : ""}
+  ${!profile && state.game !== "snaps" && isAdmin() ? `<article class="game-card"><p class="hint">Ingen spelprofil vald. Välj en profil i adminpanelen om du vill förhandsvisa den här leken.</p></article>` : ""}
   ${isAdmin() ? renderGameAdminEditor() : ""}`;
+}
+
+function gameProfileForRender() {
+  if (!isAdmin()) return activeProfile();
+  const participants = allParticipants();
+  const name = participants.includes(state.adminActiveProfile) ? state.adminActiveProfile : participants[0];
+  if (!name) return null;
+  if (!state.profiles[name]) state.profiles[name] = makeProfile(name);
+  migrateProfile(name, state.profiles[name]);
+  return state.profiles[name];
 }
 
 function renderGamePickerButton(game, icon, label) {
@@ -3666,11 +3681,14 @@ document.querySelector("[data-admin-login]").addEventListener("click", () => {
   saveState();
   renderAll();
 });
-document.querySelector("#profile-grid").addEventListener("click", (event) => {
+function handleProfileGridAction(event) {
   if (!isAdmin()) return;
   const deleteButton = event.target.closest("[data-delete-profile]");
   if (deleteButton) {
+    event.preventDefault();
+    event.stopPropagation();
     const name = deleteButton.dataset.deleteProfile;
+    if (skipRepeatedProfileAction(`delete:${name}`)) return;
     if (!window.confirm(`Radera profilen ${name}? Det går inte att ångra.`)) return;
     if (!deleteProfile(name)) return;
     showToast(`Raderade ${name}`);
@@ -3680,11 +3698,28 @@ document.querySelector("#profile-grid").addEventListener("click", (event) => {
   }
   const button = event.target.closest("[data-profile]");
   if (!button) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (skipRepeatedProfileAction(`select:${button.dataset.profile}`)) return;
   state.adminActiveProfile = button.dataset.profile;
   showToast(`Admin jobbar med ${state.adminActiveProfile}`);
   saveState();
   renderAll();
+}
+
+document.querySelector("#profile-grid").addEventListener("click", handleProfileGridAction);
+document.querySelector("#profile-grid").addEventListener("pointerup", (event) => {
+  if (event.pointerType === "mouse") return;
+  handleProfileGridAction(event);
 });
+document.querySelector("#profile-grid").addEventListener("touchend", handleProfileGridAction, { passive: false });
+
+function skipRepeatedProfileAction(key) {
+  const now = Date.now();
+  if (lastProfileGridAction.key === key && now - lastProfileGridAction.at < 700) return true;
+  lastProfileGridAction = { key, at: now };
+  return false;
+}
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && state.activeSnapId) {

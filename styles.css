@@ -2876,6 +2876,17 @@ body[data-page="prep"] .prep-pack-card {
   background: #b94a48;
 }
 
+.admin-game-context {
+  padding-block: 10px;
+}
+
+.admin-game-context p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 .score-inputs {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
