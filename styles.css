@@ -4556,8 +4556,11 @@ body[data-page="prep"] .prep-welcome small {
 body[data-page="prep"] .countdown-ring {
   display: grid;
   width: min(326px, calc(100vw - 42px));
+  aspect-ratio: auto !important;
+  place-items: stretch;
   height: auto;
   min-height: 0;
+  max-height: 128px;
   border-radius: 22px;
   padding: 14px 12px 12px;
   color: #173b2b;
@@ -6805,9 +6808,14 @@ body[data-section="score"] .scoreboard--leaderboard {
 
   body[data-page="prep"] .countdown-ring {
     width: min(100%, 326px) !important;
+    aspect-ratio: auto !important;
+    place-items: stretch !important;
+    align-self: auto !important;
     min-height: 0;
+    max-height: 112px;
     border-radius: 18px;
     padding: 10px 10px 9px;
+    gap: 0 !important;
   }
 
   body[data-page="prep"] .countdown-ring::before {
