@@ -27,6 +27,7 @@ const SHARED_STATE_KEYS = [
   "schedule",
   "content",
   "settings",
+  "deletedProfiles",
   "galleryArchive",
 ];
 const LOCAL_LOGOUT_KEY = "midsommar-last-global-logout";
@@ -187,6 +188,7 @@ const seed = {
   schedule: [],
   content: {},
   settings: {},
+  deletedProfiles: [],
   galleryArchive: [],
 };
 
@@ -456,6 +458,7 @@ function ensureEditableContent() {
   state.settings = state.settings && typeof state.settings === "object" ? state.settings : {};
   state.settings.dashboard = { next: true, schedule: true, score: true, weather: true, rsvp: true, feed: false, ...(state.settings.dashboard || {}) };
   state.settings.pentathlon = { started: false, visibleIndex: -1, ...(state.settings.pentathlon || {}) };
+  state.deletedProfiles = Array.isArray(state.deletedProfiles) ? state.deletedProfiles : [];
   state.quizCorrected = Boolean(state.quizCorrected);
   state.quizAwarded = Boolean(state.quizAwarded);
   state.galleryArchive = Array.isArray(state.galleryArchive) ? state.galleryArchive : [];
@@ -726,6 +729,15 @@ function applyGlobalLogoutIfNeeded() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+function ensureImplicitAdminAccess() {
+  if (state.profile || state.page !== "party") return;
+  state.adminMode = true;
+  state.adminOwner = ADMIN_PROFILE;
+  state.profile = ADMIN_PROFILE;
+  state.adminReturnProfile = "";
+  state.adminActiveProfile = state.adminActiveProfile || "";
+}
+
 function scheduleRemoteSave() {
   if (!remoteReady) return;
   pendingRemoteSave = true;
@@ -921,6 +933,7 @@ function missionPointsFor(text, index = 0) {
 
 function renderAll() {
   ensureEditableContent();
+  ensureImplicitAdminAccess();
   applyGlobalLogoutIfNeeded();
   activatePartyIfEventStarted();
   renderShell();
@@ -1007,10 +1020,11 @@ function renderShell() {
 function allParticipants() {
   const overrides = state.nameOverrides || {};
   const overriddenNames = new Set(Object.values(overrides).filter(Boolean));
+  const deleted = new Set(state.deletedProfiles || []);
   const baseGuests = guests.map((name) => overrides[name] || name);
   const extras = [...Object.keys(state.profiles || {}), ...Object.keys(state.rsvp || {})]
     .filter((name) => name && !isAdminProfileName(name) && !guests.includes(name) && !overriddenNames.has(name));
-  return [...new Set([...baseGuests, ...extras].filter(Boolean))];
+  return [...new Set([...baseGuests, ...extras].filter(Boolean))].filter((name) => !deleted.has(name) && !deleted.has(originalGuestForDisplay(name)));
 }
 
 function originalGuestForDisplay(name) {
@@ -1036,7 +1050,7 @@ function isAdmin() {
 }
 
 function canUseAdmin() {
-  return Boolean(state.profile);
+  return Boolean(state.profile) || state.page === "party";
 }
 
 function isAdminProfileName(name) {
@@ -1078,6 +1092,7 @@ function renameProfile(oldName, newName, options = {}) {
   if (activate || state.profile === oldName) state.profile = newName;
   if (state.adminActiveProfile === oldName) state.adminActiveProfile = newName;
   if (state.adminReturnProfile === oldName) state.adminReturnProfile = newName;
+  state.deletedProfiles = (state.deletedProfiles || []).filter((name) => name !== newName && name !== originalGuestForDisplay(newName));
   return true;
 }
 
@@ -1085,8 +1100,13 @@ function deleteProfile(name) {
   if (!isAdmin() || !name || isAdminProfileName(name)) return false;
   archiveProfileGalleryItems(name);
   state.nameOverrides = state.nameOverrides || {};
+  state.deletedProfiles = Array.isArray(state.deletedProfiles) ? state.deletedProfiles : [];
+  const originalGuest = originalGuestForDisplay(name);
+  [name, originalGuest].filter(Boolean).forEach((item) => {
+    if (!state.deletedProfiles.includes(item)) state.deletedProfiles.push(item);
+  });
   Object.entries(state.nameOverrides).forEach(([originalName, displayName]) => {
-    if (displayName === name) delete state.nameOverrides[originalName];
+    if (displayName === name || originalName === name) delete state.nameOverrides[originalName];
   });
   delete state.profiles[name];
   delete state.rsvp[name];
@@ -2376,6 +2396,7 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-game]").forEach((button) => {
     const selectGame = (event) => {
       event.preventDefault();
+      event.stopPropagation();
       if (state.game === button.dataset.game) return;
       state.game = button.dataset.game;
       state.adminEdit = "";
@@ -2383,10 +2404,15 @@ function bindDynamicEvents() {
       renderAll();
     };
     button.addEventListener("click", selectGame);
+    button.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse") return;
+      selectGame(event);
+    });
     button.addEventListener("pointerup", (event) => {
       if (event.pointerType === "mouse") return;
       selectGame(event);
     });
+    button.addEventListener("touchend", selectGame, { passive: false });
   });
 
   document.querySelectorAll("[data-admin-edit]").forEach((button) => button.addEventListener("click", () => {
@@ -3317,6 +3343,7 @@ document.querySelector("#login-form").addEventListener("submit", async (event) =
     }
   }
   state.profile = name;
+  state.deletedProfiles = (state.deletedProfiles || []).filter((item) => item !== name && item !== originalGuestForDisplay(name));
   state.adminMode = false;
   state.adminOwner = "";
   state.adminReturnProfile = "";
@@ -3485,6 +3512,7 @@ updateInstallButton();
 function skipLoginForTest() {
   if (state.profile) return;
   state.profile = "Test";
+  state.deletedProfiles = (state.deletedProfiles || []).filter((item) => item !== "Test");
   state.adminMode = false;
   state.adminOwner = "";
   state.adminReturnProfile = "";
@@ -3558,7 +3586,7 @@ document.querySelector("[data-admin-code]").addEventListener("click", () => {
 });
 
 function enterAdminMode() {
-  if (!state.profile) {
+  if (!state.profile && state.page !== "party") {
     showToast("Välj profil först");
     return;
   }

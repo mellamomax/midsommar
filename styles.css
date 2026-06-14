@@ -4928,6 +4928,7 @@ body[data-section="games"] .game-picker {
   border-radius: 0 0 14px 14px;
   background: var(--game-accent);
   opacity: 0.9;
+  pointer-events: none;
 }
 
 .game-menu-button::before {
