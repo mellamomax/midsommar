@@ -4557,12 +4557,13 @@ body[data-page="prep"] .countdown-ring {
   display: grid;
   width: min(326px, calc(100vw - 42px));
   aspect-ratio: auto !important;
-  place-items: stretch;
+  place-items: center;
+  justify-self: center;
   height: auto;
   min-height: 0;
-  max-height: 128px;
+  max-height: 132px;
   border-radius: 22px;
-  padding: 14px 12px 12px;
+  padding: 14px 14px 13px;
   color: #173b2b;
   background:
     radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.9), transparent 48%),
@@ -4572,16 +4573,20 @@ body[data-page="prep"] .countdown-ring {
     0 0 0 1px rgba(255, 255, 255, 0.62),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
-  animation: countdownBreath 4.8s ease-in-out infinite;
+  animation: countdownBreath 3.2s ease-in-out infinite;
 }
 
 body[data-page="prep"] .countdown-ring::before {
   content: "";
   position: absolute;
-  inset: 10px;
-  border-radius: 24px;
-  border: 1px solid rgba(47, 113, 71, 0.16);
+  inset: -8px;
+  border-radius: 28px;
+  border: 1px solid rgba(247, 205, 82, 0.44);
+  box-shadow:
+    0 0 0 0 rgba(247, 205, 82, 0.32),
+    0 0 38px rgba(247, 205, 82, 0.2);
   pointer-events: none;
+  animation: countdownHalo 2.4s ease-out infinite;
 }
 
 body[data-page="prep"] .countdown-ring span {
@@ -4593,21 +4598,35 @@ body[data-page="prep"] .countdown-ring span {
 
 body[data-page="prep"] .countdown-units {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
-  margin-top: 8px;
+  grid-template-columns: repeat(4, auto);
+  justify-content: center;
+  align-items: start;
+  gap: 0;
+  margin-top: 6px;
 }
 
 body[data-page="prep"] .countdown-units strong {
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: 5px;
-  min-width: 0;
+  gap: 4px;
+  min-width: 58px;
+}
+
+body[data-page="prep"] .countdown-units strong + strong::before {
+  content: ":";
+  position: absolute;
+  left: -3px;
+  top: -1px;
+  color: rgba(31, 77, 53, 0.62);
+  font-size: clamp(1.7rem, 7vw, 2.55rem);
+  font-weight: 950;
+  line-height: 0.92;
 }
 
 body[data-page="prep"] .countdown-units b {
   color: var(--leaf-dark);
-  font-size: clamp(1.8rem, 8vw, 2.65rem);
+  font-size: clamp(1.8rem, 8vw, 2.7rem);
   line-height: 0.92;
   font-weight: 950;
   font-variant-numeric: tabular-nums;
@@ -4640,11 +4659,35 @@ body[data-page="prep"] #countdown-time {
       inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
   50% {
-    transform: translateY(-3px) scale(1.012);
+    transform: translateY(-2px) scale(1.025);
     box-shadow:
-      0 28px 66px rgba(31, 77, 53, 0.3),
-      0 0 0 8px rgba(247, 205, 82, 0.1),
+      0 30px 72px rgba(31, 77, 53, 0.34),
+      0 0 0 10px rgba(247, 205, 82, 0.16),
       inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+}
+
+@keyframes countdownHalo {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.985);
+    box-shadow:
+      0 0 0 0 rgba(247, 205, 82, 0.32),
+      0 0 30px rgba(247, 205, 82, 0.2);
+  }
+  70% {
+    opacity: 0.18;
+    transform: scale(1.08);
+    box-shadow:
+      0 0 0 13px rgba(247, 205, 82, 0),
+      0 0 48px rgba(247, 205, 82, 0.28);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+    box-shadow:
+      0 0 0 16px rgba(247, 205, 82, 0),
+      0 0 50px rgba(247, 205, 82, 0);
   }
 }
 
@@ -6807,20 +6850,20 @@ body[data-section="score"] .scoreboard--leaderboard {
   }
 
   body[data-page="prep"] .countdown-ring {
-    width: min(100%, 326px) !important;
+    width: min(100%, 340px) !important;
     aspect-ratio: auto !important;
-    place-items: stretch !important;
+    place-items: center !important;
     align-self: auto !important;
     min-height: 0;
-    max-height: 112px;
+    max-height: 108px;
     border-radius: 18px;
-    padding: 10px 10px 9px;
+    padding: 10px 12px 9px;
     gap: 0 !important;
   }
 
   body[data-page="prep"] .countdown-ring::before {
-    inset: 7px;
-    border-radius: 15px;
+    inset: -6px;
+    border-radius: 22px;
   }
 
   body[data-page="prep"] .countdown-ring span {
@@ -6829,22 +6872,30 @@ body[data-section="score"] .scoreboard--leaderboard {
   }
 
   body[data-page="prep"] .countdown-units {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    margin-top: 6px;
+    grid-template-columns: repeat(4, auto);
+    justify-content: center;
+    gap: 0;
+    margin-top: 5px;
   }
 
   body[data-page="prep"] .countdown-units strong {
-    min-height: 44px;
-    border: 1px solid rgba(47, 113, 71, 0.1);
-    border-radius: 12px;
-    padding: 4px 3px;
-    background: rgba(255, 255, 255, 0.44);
+    min-width: 48px;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 0 2px;
+    background: transparent;
     gap: 2px;
   }
 
+  body[data-page="prep"] .countdown-units strong + strong::before {
+    left: -4px;
+    top: -1px;
+    font-size: clamp(1.42rem, 7vw, 1.92rem);
+  }
+
   body[data-page="prep"] .countdown-units b {
-    font-size: clamp(1.45rem, 8vw, 2.05rem);
+    font-size: clamp(1.42rem, 7vw, 1.96rem);
     line-height: 0.9;
   }
 
