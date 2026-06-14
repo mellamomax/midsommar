@@ -791,6 +791,13 @@ function ensureImplicitAdminAccess() {
   state.adminActiveProfile = state.adminActiveProfile || "";
 }
 
+function clearPrepBypass() {
+  try {
+    sessionStorage.removeItem("midsommar-prep-bypass");
+    sessionStorage.removeItem("midsommar-admin-prep-view");
+  } catch {}
+}
+
 function scheduleRemoteSave() {
   if (!remoteReady) return;
   pendingRemoteSave = true;
@@ -1224,12 +1231,13 @@ function renderProfile() {
   if (adminInput && (isAdmin() || !adminInput.value)) adminInput.value = adminTarget || "";
   if (adminInput) adminInput.disabled = !isAdmin();
   document.querySelector("[data-admin-login]").disabled = !isAdmin() || !adminTarget;
+  document.querySelector("[data-admin-switch-profile]")?.toggleAttribute("hidden", !isAdmin() || !adminTarget);
   document.querySelector(".admin-name-field").hidden = !isAdmin();
   document.querySelector("#current-profile-card").hidden = !isAdmin();
   document.querySelector("#profile-grid").hidden = !isAdmin();
   document.querySelector("#admin-code-row").hidden = true;
   document.querySelector("[data-admin-mode]").hidden = !isAdmin();
-  document.querySelector("[data-admin-mode]").textContent = "Lämna admin mode";
+  document.querySelector("[data-admin-mode]").textContent = state.adminReturnProfile ? "Till mitt konto" : "Lämna admin";
   document.querySelector("[data-admin-logout-all]")?.toggleAttribute("hidden", !isAdmin());
   setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Välj vem du vill redigera, eller logga ut alla inför live." : "Profilen är låst.");
 }
@@ -3467,6 +3475,7 @@ document.querySelector("#login-form").addEventListener("submit", async (event) =
   state.adminOwner = "";
   state.adminReturnProfile = "";
   state.adminActiveProfile = "";
+  clearPrepBypass();
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
   const profile = activeProfile();
   profile.avatarUrl = avatarUrl;
@@ -3490,6 +3499,7 @@ function returnToPrepFromProfile() {
   clearTimeout(profileClickTimer);
   if (!state.profile) return;
   document.querySelector("#profile-dialog")?.close();
+  clearPrepBypass();
   state.page = "prep";
   galleryIndex = null;
   galleryMotion = "open";
@@ -3499,6 +3509,7 @@ function returnToPrepFromProfile() {
 
 function returnToPrepFromStartTab() {
   if (!state.profile) return;
+  clearPrepBypass();
   state.page = "prep";
   galleryIndex = null;
   galleryMotion = "open";
@@ -3547,6 +3558,7 @@ function returnToLoginForTest() {
   state.adminOwner = "";
   state.adminReturnProfile = "";
   state.adminActiveProfile = "";
+  clearPrepBypass();
   state.page = "prep";
   galleryIndex = null;
   galleryMotion = "open";
@@ -3636,6 +3648,7 @@ function skipLoginForTest() {
   state.adminOwner = "";
   state.adminReturnProfile = "";
   state.adminActiveProfile = "";
+  clearPrepBypass();
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
   activeProfile();
   showToast("Testläge öppnat");
@@ -3722,13 +3735,37 @@ function enterAdminMode() {
 
 function leaveAdminMode() {
   const returnProfile = state.adminReturnProfile && !isAdminProfileName(state.adminReturnProfile) ? state.adminReturnProfile : "";
+  clearPrepBypass();
   state.adminMode = false;
   state.adminOwner = "";
   state.adminReturnProfile = "";
   state.adminActiveProfile = "";
   state.profile = returnProfile;
   if (state.profile) activeProfile();
+  if (Date.now() < EVENT_START.getTime()) {
+    state.page = "prep";
+    state.section = "today";
+  }
   showToast(state.profile ? `Tillbaka som ${state.profile}` : "Admin mode av");
+}
+
+function switchAdminToProfile(name) {
+  if (!isAdmin() || !name || isAdminProfileName(name)) return;
+  clearPrepBypass();
+  state.adminMode = false;
+  state.adminOwner = "";
+  state.adminReturnProfile = "";
+  state.adminActiveProfile = "";
+  state.profile = name;
+  activeProfile();
+  if (Date.now() < EVENT_START.getTime()) {
+    state.page = "prep";
+    state.section = "today";
+  } else {
+    state.page = "party";
+    state.section = "today";
+  }
+  showToast(`Inloggad som ${name}`);
 }
 
 function toggleAdminFromStartTab() {
@@ -3763,6 +3800,18 @@ document.querySelector("[data-admin-logout-all]")?.addEventListener("click", () 
   state.settings.logoutAt = new Date().toISOString();
   saveState();
   showToast("Alla loggas ut");
+  renderAll();
+});
+document.querySelector("[data-admin-switch-profile]")?.addEventListener("click", () => {
+  if (!isAdmin()) return;
+  const target = state.adminActiveProfile;
+  if (!target) {
+    showToast("VÃ¤lj profil fÃ¶rst");
+    return;
+  }
+  switchAdminToProfile(target);
+  saveState();
+  document.querySelector("#profile-dialog").close();
   renderAll();
 });
 document.querySelector("[data-admin-login]").addEventListener("click", () => {

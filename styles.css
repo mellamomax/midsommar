@@ -2863,6 +2863,7 @@ body[data-page="prep"] .prep-pack-card {
 }
 
 .admin-mode-button,
+.admin-switch-profile-button,
 .admin-logout-all-button {
   min-height: 40px;
   border: 0;
@@ -2870,6 +2871,11 @@ body[data-page="prep"] .prep-pack-card {
   color: #fff;
   background: var(--leaf-dark);
   font-weight: 900;
+}
+
+.admin-switch-profile-button {
+  background: #f2c84b;
+  color: #173b2b;
 }
 
 .admin-logout-all-button {
