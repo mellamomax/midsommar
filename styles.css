@@ -4978,6 +4978,15 @@ body[data-section="games"] .game-picker {
   text-shadow: none;
 }
 
+.game-menu-button {
+  touch-action: manipulation;
+  pointer-events: auto;
+}
+
+.game-menu-button > * {
+  pointer-events: none;
+}
+
 .game-menu-icon {
   color: var(--game-accent);
 }

@@ -45,6 +45,7 @@ let profileClickTimer = null;
 let lastLoginTap = 0;
 let lastAdminCardTap = 0;
 let lastProfileGridAction = { key: "", at: 0 };
+let lastGameSelectAction = { game: "", at: 0 };
 let deferredInstallPrompt = null;
 const tripleTapTrackers = {};
 
@@ -2408,28 +2409,6 @@ function bindDynamicEvents() {
     renderAll();
   });
 
-  document.querySelectorAll("[data-game]").forEach((button) => {
-    const selectGame = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (state.game === button.dataset.game) return;
-      state.game = button.dataset.game;
-      state.adminEdit = "";
-      saveState();
-      renderAll();
-    };
-    button.addEventListener("click", selectGame);
-    button.addEventListener("pointerdown", (event) => {
-      if (event.pointerType === "mouse") return;
-      selectGame(event);
-    });
-    button.addEventListener("pointerup", (event) => {
-      if (event.pointerType === "mouse") return;
-      selectGame(event);
-    });
-    button.addEventListener("touchend", selectGame, { passive: false });
-  });
-
   document.querySelectorAll("[data-admin-edit]").forEach((button) => button.addEventListener("click", () => {
     state.adminEdit = state.adminEdit === button.dataset.adminEdit ? "" : button.dataset.adminEdit;
     saveState();
@@ -3720,6 +3699,30 @@ function skipRepeatedProfileAction(key) {
   lastProfileGridAction = { key, at: now };
   return false;
 }
+
+function handleGameSelectEvent(event) {
+  const button = event.target.closest?.("[data-game]");
+  if (!button || !document.querySelector("#party-content")?.contains(button)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  selectGame(button.dataset.game);
+}
+
+function selectGame(game) {
+  if (!game) return;
+  const now = Date.now();
+  if (lastGameSelectAction.game === game && now - lastGameSelectAction.at < 450) return;
+  lastGameSelectAction = { game, at: now };
+  if (state.game === game) return;
+  state.game = game;
+  state.adminEdit = "";
+  saveState();
+  renderAll();
+}
+
+["pointerdown", "click", "touchstart", "touchend"].forEach((eventName) => {
+  document.addEventListener(eventName, handleGameSelectEvent, { capture: true, passive: false });
+});
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && state.activeSnapId) {
