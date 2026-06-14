@@ -4590,7 +4590,7 @@ body[data-page="prep"] .countdown-ring span {
 
 body[data-page="prep"] .countdown-units {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
 }
@@ -6806,13 +6806,13 @@ body[data-section="score"] .scoreboard--leaderboard {
   body[data-page="prep"] .countdown-ring {
     width: min(100%, 356px) !important;
     min-height: 0;
-    border-radius: 24px;
-    padding: 16px 14px 14px;
+    border-radius: 20px;
+    padding: 13px 12px 12px;
   }
 
   body[data-page="prep"] .countdown-ring::before {
-    inset: 8px;
-    border-radius: 19px;
+    inset: 7px;
+    border-radius: 15px;
   }
 
   body[data-page="prep"] .countdown-ring span {
@@ -6821,22 +6821,22 @@ body[data-section="score"] .scoreboard--leaderboard {
   }
 
   body[data-page="prep"] .countdown-units {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    margin-top: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 8px;
   }
 
   body[data-page="prep"] .countdown-units strong {
-    min-height: 66px;
+    min-height: 54px;
     border: 1px solid rgba(47, 113, 71, 0.1);
-    border-radius: 16px;
-    padding: 7px 5px 6px;
+    border-radius: 14px;
+    padding: 6px 4px 5px;
     background: rgba(255, 255, 255, 0.44);
   }
 
   body[data-page="prep"] .countdown-units b {
-    font-size: clamp(2.15rem, 12vw, 2.85rem);
-    line-height: 0.88;
+    font-size: clamp(1.75rem, 9.5vw, 2.45rem);
+    line-height: 0.9;
   }
 
   body[data-page="prep"] .countdown-units small {
@@ -6844,8 +6844,8 @@ body[data-section="score"] .scoreboard--leaderboard {
   }
 
   body[data-page="prep"] #countdown-time {
-    margin-top: 9px;
-    font-size: 0.66rem;
+    margin-top: 7px;
+    font-size: 0.62rem;
   }
 
   body[data-page="prep"] .prep-stack {
