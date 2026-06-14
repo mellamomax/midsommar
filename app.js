@@ -29,6 +29,7 @@ const SHARED_STATE_KEYS = [
   "settings",
   "galleryArchive",
 ];
+const LOCAL_LOGOUT_KEY = "midsommar-last-global-logout";
 
 let remoteReady = false;
 let remoteSaveTimer = null;
@@ -144,6 +145,7 @@ const seed = {
   adminMode: false,
   adminOwner: "",
   adminReturnProfile: "",
+  adminActiveProfile: "",
   adminEdit: "",
   game: "vote",
   snapsLang: "sv",
@@ -449,6 +451,8 @@ function ensureEditableContent() {
   if (!Array.isArray(state.content.quizQuestions) || !state.content.quizQuestions.length) state.content.quizQuestions = structuredClone(quizQuestions);
   state.content.quizQuestions = normalizeQuizContent(state.content.quizQuestions);
   state.content.quizQuestions = localizeQuizQuestions(state.content.quizQuestions);
+  if (!Array.isArray(state.content.snapsSongs) || !state.content.snapsSongs.length) state.content.snapsSongs = structuredClone(snapsSongs.sv);
+  state.content.snapsSongs = normalizeSnapsSongs(state.content.snapsSongs);
   state.settings = state.settings && typeof state.settings === "object" ? state.settings : {};
   state.settings.dashboard = { next: true, schedule: true, score: true, weather: true, rsvp: true, feed: false, ...(state.settings.dashboard || {}) };
   state.settings.pentathlon = { started: false, visibleIndex: -1, ...(state.settings.pentathlon || {}) };
@@ -514,6 +518,38 @@ function editableVoteQuestions() {
 function editableQuizQuestions() {
   ensureEditableContent();
   return state.content.quizQuestions;
+}
+
+function editableSnapsSongs() {
+  ensureEditableContent();
+  return state.content.snapsSongs;
+}
+
+function normalizeSnapsSongs(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item, index) => {
+      const title = String(item?.title || "").trim();
+      const melody = String(item?.melody || "").trim();
+      const text = Array.isArray(item?.text)
+        ? item.text.map((line) => String(line || "").trim()).filter(Boolean)
+        : String(item?.text || "").split(/\n+/).map((line) => line.trim()).filter(Boolean);
+      return {
+        id: String(item?.id || slugify(`${title}-${index}`)),
+        title,
+        melody,
+        text,
+      };
+    })
+    .filter((song) => song.title && song.text.length);
+}
+
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || `item-${Date.now()}`;
 }
 
 function normalizeQuizContent(items) {
@@ -669,6 +705,25 @@ function applySharedState(sharedState) {
     const profile = state.profiles[name];
     if (profile) migrateProfile(name, profile);
   });
+}
+
+function applyGlobalLogoutIfNeeded() {
+  const logoutAt = state.settings?.logoutAt;
+  if (!logoutAt) return;
+  const seen = localStorage.getItem(LOCAL_LOGOUT_KEY);
+  if (seen === logoutAt) return;
+  localStorage.setItem(LOCAL_LOGOUT_KEY, logoutAt);
+  if (isAdmin()) return;
+  state.profile = "";
+  state.adminMode = false;
+  state.adminOwner = "";
+  state.adminReturnProfile = "";
+  state.adminActiveProfile = "";
+  state.page = "prep";
+  state.section = "today";
+  galleryIndex = null;
+  galleryMotion = "open";
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 function scheduleRemoteSave() {
@@ -866,6 +921,7 @@ function missionPointsFor(text, index = 0) {
 
 function renderAll() {
   ensureEditableContent();
+  applyGlobalLogoutIfNeeded();
   activatePartyIfEventStarted();
   renderShell();
   renderForecast();
@@ -1002,8 +1058,9 @@ function rsvpLabel(status) {
   return "inte svarat";
 }
 
-function renameProfile(oldName, newName) {
+function renameProfile(oldName, newName, options = {}) {
   if (!oldName || !newName || oldName === newName) return false;
+  const activate = options.activate !== false;
   state.nameOverrides = state.nameOverrides || {};
   const originalGuest = originalGuestForDisplay(oldName);
   if (originalGuest) state.nameOverrides[originalGuest] = newName;
@@ -1018,12 +1075,14 @@ function renameProfile(oldName, newName) {
     state.matchVotes[newName] = state.matchVotes[oldName];
     delete state.matchVotes[oldName];
   }
-  state.profile = newName;
+  if (activate || state.profile === oldName) state.profile = newName;
+  if (state.adminActiveProfile === oldName) state.adminActiveProfile = newName;
+  if (state.adminReturnProfile === oldName) state.adminReturnProfile = newName;
   return true;
 }
 
 function deleteProfile(name) {
-  if (!isAdmin() || !name || name === "Max") return false;
+  if (!isAdmin() || !name || isAdminProfileName(name)) return false;
   archiveProfileGalleryItems(name);
   state.nameOverrides = state.nameOverrides || {};
   Object.entries(state.nameOverrides).forEach(([originalName, displayName]) => {
@@ -1032,9 +1091,11 @@ function deleteProfile(name) {
   delete state.profiles[name];
   delete state.rsvp[name];
   delete state.matchVotes[name];
+  if (state.adminActiveProfile === name) state.adminActiveProfile = "";
+  if (state.adminReturnProfile === name) state.adminReturnProfile = "";
   if (state.profile === name) {
-    state.profile = "Max";
-    activeProfile();
+    state.profile = isAdmin() ? ADMIN_PROFILE : "Max";
+    if (!isAdmin()) activeProfile();
   }
   return true;
 }
@@ -1063,35 +1124,40 @@ function renderLogin() {
 
 function renderProfile() {
   const profile = activeProfile();
-  setText("profile-label", profile ? `${state.profile} · ${profile.points} p${isAdmin() ? " · admin" : ""}` : "Välj");
-  setText("profile-initial", state.profile ? state.profile.slice(0, 1) : "?");
+  const displayName = isAdmin() ? ADMIN_PROFILE : state.profile;
+  const displayProfile = isAdmin() ? null : profile;
+  setText("profile-label", isAdmin() ? "Admin" : profile ? `${state.profile} · ${profile.points} p` : "Välj");
+  setText("profile-initial", displayName ? displayName.slice(0, 1) : "?");
   const profileAvatar = document.querySelector("#profile-avatar");
   const profileInitial = document.querySelector("#profile-initial");
   if (profileAvatar && profileInitial) {
-    profileAvatar.hidden = !profile?.avatarUrl;
-    profileInitial.hidden = !!profile?.avatarUrl;
-    if (profile?.avatarUrl) profileAvatar.src = profile.avatarUrl;
+    profileAvatar.hidden = !displayProfile?.avatarUrl;
+    profileInitial.hidden = !!displayProfile?.avatarUrl;
+    if (displayProfile?.avatarUrl) profileAvatar.src = displayProfile.avatarUrl;
   }
-  setText("dialog-profile-name", profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
+  const adminTarget = state.adminActiveProfile || "";
+  const targetProfile = adminTarget ? state.profiles[adminTarget] || makeProfile(adminTarget) : null;
+  setText("dialog-profile-name", isAdmin() ? `Admin${adminTarget ? ` · jobbar med ${adminTarget}` : ""}` : profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
   const profileButton = document.querySelector("#profile-button");
   profileButton.disabled = false;
   profileButton.setAttribute("aria-disabled", isAdmin() ? "false" : "true");
   document.querySelector("#profile-grid").innerHTML = allParticipants()
     .map((name) => isAdmin()
-      ? `<div class="profile-manage-row"><button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button><button class="profile-delete-button" type="button" data-delete-profile="${escapeHtml(name)}" aria-label="Radera ${escapeHtml(name)}" ${name === "Max" ? "disabled" : ""}>×</button></div>`
+      ? `<div class="profile-manage-row"><button class="${name === adminTarget ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}${targetProfile && name === adminTarget ? ` · ${targetProfile.points || 0} p` : ""}</button><button class="profile-delete-button" type="button" data-delete-profile="${escapeHtml(name)}" aria-label="Radera ${escapeHtml(name)}">×</button></div>`
       : `<button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`)
     .join("");
   const adminInput = document.querySelector("#admin-name-input");
-  if (adminInput && (isAdmin() || !adminInput.value)) adminInput.value = state.profile || "";
+  if (adminInput && (isAdmin() || !adminInput.value)) adminInput.value = adminTarget || "";
   if (adminInput) adminInput.disabled = !isAdmin();
-  document.querySelector("[data-admin-login]").disabled = !isAdmin();
+  document.querySelector("[data-admin-login]").disabled = !isAdmin() || !adminTarget;
   document.querySelector(".admin-name-field").hidden = !isAdmin();
   document.querySelector("#current-profile-card").hidden = !isAdmin();
   document.querySelector("#profile-grid").hidden = !isAdmin();
   document.querySelector("#admin-code-row").hidden = true;
   document.querySelector("[data-admin-mode]").hidden = !isAdmin();
   document.querySelector("[data-admin-mode]").textContent = "Lämna admin mode";
-  setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Du kan byta profil, döpa om aktiv person eller radera testprofiler." : "Profilen är låst.");
+  document.querySelector("[data-admin-logout-all]")?.toggleAttribute("hidden", !isAdmin());
+  setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Välj vem du vill redigera, eller logga ut alla inför live." : "Profilen är låst.");
 }
 
 function renderForecast() {
@@ -1279,14 +1345,34 @@ function getActivityFeedItems() {
     Object.entries(profile.bingoProofs || {}).forEach(([item, proof]) => {
       if (!proof?.completedAt) return;
       items.push({
-        kind: "bingo",
+        kind: "bingo-square",
         icon: "#",
         name,
         at: proof.completedAt,
-        title: `${name} fick bingo`,
+        title: `${name} bockade av en bingoruta`,
         detail: item,
       });
     });
+    if (profile.bingoRewards?.lineAt) {
+      items.push({
+        kind: "bingo",
+        icon: "#",
+        name,
+        at: profile.bingoRewards.lineAt,
+        title: `${name} fick bingo`,
+        detail: "3 i rad · +3 p",
+      });
+    }
+    if (profile.bingoRewards?.fullAt) {
+      items.push({
+        kind: "bingo-full",
+        icon: "#",
+        name,
+        at: profile.bingoRewards.fullAt,
+        title: `${name} fyllde brickan`,
+        detail: "Full bricka · +5 p",
+      });
+    }
     ["before", "after"].forEach((slot) => {
       const video = profile.beforeAfter?.[slot];
       if (!video?.completedAt) return;
@@ -1366,12 +1452,9 @@ function relativeToEvent(value) {
 }
 
 function renderSnapsGame() {
-  const songs = snapsSongs.sv;
+  const songs = editableSnapsSongs();
   const activeSong = songs.find((song) => song.id === state.activeSnapId);
   return `<article class="game-card snaps-card">
-    <div class="snaps-card__head">
-      <div><span>Sånghäfte</span><strong>Snapsvisor</strong></div>
-    </div>
     <div class="snaps-list">
       ${songs.map((song, index) => `<button type="button" data-open-snap="${escapeHtml(song.id)}"><b>${index + 1}</b><span><strong>${escapeHtml(song.title)}</strong><small>${escapeHtml(song.melody)}</small></span></button>`).join("")}
     </div>
@@ -1613,6 +1696,7 @@ function renderGameAdminEditor() {
   const config = {
     vote: { key: "voteQuestions", title: "Most likely", applyLabel: "Dela ut nya fr&aring;gor" },
     quiz: { key: "quizQuestions", title: "Quiz", applyLabel: "Nollst&auml;ll quizsvar" },
+    snaps: { key: "snapsSongs", title: "Snapsvisor", applyLabel: "Spara visor" },
     mission: { key: "missions", title: "Uppdrag", applyLabel: "Dela ut nya uppdrag" },
     bingo: { key: "bingo", title: "Bingo", applyLabel: "Slumpa nya brickor" },
   }[state.game];
@@ -1689,6 +1773,26 @@ function renderGameAdminEditor() {
       </div>
     </article>`;
   }
+  if (config.key === "snapsSongs") {
+    const songs = editableSnapsSongs();
+    return `<article class="admin-editor game-content-editor snaps-admin-editor">
+      <div class="admin-editor-head"><strong>Redigera snapsvisor</strong><small>Titel, melodi och text</small></div>
+      <div class="snaps-admin-table">
+        ${songs.map((song, index) => `<div class="snaps-admin-row" data-snaps-admin-row>
+          <div class="snaps-admin-row-head">
+            <input value="${escapeHtml(song.title)}" data-snaps-admin-title aria-label="Titel ${index + 1}" />
+            <button class="admin-delete-button" type="button" data-delete-snaps-row="${index}" aria-label="Radera snapsvisa">&times;</button>
+          </div>
+          <input value="${escapeHtml(song.melody)}" data-snaps-admin-melody aria-label="Melodi ${index + 1}" />
+          <textarea data-snaps-admin-text aria-label="Text ${index + 1}">${escapeHtml(song.text.join("\n"))}</textarea>
+        </div>`).join("")}
+      </div>
+      <div class="admin-actions">
+        <button class="admin-secondary-button" type="button" data-add-snaps-row>Lägg till</button>
+        <button class="admin-add-button" type="button" data-save-content="snapsSongs">Spara visor</button>
+      </div>
+    </article>`;
+  }
   return `<article class="admin-editor game-content-editor">
     <div class="admin-editor-head"><strong>Redigera ${escapeHtml(config.title)}</strong><small>En rad per sak</small></div>
     <textarea class="admin-textarea" data-content-editor="${escapeHtml(config.key)}">${escapeHtml(rows.join("\n"))}</textarea>
@@ -1726,10 +1830,12 @@ function evaluateBingoRewards(profile) {
   profile.bingoRewards = profile.bingoRewards || {};
   if (hasLine && !profile.bingoRewards.lineText) {
     profile.bingoRewards.lineText = bingoLineRewards[Math.floor(Math.random() * bingoLineRewards.length)];
+    profile.bingoRewards.lineAt = new Date().toISOString();
     profile.points += 3;
   }
   if (hits.length === profile.bingo.length && !profile.bingoRewards.fullText) {
     profile.bingoRewards.fullText = bingoFullReward;
+    profile.bingoRewards.fullAt = new Date().toISOString();
     profile.points += 5;
   }
 }
@@ -2267,12 +2373,21 @@ function bindDynamicEvents() {
     renderAll();
   });
 
-  document.querySelectorAll("[data-game]").forEach((button) => button.addEventListener("click", () => {
-    state.game = button.dataset.game;
-    state.adminEdit = "";
-    saveState();
-    renderAll();
-  }));
+  document.querySelectorAll("[data-game]").forEach((button) => {
+    const selectGame = (event) => {
+      event.preventDefault();
+      if (state.game === button.dataset.game) return;
+      state.game = button.dataset.game;
+      state.adminEdit = "";
+      saveState();
+      renderAll();
+    };
+    button.addEventListener("click", selectGame);
+    button.addEventListener("pointerup", (event) => {
+      if (event.pointerType === "mouse") return;
+      selectGame(event);
+    });
+  });
 
   document.querySelectorAll("[data-admin-edit]").forEach((button) => button.addEventListener("click", () => {
     state.adminEdit = state.adminEdit === button.dataset.adminEdit ? "" : button.dataset.adminEdit;
@@ -2379,6 +2494,29 @@ function bindDynamicEvents() {
       return;
     }
     state.content.bingo.splice(Number(button.dataset.deleteBingoRow), 1);
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelector("[data-add-snaps-row]")?.addEventListener("click", () => {
+    ensureEditableContent();
+    state.content.snapsSongs.push({
+      id: `snaps-${Date.now()}`,
+      title: "Ny snapsvisa",
+      melody: "Melodi:",
+      text: ["Skriv första raden här"],
+    });
+    saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-delete-snaps-row]").forEach((button) => button.addEventListener("click", () => {
+    ensureEditableContent();
+    if (state.content.snapsSongs.length <= 1) {
+      showToast("Minst en snapsvisa behövs");
+      return;
+    }
+    state.content.snapsSongs.splice(Number(button.dataset.deleteSnapsRow), 1);
     saveState();
     renderAll();
   }));
@@ -2843,6 +2981,27 @@ function saveContentList(key) {
     saveState();
     return true;
   }
+  if (key === "snapsSongs") {
+    const rows = [...document.querySelectorAll("[data-snaps-admin-row]")]
+      .map((row, index) => {
+        const title = row.querySelector("[data-snaps-admin-title]")?.value.trim() || "";
+        const melody = row.querySelector("[data-snaps-admin-melody]")?.value.trim() || "";
+        const text = row.querySelector("[data-snaps-admin-text]")?.value
+          .split(/\n+/)
+          .map((line) => line.trim())
+          .filter(Boolean) || [];
+        return { id: slugify(`${title}-${index}`), title, melody, text };
+      })
+      .filter((song) => song.title && song.text.length);
+    if (!rows.length) {
+      showToast("Minst en snapsvisa behövs");
+      return false;
+    }
+    state.content.snapsSongs = normalizeSnapsSongs(rows);
+    if (!state.content.snapsSongs.some((song) => song.id === state.activeSnapId)) state.activeSnapId = "";
+    saveState();
+    return true;
+  }
   const textarea = document.querySelector(`[data-content-editor="${key}"]`);
   if (!textarea) return false;
   const rows = textarea.value
@@ -3161,6 +3320,7 @@ document.querySelector("#login-form").addEventListener("submit", async (event) =
   state.adminMode = false;
   state.adminOwner = "";
   state.adminReturnProfile = "";
+  state.adminActiveProfile = "";
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
   const profile = activeProfile();
   profile.avatarUrl = avatarUrl;
@@ -3240,6 +3400,7 @@ function returnToLoginForTest() {
   state.adminMode = false;
   state.adminOwner = "";
   state.adminReturnProfile = "";
+  state.adminActiveProfile = "";
   state.page = "prep";
   galleryIndex = null;
   galleryMotion = "open";
@@ -3327,6 +3488,7 @@ function skipLoginForTest() {
   state.adminMode = false;
   state.adminOwner = "";
   state.adminReturnProfile = "";
+  state.adminActiveProfile = "";
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
   activeProfile();
   showToast("Testläge öppnat");
@@ -3381,7 +3543,7 @@ document.querySelector("[data-admin-mode]").addEventListener("click", () => {
 document.querySelector("[data-admin-code]").addEventListener("click", () => {
   const input = document.querySelector("#admin-code-input");
   if (!canUseAdmin()) {
-    showToast("Endast Max kan öppna admin");
+    showToast("Välj profil först");
     return;
   }
   if (input.value.trim() !== "0202") {
@@ -3397,18 +3559,18 @@ document.querySelector("[data-admin-code]").addEventListener("click", () => {
 
 function enterAdminMode() {
   if (!state.profile) {
-    showToast("VÃ¤lj profil fÃ¶rst");
+    showToast("Välj profil först");
     return;
   }
   if (!isAdmin()) state.adminReturnProfile = isAdminProfileName(state.profile) ? "" : state.profile;
+  if (!state.adminActiveProfile && !isAdminProfileName(state.adminReturnProfile)) state.adminActiveProfile = state.adminReturnProfile;
   clearAdminPrepView();
   state.adminMode = true;
   state.adminOwner = ADMIN_PROFILE;
   state.profile = ADMIN_PROFILE;
   state.page = "party";
   state.section = "today";
-  showToast("Admin mode pÃ¥");
-  activeProfile();
+  showToast("Admin mode på");
 }
 
 function leaveAdminMode() {
@@ -3416,6 +3578,7 @@ function leaveAdminMode() {
   state.adminMode = false;
   state.adminOwner = "";
   state.adminReturnProfile = "";
+  state.adminActiveProfile = "";
   state.profile = returnProfile;
   if (state.profile) activeProfile();
   showToast(state.profile ? `Tillbaka som ${state.profile}` : "Admin mode av");
@@ -3446,11 +3609,20 @@ document.querySelector("#admin-code-input").addEventListener("keydown", (event) 
   event.preventDefault();
   document.querySelector("[data-admin-code]").click();
 });
+document.querySelector("[data-admin-logout-all]")?.addEventListener("click", () => {
+  if (!isAdmin()) return;
+  if (!window.confirm("Logga ut alla enheter? Profiler, bilder och poäng sparas.")) return;
+  ensureEditableContent();
+  state.settings.logoutAt = new Date().toISOString();
+  saveState();
+  showToast("Alla loggas ut");
+  renderAll();
+});
 document.querySelector("[data-admin-login]").addEventListener("click", () => {
   if (!isAdmin()) return;
   const name = normalizeProfileName(document.querySelector("#admin-name-input").value);
   if (!name) return;
-  const oldName = state.profile;
+  const oldName = state.adminActiveProfile;
   if (isAdminProfileName(oldName)) {
     showToast("Välj en profil att byta namn på");
     return;
@@ -3459,11 +3631,11 @@ document.querySelector("[data-admin-login]").addEventListener("click", () => {
     showToast("Namnet finns redan");
     return;
   }
-  renameProfile(oldName, name);
-  activeProfile();
+  renameProfile(oldName, name, { activate: false });
+  state.profile = ADMIN_PROFILE;
+  state.adminActiveProfile = name;
   showToast(oldName === name ? "Namnet är oförändrat" : `Bytte namn till ${name}`);
   saveState();
-  document.querySelector("#profile-dialog").close();
   renderAll();
 });
 document.querySelector("#profile-grid").addEventListener("click", (event) => {
@@ -3480,11 +3652,9 @@ document.querySelector("#profile-grid").addEventListener("click", (event) => {
   }
   const button = event.target.closest("[data-profile]");
   if (!button) return;
-  state.profile = button.dataset.profile;
-  activeProfile();
-  showToast(`Profil bytt till ${state.profile}`);
+  state.adminActiveProfile = button.dataset.profile;
+  showToast(`Admin jobbar med ${state.adminActiveProfile}`);
   saveState();
-  document.querySelector("#profile-dialog").close();
   renderAll();
 });
 

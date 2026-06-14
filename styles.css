@@ -1121,6 +1121,44 @@ body[data-section="score"] .panel-content {
   font-weight: 760;
 }
 
+.snaps-admin-table {
+  display: grid;
+  gap: 8px;
+}
+
+.snaps-admin-row {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(49, 72, 58, 0.12);
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(255, 253, 248, 0.82);
+}
+
+.snaps-admin-row-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  gap: 6px;
+}
+
+.snaps-admin-row input,
+.snaps-admin-row textarea {
+  min-width: 0;
+  border: 1px solid rgba(49, 72, 58, 0.16);
+  border-radius: 10px;
+  padding: 8px 9px;
+  color: #202a24;
+  background: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.snaps-admin-row textarea {
+  min-height: 92px;
+  resize: vertical;
+  line-height: 1.35;
+}
+
 .prep-location-pin {
   width: auto;
   min-width: 82px;
@@ -2824,13 +2862,18 @@ body[data-page="prep"] .prep-pack-card {
   opacity: 0.95;
 }
 
-.admin-mode-button {
+.admin-mode-button,
+.admin-logout-all-button {
   min-height: 40px;
   border: 0;
   border-radius: 999px;
   color: #fff;
   background: var(--leaf-dark);
   font-weight: 900;
+}
+
+.admin-logout-all-button {
+  background: #b94a48;
 }
 
 .score-inputs {
@@ -3829,7 +3872,7 @@ body[data-page="party"] .forecast-strip {
 .snaps-card {
   position: relative;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 10px;
   min-height: 0;
   height: min(100%, calc(100svh - 318px));
@@ -3981,7 +4024,7 @@ body[data-section="games"] #party-content:has(.snaps-card) .snaps-card {
     radial-gradient(circle at 22px 20px, #c94d3c 0 6px, transparent 7px),
     radial-gradient(circle at 36px 18px, #c94d3c 0 5px, transparent 6px),
     radial-gradient(circle at calc(100% - 34px) 24px, #f8fbf0 0 5px, #dfe7c3 6px 7px, transparent 8px),
-    repeating-linear-gradient(180deg, transparent 0 31px, rgba(42, 61, 48, 0.08) 31px 32px),
+    repeating-linear-gradient(180deg, transparent 0 24px, rgba(42, 61, 48, 0.08) 24px 25px),
     linear-gradient(135deg, #fff8df, #fff0bd),
     #fff4cf;
   box-shadow: 0 28px 60px rgba(13, 24, 17, 0.28);
@@ -4041,11 +4084,11 @@ body[data-section="games"] #party-content:has(.snaps-card) .snaps-card {
 .snap-lyrics p {
   margin: 0;
   color: #223229;
-  min-height: 32px;
-  font-size: 0.98rem;
+  min-height: 25px;
+  font-size: 0.86rem;
   font-weight: 500;
-  line-height: 1.22;
-  padding-top: 9px;
+  line-height: 1.12;
+  padding-top: 5px;
 }
 
 @keyframes snapPop {
@@ -4482,7 +4525,7 @@ body[data-section="games"] .panel-content {
   overflow: visible;
   fill: none;
   stroke: currentColor;
-  stroke-width: 5;
+  stroke-width: 3.1;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -4492,25 +4535,9 @@ body[data-section="games"] .panel-content {
   vector-effect: non-scaling-stroke;
 }
 
-.game-menu-icon--vote svg circle,
-.game-menu-icon--wheel svg circle,
-.game-menu-icon--bingo svg path:first-child,
-.game-menu-icon--people svg circle {
-  fill: currentColor;
-  stroke: currentColor;
-}
-
-.game-menu-icon--vote svg circle {
-  fill: var(--leaf-dark);
-  stroke: var(--leaf-dark);
-}
-
-.game-menu-icon--wheel svg circle:nth-child(2) {
-  fill: var(--leaf-dark);
-}
-
-.game-menu-icon--bingo svg path:first-child {
-  fill: transparent;
+.game-menu-icon svg circle,
+.game-menu-icon svg path {
+  fill: none !important;
 }
 
 /* Pastel midsommar identity */
@@ -4774,11 +4801,9 @@ body[data-section="games"] .game-picker {
   background: rgba(255, 255, 255, 0.58);
 }
 
-.game-menu-button .game-menu-icon--vote svg circle,
-.game-menu-button .game-menu-icon--wheel svg circle:nth-child(2),
-.game-menu-button .game-menu-icon--people svg circle {
-  fill: currentColor;
-  stroke: currentColor;
+.game-menu-button .game-menu-icon svg circle,
+.game-menu-button .game-menu-icon svg path {
+  fill: none !important;
 }
 
 /* Refined modern midsommar identity */
