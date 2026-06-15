@@ -4688,7 +4688,7 @@ body[data-page="prep"] .prep-welcome small {
 
 body[data-page="prep"] .countdown-ring {
   display: grid;
-  width: min(326px, calc(100vw - 42px));
+  width: min(286px, calc(100vw - 76px));
   aspect-ratio: auto !important;
   place-items: center;
   align-content: center;
@@ -4737,8 +4737,8 @@ body[data-page="prep"] .countdown-units {
   justify-content: center;
   align-items: center;
   gap: 8px 18px;
-  width: min(100%, 230px);
-  margin-top: 7px;
+  width: min(100%, 206px);
+  margin-top: 8px;
 }
 
 body[data-page="prep"] .countdown-units strong {
@@ -4764,7 +4764,7 @@ body[data-page="prep"] .countdown-units b {
 }
 
 body[data-page="prep"] .countdown-units strong:nth-child(-n + 2) b {
-  font-size: clamp(1.9rem, 8vw, 2.62rem);
+  font-size: clamp(2.15rem, 9vw, 2.95rem);
 }
 
 body[data-page="prep"] .countdown-units strong:nth-child(n + 3) b {
@@ -6986,7 +6986,7 @@ body[data-section="score"] .scoreboard--leaderboard {
   }
 
   body[data-page="prep"] .countdown-ring {
-    width: min(100%, 318px) !important;
+    width: min(100%, 272px) !important;
     aspect-ratio: auto !important;
     place-items: center !important;
     align-content: center !important;
@@ -6994,7 +6994,7 @@ body[data-section="score"] .scoreboard--leaderboard {
     min-height: 0;
     max-height: 132px;
     border-radius: 18px;
-    padding: 11px 16px 12px;
+    padding: 11px 15px 12px;
     gap: 0 !important;
   }
 
@@ -7012,8 +7012,8 @@ body[data-section="score"] .scoreboard--leaderboard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     justify-content: center;
     align-items: center;
-    width: min(100%, 218px);
-    gap: 7px 16px;
+    width: min(100%, 190px);
+    gap: 7px 14px;
     margin-top: 7px;
   }
 
@@ -7037,7 +7037,7 @@ body[data-section="score"] .scoreboard--leaderboard {
   }
 
   body[data-page="prep"] .countdown-units strong:nth-child(-n + 2) b {
-    font-size: clamp(1.62rem, 8vw, 2.08rem);
+    font-size: clamp(1.9rem, 9.5vw, 2.42rem);
   }
 
   body[data-page="prep"] .countdown-units strong:nth-child(n + 3) b {
@@ -7054,6 +7054,7 @@ body[data-section="score"] .scoreboard--leaderboard {
 
   body[data-page="prep"] .prep-stack {
     align-self: end;
+    margin-bottom: clamp(18px, 5svh, 46px);
     gap: 8px;
     width: 100%;
   }
