@@ -4966,7 +4966,7 @@ body[data-section="games"] .panel-content {
   overflow: visible;
   fill: none;
   stroke: currentColor;
-  stroke-width: 3.1;
+  stroke-width: 2.65;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -4979,6 +4979,15 @@ body[data-section="games"] .panel-content {
 .game-menu-icon svg circle,
 .game-menu-icon svg path {
   fill: none !important;
+}
+
+.game-menu-icon--vote svg {
+  stroke-width: 2.45;
+}
+
+.game-menu-icon--quiz svg,
+.game-menu-icon--mission svg {
+  stroke-width: 2.8;
 }
 
 /* Pastel midsommar identity */

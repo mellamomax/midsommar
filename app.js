@@ -1719,12 +1719,12 @@ function renderGamePickerButton(game, icon, label) {
 function gameIcon(icon) {
   const icons = {
     wheel: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22"/><circle cx="32" cy="32" r="4"/><path d="M32 10v22l16-16M32 32h22M32 32l16 16M32 32v22M32 32 16 48M32 32H10M32 32 16 16"/></svg>`,
-    vote: `<svg viewBox="0 0 64 64"><path d="M17 18h30c4 0 7 3 7 7v13c0 4-3 7-7 7H35l-12 9v-9h-6c-4 0-7-3-7-7V25c0-4 3-7 7-7Z"/><path d="M22 31h20M22 38h13"/><circle cx="45" cy="31" r="3"/></svg>`,
-    quiz: `<svg viewBox="0 0 64 64"><path d="M18 10h28l8 8v36H18z"/><path d="M46 10v10h8"/><path d="M26 27c1-5 5-8 10-7 5 1 8 4 8 9 0 7-9 7-9 13"/><path d="M35 50h.1"/></svg>`,
-    snaps: `<svg viewBox="0 0 64 64"><path d="M20 13h24l-4 30H24L20 13Z"/><path d="M25 43h14l4 9H21l4-9Z"/><path d="M24 24h16"/><path d="M48 15v18"/><path d="M48 15c6 0 8 4 7 8"/></svg>`,
-    mission: `<svg viewBox="0 0 64 64"><path d="M14 18h36v28H14z"/><path d="m14 20 18 15 18-15"/><path d="M43 11v10M38 16h10"/><path d="m22 45-8 8M42 45l8 8"/></svg>`,
-    bingo: `<svg viewBox="0 0 64 64"><path d="M13 13h38v38H13z"/><path d="M26 13v38M38 13v38M13 26h38M13 38h38"/><path d="m20 33 4 4 8-9"/><circle cx="45" cy="45" r="3"/></svg>`,
-    people: `<svg viewBox="0 0 64 64"><path d="M15 16h34v32H15z"/><path d="M32 16v32"/><circle cx="24" cy="28" r="5"/><path d="M17 42c2-6 5-9 7-9s5 3 7 9"/><path d="M39 24h7M39 32h7M39 40h5"/></svg>`,
+    vote: `<svg viewBox="0 0 64 64"><path d="M15 14h34c5 0 9 4 9 9v20c0 5-4 9-9 9H15c-5 0-9-4-9-9V23c0-5 4-9 9-9Z"/><path d="M10 28h44M14 42h36"/><circle cx="26" cy="34" r="5"/><circle cx="42" cy="34" r="5"/><path d="M25 32h.1M41 32h.1"/></svg>`,
+    quiz: `<svg viewBox="0 0 64 64"><path d="M18 50a22 22 0 0 1 0-36M46 14a22 22 0 0 1 0 36"/><path d="M25 24c2-5 7-8 13-6 5 2 8 6 7 11-1 7-10 7-10 14"/><path d="M34 51h.1"/><path d="M25 12c5-3 11-3 16 0"/></svg>`,
+    snaps: `<svg viewBox="0 0 64 64"><path d="M13 13h27c5 0 9 4 9 9v29H22c-5 0-9-4-9-9V13Z"/><path d="M22 13v38M28 24h13M28 32h13M28 40h9"/><path d="M47 18h8l-2 20h-4l-2-20Z"/><path d="M48 38h4l3 8H45l3-8Z"/></svg>`,
+    mission: `<svg viewBox="0 0 64 64"><path d="M11 25 44 16l8 27-33 9-8-27Z"/><path d="M17 31 47 23M20 41l23-6"/><path d="M24 19 40 47"/><path d="M45 12 55 8M51 20l8-2M13 51l-8 5"/></svg>`,
+    bingo: `<svg viewBox="0 0 64 64"><path d="M12 10h33c4 0 7 3 7 7v35H19c-4 0-7-3-7-7V10Z"/><path d="M22 10v42M34 10v42M12 24h40M12 38h40"/><path d="m26 38 4-7 4 7 7 1-5 5 1 7-7-4-7 4 1-7-5-5 7-1Z"/><path d="m45 44 10-10 5 5-10 10-7 2 2-7Z"/></svg>`,
+    people: `<svg viewBox="0 0 64 64"><path d="M10 15h18v34H10zM36 15h18v34H36z"/><path d="M16 15v34M22 15v34M42 15v34M48 15v34"/><path d="M28 32h8M33 27l5 5-5 5"/><circle cx="19" cy="26" r="4"/><circle cx="45" cy="38" r="4"/></svg>`,
   };
   return icons[icon] || icons.wheel;
 }
