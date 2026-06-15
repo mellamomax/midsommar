@@ -154,6 +154,7 @@ const seed = {
   game: "vote",
   snapsLang: "sv",
   activeSnapId: "",
+  activeSnapsEditId: "",
   profiles: {},
   nameOverrides: {},
   rsvp: Object.fromEntries(guests.map((name, index) => [name, index < 5])),
@@ -1295,6 +1296,7 @@ function ensurePackList() {
 function renderParty() {
   if (state.section !== "photos") galleryIndex = null;
   if (state.section !== "games" || state.game !== "snaps") state.activeSnapId = "";
+  if (state.section !== "games" || state.game !== "snaps") state.activeSnapsEditId = "";
   if (state.section !== "pentathlon") activePentathlonInfoIndex = null;
   document.body.dataset.section = state.section;
   const [kicker, title] = sectionMeta[state.section];
@@ -1870,6 +1872,37 @@ function renderGameAdminEditor() {
   }
   if (config.key === "snapsSongs") {
     const songs = editableSnapsSongs();
+    const editSong = songs.find((song) => song.id === state.activeSnapsEditId);
+    return `<article class="admin-editor game-content-editor snaps-admin-editor">
+      <div class="admin-editor-head"><strong>Redigera snapsvisor</strong><small>Klicka en visa f&ouml;r att redigera</small></div>
+      <div class="snaps-admin-list">
+        ${songs.map((song, index) => `<div class="snaps-admin-list-row">
+          <button class="snaps-admin-open" type="button" data-edit-snaps-row="${escapeHtml(song.id)}">
+            <strong>${escapeHtml(song.title)}</strong>
+            <small>${escapeHtml(song.melody || "Melodi saknas")}</small>
+          </button>
+          <button class="admin-delete-button" type="button" data-delete-snaps-row="${index}" aria-label="Radera ${escapeHtml(song.title)}">&times;</button>
+        </div>`).join("")}
+      </div>
+      <div class="admin-actions">
+        <button class="admin-secondary-button" type="button" data-add-snaps-row>L&auml;gg till</button>
+      </div>
+      ${editSong ? `<div class="snaps-admin-modal" data-snaps-edit-backdrop>
+        <section class="snaps-admin-modal-card">
+          <div class="snaps-admin-modal-head">
+            <strong>Redigera visa</strong>
+            <button class="profile-dialog-close" type="button" data-close-snaps-edit aria-label="St&auml;ng">&times;</button>
+          </div>
+          <label>Titel<input value="${escapeHtml(editSong.title)}" data-snaps-edit-title /></label>
+          <label>Melodi<input value="${escapeHtml(editSong.melody)}" data-snaps-edit-melody /></label>
+          <label>Visa<textarea data-snaps-edit-text>${escapeHtml(editSong.text.join("\n"))}</textarea></label>
+          <div class="admin-actions">
+            <button class="admin-secondary-button" type="button" data-close-snaps-edit>St&auml;ng</button>
+            <button class="admin-add-button" type="button" data-save-snaps-edit="${escapeHtml(editSong.id)}">Spara</button>
+          </div>
+        </section>
+      </div>` : ""}
+    </article>`;
     return `<article class="admin-editor game-content-editor snaps-admin-editor">
       <div class="admin-editor-head"><strong>Redigera snapsvisor</strong><small>Titel, melodi och text</small></div>
       <div class="snaps-admin-table">
@@ -2606,13 +2639,58 @@ function bindDynamicEvents() {
 
   document.querySelector("[data-add-snaps-row]")?.addEventListener("click", () => {
     ensureEditableContent();
-    state.content.snapsSongs.push({
+    const song = {
       id: `snaps-${Date.now()}`,
       title: "Ny snapsvisa",
       melody: "Melodi:",
       text: ["Skriv första raden här"],
-    });
+    };
+    state.content.snapsSongs.push(song);
+    state.activeSnapsEditId = song.id;
     saveState();
+    renderAll();
+  });
+
+  document.querySelectorAll("[data-edit-snaps-row]").forEach((button) => button.addEventListener("click", () => {
+    state.activeSnapsEditId = button.dataset.editSnapsRow;
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelectorAll("[data-close-snaps-edit]").forEach((button) => button.addEventListener("click", () => {
+    state.activeSnapsEditId = "";
+    saveState();
+    renderAll();
+  }));
+
+  document.querySelector("[data-snaps-edit-backdrop]")?.addEventListener("click", (event) => {
+    if (event.target !== event.currentTarget) return;
+    state.activeSnapsEditId = "";
+    saveState();
+    renderAll();
+  });
+
+  document.querySelector("[data-save-snaps-edit]")?.addEventListener("click", (event) => {
+    ensureEditableContent();
+    const song = state.content.snapsSongs.find((item) => item.id === event.currentTarget.dataset.saveSnapsEdit);
+    if (!song) return;
+    const title = document.querySelector("[data-snaps-edit-title]")?.value.trim() || "";
+    const melody = document.querySelector("[data-snaps-edit-melody]")?.value.trim() || "";
+    const text = document.querySelector("[data-snaps-edit-text]")?.value
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean) || [];
+    if (!title || !text.length) {
+      showToast("Titel och text behÃ¶vs");
+      return;
+    }
+    song.title = title;
+    song.melody = melody;
+    song.text = text;
+    state.content.snapsSongs = normalizeSnapsSongs(state.content.snapsSongs);
+    state.activeSnapsEditId = "";
+    saveState();
+    showToast("Visa sparad");
     renderAll();
   });
 
@@ -2622,6 +2700,9 @@ function bindDynamicEvents() {
       showToast("Minst en snapsvisa behövs");
       return;
     }
+    if (!window.confirm("Radera snapsvisan?")) return;
+    const song = state.content.snapsSongs[Number(button.dataset.deleteSnapsRow)];
+    if (song?.id === state.activeSnapsEditId) state.activeSnapsEditId = "";
     state.content.snapsSongs.splice(Number(button.dataset.deleteSnapsRow), 1);
     saveState();
     renderAll();
