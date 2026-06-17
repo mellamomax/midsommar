@@ -1,5 +1,5 @@
-const EVENT_START = new Date("2026-06-19T08:00:00+02:00");
-const BEFORE_VIDEO_OPEN = new Date("2026-06-19T00:00:00+02:00");
+﻿const EVENT_START = new Date("2026-06-19T10:00:00+02:00");
+const BEFORE_VIDEO_OPEN = new Date("2026-06-19T10:00:00+02:00");
 const BEFORE_VIDEO_CLOSE = new Date("2026-06-19T11:00:00+02:00");
 const AFTER_VIDEO_OPEN = new Date("2026-06-19T20:00:00+02:00");
 const MATCH_TIP_DEADLINE = new Date("2026-06-20T19:00:00+02:00");
@@ -31,6 +31,7 @@ const SHARED_STATE_KEYS = [
   "galleryArchive",
 ];
 const LOCAL_LOGOUT_KEY = "midsommar-last-global-logout";
+const LOCAL_INTRO_PREFIX = "midsommar-intro-seen";
 
 let remoteReady = false;
 let remoteSaveTimer = null;
@@ -55,20 +56,20 @@ const snapsSongs = {
     {
       id: "sill-och-sol",
       title: "Sill och sol",
-      melody: "Melodi: Helan går",
-      text: ["Sill och sol, nu lyfter vi glaset.", "Potatisen ler, och kransen sitter snett.", "En liten skål, sen tillbaka till kalaset.", "Midsommar nu, det här blir helt perfekt."],
+      melody: "Melodi: Helan gÃ¥r",
+      text: ["Sill och sol, nu lyfter vi glaset.", "Potatisen ler, och kransen sitter snett.", "En liten skÃ¥l, sen tillbaka till kalaset.", "Midsommar nu, det hÃ¤r blir helt perfekt."],
     },
     {
       id: "badbryggan",
       title: "Badbryggan",
-      melody: "Melodi: Små grodorna",
-      text: ["Nu går vi ut mot bryggan, hurra hurra hurra.", "Men först en liten nubbe, så modet kan bli bra.", "Vi doppar bara tårna, sen säger någon nej.", "Och alla ropar skåla, kom igen nu, häng med mig."],
+      melody: "Melodi: SmÃ¥ grodorna",
+      text: ["Nu gÃ¥r vi ut mot bryggan, hurra hurra hurra.", "Men fÃ¶rst en liten nubbe, sÃ¥ modet kan bli bra.", "Vi doppar bara tÃ¥rna, sen sÃ¤ger nÃ¥gon nej.", "Och alla ropar skÃ¥la, kom igen nu, hÃ¤ng med mig."],
     },
     {
       id: "krans-paniken",
       title: "Kranspaniken",
       melody: "Melodi: Imse vimse spindel",
-      text: ["Kransen tappas snett ner i midsommargräset.", "Någon hittar blommor, någon hittar glas.", "Upp går lilla snapsen, ner går hela väsendet.", "Sen står vi där och skrattar i vårt sommarkalas."],
+      text: ["Kransen tappas snett ner i midsommargrÃ¤set.", "NÃ¥gon hittar blommor, nÃ¥gon hittar glas.", "Upp gÃ¥r lilla snapsen, ner gÃ¥r hela vÃ¤sendet.", "Sen stÃ¥r vi dÃ¤r och skrattar i vÃ¥rt sommarkalas."],
     },
   ],
 };
@@ -76,57 +77,57 @@ const snapsSongs = {
 snapsSongs.sv = [
   {
     id: "helan-gar",
-    title: "Helan går",
-    melody: "Melodi: Helan går",
-    text: ["Helan går", "Sjung hopp fallerallan lallan lej", "Helan går", "Sjung hopp fallerallan lej", "Och den som inte helan tar,", "Han heller inte Halvan får", "Helan går...", "(Helan tages)", "Sjung hopp faderallan lej."],
+    title: "Helan gÃ¥r",
+    melody: "Melodi: Helan gÃ¥r",
+    text: ["Helan gÃ¥r", "Sjung hopp fallerallan lallan lej", "Helan gÃ¥r", "Sjung hopp fallerallan lej", "Och den som inte helan tar,", "Han heller inte Halvan fÃ¥r", "Helan gÃ¥r...", "(Helan tages)", "Sjung hopp faderallan lej."],
   },
   {
     id: "lille-sup",
     title: "Lille sup",
     melody: "Melodi: Lille katt",
-    text: ["Lille sup, lille sup,", "Lille söte supen", "Nu ska du, nu ska du,", "Ner igenom strupen"],
+    text: ["Lille sup, lille sup,", "Lille sÃ¶te supen", "Nu ska du, nu ska du,", "Ner igenom strupen"],
   },
   {
     id: "min-sup-den-har-sin-fyllning",
     title: "Min sup den har sin fyllning",
     melody: "Melodi: Min hatt den har tre kanter",
-    text: ["Min sup den har sin fyllning,", "Sin fyllning har min sup.", "O har den ej nån fyllning,", "Så e de ej min sup."],
+    text: ["Min sup den har sin fyllning,", "Sin fyllning har min sup.", "O har den ej nÃ¥n fyllning,", "SÃ¥ e de ej min sup."],
   },
   {
     id: "du-ar-full",
-    title: "Du är full",
-    melody: "Melodi: Det gör ont",
-    text: ["Full, du är fall", "Och så dum", "Att du knappt kan tugga tuggummi", "Ens en sekund.", "Du är så himla full,", "Ja, så full", "Att du snart", "Tar ett steg rakt ut i intet", "Och snubblar omkull.", "Sen ligger du där,", "Ser stjärnornas färd.", "Du är full."],
+    title: "Du Ã¤r full",
+    melody: "Melodi: Det gÃ¶r ont",
+    text: ["Full, du Ã¤r fall", "Och sÃ¥ dum", "Att du knappt kan tugga tuggummi", "Ens en sekund.", "Du Ã¤r sÃ¥ himla full,", "Ja, sÃ¥ full", "Att du snart", "Tar ett steg rakt ut i intet", "Och snubblar omkull.", "Sen ligger du dÃ¤r,", "Ser stjÃ¤rnornas fÃ¤rd.", "Du Ã¤r full."],
   },
   {
     id: "san-ar-spriten",
-    title: "Sån är spriten",
-    melody: "Melodi: Sånt är livet",
-    text: ["Sån är spriten, ja sån är spriten", "Så mycket brännvin finns det här", "Den sup man ratar, den tar nån annan", "Så ta nu snapsen som du har kär."],
+    title: "SÃ¥n Ã¤r spriten",
+    melody: "Melodi: SÃ¥nt Ã¤r livet",
+    text: ["SÃ¥n Ã¤r spriten, ja sÃ¥n Ã¤r spriten", "SÃ¥ mycket brÃ¤nnvin finns det hÃ¤r", "Den sup man ratar, den tar nÃ¥n annan", "SÃ¥ ta nu snapsen som du har kÃ¤r."],
   },
   {
     id: "drick-nu",
     title: "Drick nu",
     melody: "Melodi: IQ",
-    text: ["Drick nu!", "För glaset upp till munnen!", "Drick nu!", "Ta allt i ett svep!", "Drick nu!", "Släng prästerna i brunnen!", "Drick nu!", "Rid till helvetet på en get!", "Bli aldrig fet!"],
+    text: ["Drick nu!", "FÃ¶r glaset upp till munnen!", "Drick nu!", "Ta allt i ett svep!", "Drick nu!", "SlÃ¤ng prÃ¤sterna i brunnen!", "Drick nu!", "Rid till helvetet pÃ¥ en get!", "Bli aldrig fet!"],
   },
   {
     id: "jag-hade-en-snaps",
-    title: "Jag hade en snaps en gång",
-    melody: "Melodi: Jag hade en gång en båt",
-    text: ["Jag hade en snaps en gång", "jag hörde en ton slås an", "så sjöng vi en liten sång", "och snapsen försvann!", "Svara mej Du: Var är den nu?", "Jag bara undrar: Var är den nu?"],
+    title: "Jag hade en snaps en gÃ¥ng",
+    melody: "Melodi: Jag hade en gÃ¥ng en bÃ¥t",
+    text: ["Jag hade en snaps en gÃ¥ng", "jag hÃ¶rde en ton slÃ¥s an", "sÃ¥ sjÃ¶ng vi en liten sÃ¥ng", "och snapsen fÃ¶rsvann!", "Svara mej Du: Var Ã¤r den nu?", "Jag bara undrar: Var Ã¤r den nu?"],
   },
   {
     id: "fyllebjornarna",
-    title: "Fyllebjörnarna",
-    melody: "Melodi: Bumbibjörnarna",
-    text: ["HICK HURRA!", "För här kommer fyllebjörnarna,", "ramlar fram igenom sagorna.", "Å vi får supa mer!", "Fyllebjörnssaften, den magiska kraften.", "O visst blir man full, om man dricker utav den.", "Ondska och törnar, det klarar fyllebjörnar.", "De kämpar och spriten och segrar igen!", "HICK HURRA!", "För här kommer fyllebjörnarna,", "ramlar fram igenom sagorna.", "Å vi får supa mer!", "SKÅL!"],
+    title: "FyllebjÃ¶rnarna",
+    melody: "Melodi: BumbibjÃ¶rnarna",
+    text: ["HICK HURRA!", "FÃ¶r hÃ¤r kommer fyllebjÃ¶rnarna,", "ramlar fram igenom sagorna.", "Ã… vi fÃ¥r supa mer!", "FyllebjÃ¶rnssaften, den magiska kraften.", "O visst blir man full, om man dricker utav den.", "Ondska och tÃ¶rnar, det klarar fyllebjÃ¶rnar.", "De kÃ¤mpar och spriten och segrar igen!", "HICK HURRA!", "FÃ¶r hÃ¤r kommer fyllebjÃ¶rnarna,", "ramlar fram igenom sagorna.", "Ã… vi fÃ¥r supa mer!", "SKÃ…L!"],
   },
   {
     id: "ett-litet-glas-till-maten",
     title: "Ett litet glas till maten",
     melody: "Melodi: Den Blomstertid",
-    text: ["Ett litet glas till maten,", "vår törst den är så stor.", "Nu nalkas det en nubbe,", "i frostad flaska bor.", "Med bild och livlig värma,", "den stilla rinner ner.", "När man sen sig närma,", "Vi tar oss några fler."],
+    text: ["Ett litet glas till maten,", "vÃ¥r tÃ¶rst den Ã¤r sÃ¥ stor.", "Nu nalkas det en nubbe,", "i frostad flaska bor.", "Med bild och livlig vÃ¤rma,", "den stilla rinner ner.", "NÃ¤r man sen sig nÃ¤rma,", "Vi tar oss nÃ¥gra fler."],
   },
 ];
 
@@ -134,11 +135,11 @@ const guests = ["Max", "Mathilda", "Jesper", "Felipe", "Julia", "Sofia", "Viktor
 const ADMIN_PROFILE = "Admin";
 
 const sectionMeta = {
-  today: ["Start", "Midsommaröversikt"],
-  games: ["Lekar", "Dina tävlingar"],
-  score: ["Poäng", "Poängställning"],
+  today: ["Start", "MidsommarÃ¶versikt"],
+  games: ["Lekar", "Dina tÃ¤vlingar"],
+  score: ["PoÃ¤ng", "PoÃ¤ngstÃ¤llning"],
   photos: ["Bilder", "Galleri"],
-  pentathlon: ["5-kamp", "Lagpoäng"],
+  pentathlon: ["5-kamp", "LagpoÃ¤ng"],
   match: ["Match", "VM-matchen"],
 };
 
@@ -159,8 +160,8 @@ const seed = {
   nameOverrides: {},
   rsvp: Object.fromEntries(guests.map((name, index) => [name, index < 5])),
   pack: [
-    { id: "swim", text: "Badkläder", done: false },
-    { id: "warm", text: "Varm tröja", done: false },
+    { id: "swim", text: "BadklÃ¤der", done: false },
+    { id: "warm", text: "Varm trÃ¶ja", done: false },
     { id: "flowers", text: "Blommigt / krans", done: false },
     { id: "drink", text: "Egen dryck", done: false },
     { id: "rain", text: "Regnjacka", done: false },
@@ -169,17 +170,17 @@ const seed = {
   teamScores: [
     { team: "Dill", score: 0 },
     { team: "Jordgubb", score: 0 },
-    { team: "Björk", score: 0 },
+    { team: "BjÃ¶rk", score: 0 },
   ],
   pentathlon: [
     { name: "Flytta vattnet", scores: [0, 0, 0] },
-    { name: "Tältet", scores: [0, 0, 0] },
+    { name: "TÃ¤ltet", scores: [0, 0, 0] },
     { name: "Tornet", scores: [0, 0, 0] },
     { name: "Memory", scores: [0, 0, 0] },
     { name: "Blindfolded", scores: [0, 0, 0] },
   ],
   weather: null,
-  matchApiStatus: "API ej hämtat",
+  matchApiStatus: "API ej hÃ¤mtat",
   matchApiData: null,
   voteCorrections: {},
   voteCorrected: {},
@@ -210,7 +211,7 @@ const profileSeed = {
   quizSubmitted: false,
   quizSubmittedAt: "",
   quizScore: 0,
-  wheelResult: "Snurra för kvällens twist.",
+  wheelResult: "Snurra fÃ¶r kvÃ¤llens twist.",
   missions: [],
   activeMission: null,
   beforeAfter: {
@@ -219,37 +220,37 @@ const profileSeed = {
   },
 };
 
-const legacyPentathlonNames = ["Kubb-straffar", "Säcklöpning", "Quiz", "Prickkast", "Finalgren"];
+const legacyPentathlonNames = ["Kubb-straffar", "SÃ¤cklÃ¶pning", "Quiz", "Prickkast", "Finalgren"];
 const defaultPentathlonEvents = [
   {
     name: "Flytta vattnet",
-    description: "Välj verktyg ur potten och flytta så mycket vatten som möjligt från en hink till nästa station.",
-    rules: ["Alla lag väljer verktyg ur samma pott.", "Vatten ska transporteras mellan stationerna utan att bära själva hinken.", "När tiden är ute mäts vattnet som kommit fram."],
-    win: "Laget med mest vatten i målhinken vinner grenen.",
+    description: "VÃ¤lj verktyg ur potten och flytta sÃ¥ mycket vatten som mÃ¶jligt frÃ¥n en hink till nÃ¤sta station.",
+    rules: ["Alla lag vÃ¤ljer verktyg ur samma pott.", "Vatten ska transporteras mellan stationerna utan att bÃ¤ra sjÃ¤lva hinken.", "NÃ¤r tiden Ã¤r ute mÃ¤ts vattnet som kommit fram."],
+    win: "Laget med mest vatten i mÃ¥lhinken vinner grenen.",
   },
   {
-    name: "Tältet",
-    description: "Sätt upp tältet på kortast tid.",
-    rules: ["Hela tältet ska vara uppsatt.", "Alla delar ska vara använda.", "Tältet måste stå stabilt när tiden stoppas."],
-    win: "Snabbast godkända tält vinner.",
+    name: "TÃ¤ltet",
+    description: "SÃ¤tt upp tÃ¤ltet pÃ¥ kortast tid.",
+    rules: ["Hela tÃ¤ltet ska vara uppsatt.", "Alla delar ska vara anvÃ¤nda.", "TÃ¤ltet mÃ¥ste stÃ¥ stabilt nÃ¤r tiden stoppas."],
+    win: "Snabbast godkÃ¤nda tÃ¤lt vinner.",
   },
   {
     name: "Tornet",
-    description: "Bygg det högsta tornet ni kan.",
-    rules: ["Ni får bara använda veden som är framtagen.", "Tornet ska stå av sig självt när domaren mäter.", "Rasar tornet innan mätning räknas höjden som 0."],
-    win: "Högst stående torn vinner.",
+    description: "Bygg det hÃ¶gsta tornet ni kan.",
+    rules: ["Ni fÃ¥r bara anvÃ¤nda veden som Ã¤r framtagen.", "Tornet ska stÃ¥ av sig sjÃ¤lvt nÃ¤r domaren mÃ¤ter.", "Rasar tornet innan mÃ¤tning rÃ¤knas hÃ¶jden som 0."],
+    win: "HÃ¶gst stÃ¥ende torn vinner.",
   },
   {
     name: "Memory",
-    description: "Memorisera alla bilder. En och en säger ni vilken bild som har blivit vänd.",
-    rules: ["Alla får titta på bilderna innan de vänds.", "När det är din tur ska du säga en bild som är vänd.", "Fel svar eller upprepning gör att du åker ut."],
+    description: "Memorisera alla bilder. En och en sÃ¤ger ni vilken bild som har blivit vÃ¤nd.",
+    rules: ["Alla fÃ¥r titta pÃ¥ bilderna innan de vÃ¤nds.", "NÃ¤r det Ã¤r din tur ska du sÃ¤ga en bild som Ã¤r vÃ¤nd.", "Fel svar eller upprepning gÃ¶r att du Ã¥ker ut."],
     win: "Sist kvar vinner.",
   },
   {
     name: "Blindfolded",
-    description: "Din kompis är blindfolded och du är vägledare.",
-    rules: ["Vägledaren får bara guida med ord som vänster, höger, framåt och stopp.", "Den blindfolded ska följa stegen och undvika markörerna.", "Går man på en markör får laget börja om."],
-    win: "Bäst tid vinner.",
+    description: "Din kompis Ã¤r blindfolded och du Ã¤r vÃ¤gledare.",
+    rules: ["VÃ¤gledaren fÃ¥r bara guida med ord som vÃ¤nster, hÃ¶ger, framÃ¥t och stopp.", "Den blindfolded ska fÃ¶lja stegen och undvika markÃ¶rerna.", "GÃ¥r man pÃ¥ en markÃ¶r fÃ¥r laget bÃ¶rja om."],
+    win: "BÃ¤st tid vinner.",
   },
 ];
 
@@ -257,18 +258,18 @@ const timeline = [
   ["12:00", "Lunch"],
   ["15:00", "Kransar / bad"],
   ["18:30", "Middag"],
-  ["Lör", "VM-match"],
-  ["Lör", "5-kamp"],
-  ["Kväll", "Poängfinal"],
+  ["LÃ¶r", "VM-match"],
+  ["LÃ¶r", "5-kamp"],
+  ["KvÃ¤ll", "PoÃ¤ngfinal"],
 ];
 
 const eventSchedule = [
   { at: "2026-06-19T12:00:00+02:00", time: "12:00", title: "Lunch", detail: "Sill, potatis, kall dryck", color: "yellow" },
-  { at: "2026-06-19T15:00:00+02:00", time: "15:00", title: "Kransar / Bad", detail: "Kransar, brygga och första leken", color: "green" },
+  { at: "2026-06-19T15:00:00+02:00", time: "15:00", title: "Kransar / Bad", detail: "Kransar, brygga och fÃ¶rsta leken", color: "green" },
   { at: "2026-06-19T18:30:00+02:00", time: "18:30", title: "Middag", detail: "Grill, snapsvisor och quiz", color: "red" },
-  { at: "2026-06-20T19:00:00+02:00", time: "Lör", title: "VM-match", detail: "Sverige - Netherlands", color: "blue" },
-  { at: "2026-06-20T20:45:00+02:00", time: "Lör", title: "5-kamp", detail: "Laggrenar och finalryck", color: "green" },
-  { at: "2026-06-20T22:30:00+02:00", time: "Kväll", title: "Poängfinal", detail: "Rättning, vinnare och pris", color: "red" },
+  { at: "2026-06-20T19:00:00+02:00", time: "LÃ¶r", title: "VM-match", detail: "Sverige - Netherlands", color: "blue" },
+  { at: "2026-06-20T20:45:00+02:00", time: "LÃ¶r", title: "5-kamp", detail: "Laggrenar och finalryck", color: "green" },
+  { at: "2026-06-20T22:30:00+02:00", time: "KvÃ¤ll", title: "PoÃ¤ngfinal", detail: "RÃ¤ttning, vinnare och pris", color: "red" },
 ];
 
 const matchFallback = {
@@ -277,27 +278,27 @@ const matchFallback = {
   selected: {
     home: "Netherlands",
     away: "Sweden",
-    date: "Lör 20 juni",
+    date: "LÃ¶r 20 juni",
     time: "19:00 svensk tid",
     venue: "NRG Stadium, Houston",
   },
 };
 
 const matchSchedule = [
-  { date: "Grupp F", opponent: "Tunisia", note: "Tid från API" },
-  { date: "Lör 20 juni", opponent: "Netherlands", note: "19:00 svensk tid" },
-  { date: "Grupp F", opponent: "Japan", note: "Tid från API" },
+  { date: "Grupp F", opponent: "Tunisia", note: "Tid frÃ¥n API" },
+  { date: "LÃ¶r 20 juni", opponent: "Netherlands", note: "19:00 svensk tid" },
+  { date: "Grupp F", opponent: "Japan", note: "Tid frÃ¥n API" },
 ];
 
 const voteQuestions = [
-  "börjar dansa först?",
+  "bÃ¶rjar dansa fÃ¶rst?",
   "styr grillen?",
   "somnar i solen?",
-  "startar allsång?",
+  "startar allsÃ¥ng?",
   "tar mest ansvar?",
   "vinner 5-kampen?",
   "tappar bort sitt glas?",
-  "får alla att skratta?",
+  "fÃ¥r alla att skratta?",
 ];
 
 const quizQuestions = [
@@ -355,38 +356,38 @@ const quizQuestions = [
 
 quizQuestions.splice(0, quizQuestions.length, ...[
   {
-    question: "Vilket datum infaller midsommarafton alltid på?",
+    question: "Vilket datum infaller midsommarafton alltid pÃ¥?",
     options: ["Fredagen mellan 19 och 25 juni", "Alltid 21 juni", "Sista fredagen i juni"],
     answer: 0,
   },
   {
-    question: "Vad kallas stången man dansar kring?",
-    options: ["Majstång", "Solstång", "Sommarstång"],
+    question: "Vad kallas stÃ¥ngen man dansar kring?",
+    options: ["MajstÃ¥ng", "SolstÃ¥ng", "SommarstÃ¥ng"],
     answer: 0,
   },
   {
-    question: "Vilken blomma är starkt kopplad till midsommar?",
-    options: ["Julros", "Prästkrage", "Påsklilja"],
+    question: "Vilken blomma Ã¤r starkt kopplad till midsommar?",
+    options: ["Julros", "PrÃ¤stkrage", "PÃ¥sklilja"],
     answer: 1,
   },
   {
-    question: "Vad sägs man kunna drömma om om man plockar sju sorters blommor?",
-    options: ["Sin framtida kärlek", "Nästa semester", "Vinnaren i 5-kampen"],
+    question: "Vad sÃ¤gs man kunna drÃ¶mma om om man plockar sju sorters blommor?",
+    options: ["Sin framtida kÃ¤rlek", "NÃ¤sta semester", "Vinnaren i 5-kampen"],
     answer: 0,
   },
   {
-    question: "Vilken mat är vanlig på ett klassiskt midsommarbord?",
-    options: ["Surströmming och tunnbröd", "Sill och färskpotatis", "Kalkon och brysselkål"],
+    question: "Vilken mat Ã¤r vanlig pÃ¥ ett klassiskt midsommarbord?",
+    options: ["SurstrÃ¶mming och tunnbrÃ¶d", "Sill och fÃ¤rskpotatis", "Kalkon och brysselkÃ¥l"],
     answer: 1,
   },
   {
-    question: "Vilken visa sjungs ofta runt midsommarstången?",
-    options: ["Små grodorna", "Staffan stalledräng", "Nu tändas tusen juleljus"],
+    question: "Vilken visa sjungs ofta runt midsommarstÃ¥ngen?",
+    options: ["SmÃ¥ grodorna", "Staffan stalledrÃ¤ng", "Nu tÃ¤ndas tusen juleljus"],
     answer: 0,
   },
   {
-    question: "Vad betyder 'maj' i majstång?",
-    options: ["Månaden maj", "Att smycka med löv", "En gammal dryck"],
+    question: "Vad betyder 'maj' i majstÃ¥ng?",
+    options: ["MÃ¥naden maj", "Att smycka med lÃ¶v", "En gammal dryck"],
     answer: 1,
   },
   {
@@ -395,67 +396,67 @@ quizQuestions.splice(0, quizQuestions.length, ...[
     answer: 0,
   },
   {
-    question: "Vilken årstid firas midsommar?",
-    options: ["Vår", "Sommar", "Höst"],
+    question: "Vilken Ã¥rstid firas midsommar?",
+    options: ["VÃ¥r", "Sommar", "HÃ¶st"],
     answer: 1,
   },
   {
     question: "Vad symboliserar midsommar historiskt mest?",
-    options: ["Årets mörkaste natt", "Sommarsolstånd och ljus", "Skördefestens slut"],
+    options: ["Ã…rets mÃ¶rkaste natt", "SommarsolstÃ¥nd och ljus", "SkÃ¶rdefestens slut"],
     answer: 1,
   },
 ]);
 
 const missionPool = [
-  "Ta en bild på någon som gör årets första skål.",
-  "Fånga en midsommarkrans i bild.",
+  "Ta en bild pÃ¥ nÃ¥gon som gÃ¶r Ã¥rets fÃ¶rsta skÃ¥l.",
+  "FÃ¥nga en midsommarkrans i bild.",
   "Ta en gruppbild med minst fyra personer.",
-  "Dokumentera kvällens snyggaste tallrik.",
-  "Fota någon som dansar eller poserar dramatiskt.",
-  "Ta en bild på någon som hjälper till utan att bli ombedd.",
-  "Fota en person som skrattar på riktigt.",
-  "Ta bildbevis på någon som pratar VM.",
-  "Fota något som räddade kvällen.",
-  "Ta bild på en oväntad detalj i dukningen.",
-  "Fånga någon som går barfota.",
-  "Ta bild på kvällens bästa dryck.",
+  "Dokumentera kvÃ¤llens snyggaste tallrik.",
+  "Fota nÃ¥gon som dansar eller poserar dramatiskt.",
+  "Ta en bild pÃ¥ nÃ¥gon som hjÃ¤lper till utan att bli ombedd.",
+  "Fota en person som skrattar pÃ¥ riktigt.",
+  "Ta bildbevis pÃ¥ nÃ¥gon som pratar VM.",
+  "Fota nÃ¥got som rÃ¤ddade kvÃ¤llen.",
+  "Ta bild pÃ¥ en ovÃ¤ntad detalj i dukningen.",
+  "FÃ¥nga nÃ¥gon som gÃ¥r barfota.",
+  "Ta bild pÃ¥ kvÃ¤llens bÃ¤sta dryck.",
   "Dokumentera ett spontant high-five.",
-  "Fota någon som gör en seriös grillmin.",
-  "Ta en bild på en person med filt.",
-  "Fota någon som säger att de är mätta.",
-  "Ta bild på ett vinnarfirande.",
-  "Fånga någon som sjunger med.",
-  "Ta bild på en person som hämtar mer potatis.",
+  "Fota nÃ¥gon som gÃ¶r en seriÃ¶s grillmin.",
+  "Ta en bild pÃ¥ en person med filt.",
+  "Fota nÃ¥gon som sÃ¤ger att de Ã¤r mÃ¤tta.",
+  "Ta bild pÃ¥ ett vinnarfirande.",
+  "FÃ¥nga nÃ¥gon som sjunger med.",
+  "Ta bild pÃ¥ en person som hÃ¤mtar mer potatis.",
   "Dokumentera en hemlig allians i 5-kampen.",
-  "Fota kvällens bästa utsikt.",
-  "Ta bild på någon som byter plats.",
-  "Fota någon som tar kaffe.",
+  "Fota kvÃ¤llens bÃ¤sta utsikt.",
+  "Ta bild pÃ¥ nÃ¥gon som byter plats.",
+  "Fota nÃ¥gon som tar kaffe.",
   "Dokumentera en misslyckad men charmig lekinsats.",
-  "Ta bild på ett lag som peppar varandra.",
-  "Fånga någon som gör tummen upp.",
-  "Ta bild på något gult.",
-  "Ta bild på något blått.",
-  "Fota någon som förklarar regler.",
-  "Dokumentera kvällens mest svenska ögonblick.",
-  "Fota en person som bär något blomstrigt.",
-  "Ta bild på sista tuggan av något gott.",
+  "Ta bild pÃ¥ ett lag som peppar varandra.",
+  "FÃ¥nga nÃ¥gon som gÃ¶r tummen upp.",
+  "Ta bild pÃ¥ nÃ¥got gult.",
+  "Ta bild pÃ¥ nÃ¥got blÃ¥tt.",
+  "Fota nÃ¥gon som fÃ¶rklarar regler.",
+  "Dokumentera kvÃ¤llens mest svenska Ã¶gonblick.",
+  "Fota en person som bÃ¤r nÃ¥got blomstrigt.",
+  "Ta bild pÃ¥ sista tuggan av nÃ¥got gott.",
 ];
 
 const bingoPool = [
-  "Säger skål",
-  "Blomma i håret",
+  "SÃ¤ger skÃ¥l",
+  "Blomma i hÃ¥ret",
   "Byter plats",
   "Extra potatis",
-  "Pratar väder",
-  "Startar låt",
+  "Pratar vÃ¤der",
+  "Startar lÃ¥t",
   "Egen historia",
-  "Går barfota",
+  "GÃ¥r barfota",
   "Borttappat glas",
-  "Någon pratar VM",
+  "NÃ¥gon pratar VM",
   "Tar kaffe",
-  "Säger mygg",
+  "SÃ¤ger mygg",
   "Tar gruppbild",
-  "Hämtar filt",
+  "HÃ¤mtar filt",
   "Vinner en gren",
   "Sjunger",
 ];
@@ -472,10 +473,10 @@ const bingoLines = [
 ];
 
 const bingoLineRewards = [
-  "Bingo: 3 i rad ger +3 poäng.",
+  "Bingo: 3 i rad ger +3 poÃ¤ng.",
 ];
 
-const bingoFullReward = "Full bricka ger +5 poäng.";
+const bingoFullReward = "Full bricka ger +5 poÃ¤ng.";
 
 function defaultSchedule() {
   return eventSchedule.map((item, index) => ({ id: `event-${index + 1}`, ...item }));
@@ -515,7 +516,7 @@ function normalizeSchedule(schedule) {
         id: item.id || `event-${Date.now()}-${index}`,
         at,
         time,
-        title: item.title || "Ny hÃ¥llpunkt",
+        title: item.title || "Ny hÃƒÂ¥llpunkt",
         detail: item.detail || "",
         color: item.color || ["yellow", "green", "red", "blue"][index % 4],
       };
@@ -617,14 +618,14 @@ function normalizeQuizContent(items) {
 
 function localizeQuizQuestions(items) {
   const fixes = new Map([
-    ["Vilket datum infaller midsommarafton alltid pa?", "Vilket datum infaller midsommarafton alltid på?"],
-    ["Vad kallas stangen man dansar kring?", "Vad kallas stången man dansar kring?"],
-    ["Vilken blomma ar starkt kopplad till midsommar?", "Vilken blomma är starkt kopplad till midsommar?"],
-    ["Vad sags man kunna dromma om om man plockar sju sorters blommor?", "Vad sägs man kunna drömma om om man plockar sju sorters blommor?"],
-    ["Vilken mat ar vanlig pa ett klassiskt midsommarbord?", "Vilken mat är vanlig på ett klassiskt midsommarbord?"],
-    ["Vilken visa sjungs ofta runt midsommarstangen?", "Vilken visa sjungs ofta runt midsommarstången?"],
-    ["Vad betyder 'maj' i majstang?", "Vad betyder 'maj' i majstång?"],
-    ["Vilken arstid firas midsommar?", "Vilken årstid firas midsommar?"],
+    ["Vilket datum infaller midsommarafton alltid pa?", "Vilket datum infaller midsommarafton alltid pÃ¥?"],
+    ["Vad kallas stangen man dansar kring?", "Vad kallas stÃ¥ngen man dansar kring?"],
+    ["Vilken blomma ar starkt kopplad till midsommar?", "Vilken blomma Ã¤r starkt kopplad till midsommar?"],
+    ["Vad sags man kunna dromma om om man plockar sju sorters blommor?", "Vad sÃ¤gs man kunna drÃ¶mma om om man plockar sju sorters blommor?"],
+    ["Vilken mat ar vanlig pa ett klassiskt midsommarbord?", "Vilken mat Ã¤r vanlig pÃ¥ ett klassiskt midsommarbord?"],
+    ["Vilken visa sjungs ofta runt midsommarstangen?", "Vilken visa sjungs ofta runt midsommarstÃ¥ngen?"],
+    ["Vad betyder 'maj' i majstang?", "Vad betyder 'maj' i majstÃ¥ng?"],
+    ["Vilken arstid firas midsommar?", "Vilken Ã¥rstid firas midsommar?"],
     ["Vad symboliserar midsommar historiskt mest?", "Vad symboliserar midsommar historiskt mest?"],
   ]);
   return items.map((item) => ({ ...item, question: fixes.get(item.question) || item.question }));
@@ -845,7 +846,7 @@ async function fetchRemoteState() {
     headers: remoteHeaders(),
   });
   if (!response.ok) {
-    console.warn("Kunde inte hämta Supabase-state", await response.text());
+    console.warn("Kunde inte hÃ¤mta Supabase-state", await response.text());
     return null;
   }
   const rows = await response.json();
@@ -987,8 +988,8 @@ function getMissionsFor(name) {
 
 function missionPointsFor(text, index = 0) {
   const value = String(text).toLowerCase();
-  if (/(gruppbild|minst fyra|hemlig allians|vinnarfirande|förklarar regler|mest svenska|räddade kvällen|oväntad detalj)/i.test(value)) return 3;
-  if (/(sista tuggan|något gult|något blått|kaffe|filt|barfota|potatis|tummen upp)/i.test(value)) return 1;
+  if (/(gruppbild|minst fyra|hemlig allians|vinnarfirande|fÃ¶rklarar regler|mest svenska|rÃ¤ddade kvÃ¤llen|ovÃ¤ntad detalj)/i.test(value)) return 3;
+  if (/(sista tuggan|nÃ¥got gult|nÃ¥got blÃ¥tt|kaffe|filt|barfota|potatis|tummen upp)/i.test(value)) return 1;
   return index === 2 ? 3 : 2;
 }
 
@@ -1003,6 +1004,7 @@ function renderAll() {
   renderProfile();
   renderPrep();
   renderParty();
+  renderIntroModal();
 }
 
 function activatePartyIfEventStarted() {
@@ -1076,6 +1078,29 @@ function renderShell() {
   });
   document.querySelectorAll(".page").forEach((page) => page.classList.remove("is-active"));
   document.querySelector(`#${state.page}-page`).classList.add("is-active");
+}
+
+function introSeenKey() {
+  return `${LOCAL_INTRO_PREFIX}:${state.profile || "guest"}`;
+}
+
+function shouldShowIntroModal() {
+  if (!state.profile || isAdmin() || state.page !== "party") return false;
+  if (Date.now() < EVENT_START.getTime() && !hasPrepBypass()) return false;
+  return localStorage.getItem(introSeenKey()) !== "1";
+}
+
+function renderIntroModal() {
+  document.querySelector("#intro-modal")?.remove();
+  if (!shouldShowIntroModal()) return;
+  document.body.insertAdjacentHTML("beforeend", `<div class="intro-modal" id="intro-modal" role="dialog" aria-modal="true" aria-label="VÃ¤lkommen till Midsommar 2026">
+    <section class="intro-card">
+      <span class="micro-label">Midsommar 2026</span>
+      <h2>Nu Ã¤r appen igÃ¥ng</h2>
+      <p>Samla poÃ¤ng genom uppdrag, bingo, quiz, matchtippning och efter-videon. Bilder eller video lÃ¥ser bevisen. Admin startar 5-kampen och rÃ¤ttar quiz/Most likely.</p>
+      <button class="pill-button" type="button" data-close-intro>Jag fattar</button>
+    </section>
+  </div>`);
 }
 
 function allParticipants() {
@@ -1207,7 +1232,7 @@ function renderProfile() {
   const profile = activeProfile();
   const displayName = isAdmin() ? ADMIN_PROFILE : state.profile;
   const displayProfile = isAdmin() ? null : profile;
-  setText("profile-label", isAdmin() ? "Admin" : profile ? `${state.profile} · ${profile.points} p` : "Välj");
+  setText("profile-label", isAdmin() ? "Admin" : profile ? `${state.profile} Â· ${profile.points} p` : "VÃ¤lj");
   setText("profile-initial", displayName ? displayName.slice(0, 1) : "?");
   const profileAvatar = document.querySelector("#profile-avatar");
   const profileInitial = document.querySelector("#profile-initial");
@@ -1219,13 +1244,13 @@ function renderProfile() {
   if (isAdmin() && state.adminActiveProfile && !allParticipants().includes(state.adminActiveProfile)) state.adminActiveProfile = "";
   const adminTarget = state.adminActiveProfile || "";
   const targetProfile = adminTarget ? state.profiles[adminTarget] || makeProfile(adminTarget) : null;
-  setText("dialog-profile-name", isAdmin() ? `Admin${adminTarget ? ` · jobbar med ${adminTarget}` : ""}` : profile ? `${state.profile} · ${profile.points} p` : "Ingen vald");
+  setText("dialog-profile-name", isAdmin() ? `Admin${adminTarget ? ` Â· jobbar med ${adminTarget}` : ""}` : profile ? `${state.profile} Â· ${profile.points} p` : "Ingen vald");
   const profileButton = document.querySelector("#profile-button");
   profileButton.disabled = false;
   profileButton.setAttribute("aria-disabled", isAdmin() ? "false" : "true");
   document.querySelector("#profile-grid").innerHTML = allParticipants()
     .map((name) => isAdmin()
-      ? `<div class="profile-manage-row"><button class="${name === adminTarget ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}${targetProfile && name === adminTarget ? ` · ${targetProfile.points || 0} p` : ""}</button><button class="profile-delete-button" type="button" data-delete-profile="${escapeHtml(name)}" aria-label="Radera ${escapeHtml(name)}">×</button></div>`
+      ? `<div class="profile-manage-row"><button class="${name === adminTarget ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}${targetProfile && name === adminTarget ? ` Â· ${targetProfile.points || 0} p` : ""}</button><button class="profile-delete-button" type="button" data-delete-profile="${escapeHtml(name)}" aria-label="Radera ${escapeHtml(name)}">Ã—</button></div>`
       : `<button class="${name === state.profile ? "is-selected" : ""}" value="${escapeHtml(name)}" type="button" data-profile="${escapeHtml(name)}">${escapeHtml(name)}</button>`)
     .join("");
   const adminInput = document.querySelector("#admin-name-input");
@@ -1238,14 +1263,14 @@ function renderProfile() {
   document.querySelector("#profile-grid").hidden = !isAdmin();
   document.querySelector("#admin-code-row").hidden = true;
   document.querySelector("[data-admin-mode]").hidden = !isAdmin();
-  document.querySelector("[data-admin-mode]").textContent = state.adminReturnProfile ? "Till mitt konto" : "Lämna admin";
+  document.querySelector("[data-admin-mode]").textContent = state.adminReturnProfile ? "Till mitt konto" : "LÃ¤mna admin";
   document.querySelector("[data-admin-logout-all]")?.toggleAttribute("hidden", !isAdmin());
-  setText("profile-dialog-copy", isAdmin() ? "Admin mode är aktivt. Välj vem du vill redigera, eller logga ut alla inför live." : "Profilen är låst.");
+  setText("profile-dialog-copy", isAdmin() ? "Admin mode Ã¤r aktivt. VÃ¤lj vem du vill redigera, eller logga ut alla infÃ¶r live." : "Profilen Ã¤r lÃ¥st.");
 }
 
 function renderForecast() {
   const days = getWeatherDays();
-  document.querySelector("#forecast-strip").innerHTML = (days.length ? days : ["Tor", "Fre", "Lör"].map((label) => ({ label, icon: "☁", summary: "Väder", detail: "hämtas" })))
+  document.querySelector("#forecast-strip").innerHTML = (days.length ? days : ["Tor", "Fre", "LÃ¶r"].map((label) => ({ label, icon: "â˜", summary: "VÃ¤der", detail: "hÃ¤mtas" })))
     .map(
       (day) => `<article><span>${escapeHtml(day.label)}</span><strong><b>${day.icon}</b>${escapeHtml(day.summary)}</strong><small>${escapeHtml(day.detail)}</small></article>`,
     )
@@ -1268,12 +1293,12 @@ function renderPrep() {
   ];
   setText("rsvp-count", state.profile ? state.profile : `${rsvpDone}/${participants.length} svar`);
   document.querySelector("#rsvp-list").innerHTML = state.profile
-    ? `<div class="rsvp-choice-group" aria-label="OSA för ${escapeHtml(state.profile)}">
+    ? `<div class="rsvp-choice-group" aria-label="OSA fÃ¶r ${escapeHtml(state.profile)}">
         ${choices.map(([value, label]) => `<button class="${status === value ? "is-selected" : ""}" type="button" data-rsvp-status="${value}" data-rsvp-name="${escapeHtml(state.profile)}">${label}</button>`).join("")}
       </div>`
     : `<button class="rsvp-self" type="button" data-open-profile>
         <span class="rsvp-status-dot"></span>
-        <strong>Välj</strong>
+        <strong>VÃ¤lj</strong>
       </button>`;
 
   const packLeft = state.pack.filter((item) => !item.done).length;
@@ -1282,10 +1307,10 @@ function renderPrep() {
     .map(
       (item) => `<label class="pack-row"><input type="checkbox" data-pack="${item.id}" ${item.done ? "checked" : ""} /><span>${escapeHtml(item.text)}</span>${isAdmin() ? `<button type="button" data-delete-pack="${escapeHtml(item.id)}" aria-label="Radera packpunkt">&times;</button>` : ""}</label>`,
     )
-    .join("") + (isAdmin() ? `<div class="pack-admin-row"><input id="pack-admin-input" placeholder="Lägg till packning" /><button type="button" data-add-pack>+</button></div>` : "");
+    .join("") + (isAdmin() ? `<div class="pack-admin-row"><input id="pack-admin-input" placeholder="LÃ¤gg till packning" /><button type="button" data-add-pack>+</button></div>` : "");
 
   if (profile) {
-    setText("profile-label", `${state.profile} · ${profile.points} p${isAdmin() ? " · admin" : ""}`);
+    setText("profile-label", `${state.profile} Â· ${profile.points} p${isAdmin() ? " Â· admin" : ""}`);
   }
 }
 
@@ -1322,8 +1347,8 @@ function renderToday() {
   if (isAdmin()) cards.push(renderDashboardVisibilityEditor());
   if (dashboardVisible("next")) cards.push(`<article class="dash-card dash-card--wide next-activity-card">
       <div class="next-activity-top">
-        <div class="next-activity-icon">◷</div>
-        <span>Nästa aktivitet</span>
+        <div class="next-activity-icon">â—·</div>
+        <span>NÃ¤sta aktivitet</span>
       </div>
       <div class="next-activity-main">
         <strong>${escapeHtml(next.time)}</strong>
@@ -1339,8 +1364,8 @@ function renderToday() {
       <div class="timeline-mini timeline-mini--rich">${schedule.map((item) => `<i class="dot dot--${escapeHtml(item.color)}"></i><b>${escapeHtml(item.time)}</b><span>${escapeHtml(item.title)}</span>`).join("") || `<p class="hint">Inget schema f&ouml;r dagen &auml;n.</p>`}</div>
       ${isAdmin() ? renderScheduleEditor() : ""}
     </article>`);
-  if (dashboardVisible("score")) cards.push(`<article class="dash-card dash-card--wide"><span>Poängställning</span>${renderScoreMini()}</article>`);
-  if (dashboardVisible("weather")) cards.push(`<article class="dash-card dash-card--wide start-weather-card"><span>Väder</span>${renderWeatherMini()}</article>`);
+  if (dashboardVisible("score")) cards.push(`<article class="dash-card dash-card--wide"><span>PoÃ¤ngstÃ¤llning</span>${renderScoreMini()}</article>`);
+  if (dashboardVisible("weather")) cards.push(`<article class="dash-card dash-card--wide start-weather-card"><span>VÃ¤der</span>${renderWeatherMini()}</article>`);
   if (dashboardVisible("rsvp")) cards.push(`<article class="dash-card dash-card--wide rsvp-status-card"><span>OSA</span>${renderRsvpStatusMini()}</article>`);
   if (dashboardVisible("feed")) cards.push(`<article class="dash-card dash-card--wide activity-feed-card"><span>Senaste h&auml;ndelser</span>${renderActivityFeed()}</article>`);
   if (!cards.length) cards.push(`<article class="dash-card dash-card--wide"><p class="hint">Alla startkort &auml;r dolda. Sl&aring; p&aring n&aring;got i adminl&auml;get.</p></article>`);
@@ -1444,7 +1469,7 @@ function getActivityFeedItems() {
         name,
         at: profile.bingoRewards.lineAt,
         title: `${name} fick bingo`,
-        detail: "3 i rad · +3 p",
+        detail: "3 i rad Â· +3 p",
       });
     }
     if (profile.bingoRewards?.fullAt) {
@@ -1454,7 +1479,7 @@ function getActivityFeedItems() {
         name,
         at: profile.bingoRewards.fullAt,
         title: `${name} fyllde brickan`,
-        detail: "Full bricka · +5 p",
+        detail: "Full bricka Â· +5 p",
       });
     }
     ["before", "after"].forEach((slot) => {
@@ -1462,7 +1487,7 @@ function getActivityFeedItems() {
       if (!video?.completedAt) return;
       items.push({
         kind: "video",
-        icon: "▶",
+        icon: "â–¶",
         name,
         at: video.completedAt,
         title: `${name} sparade ${slot === "before" ? "f\u00f6re" : "efter"}-video`,
@@ -1497,27 +1522,27 @@ function renderScheduleEditor() {
       ${rows.map((item) => `<div class="schedule-edit-row" data-schedule-row="${escapeHtml(item.id)}">
         <input class="schedule-time-input" type="time" value="${escapeHtml(item.time)}" data-schedule-field="time" data-schedule-id="${escapeHtml(item.id)}" aria-label="Tid" />
         <input class="schedule-title-input" type="text" value="${escapeHtml(item.title)}" data-schedule-field="title" data-schedule-id="${escapeHtml(item.id)}" aria-label="Titel" />
-        <button class="admin-delete-button" type="button" data-delete-schedule="${escapeHtml(item.id)}" aria-label="Radera hÃ¥llpunkt">&times;</button>
+        <button class="admin-delete-button" type="button" data-delete-schedule="${escapeHtml(item.id)}" aria-label="Radera hÃƒÂ¥llpunkt">&times;</button>
       </div>`).join("")}
     </div>
-    <button class="admin-add-button" type="button" data-add-schedule>LÃ¤gg till hÃ¥llpunkt</button>
+    <button class="admin-add-button" type="button" data-add-schedule>LÃƒÂ¤gg till hÃƒÂ¥llpunkt</button>
   </div>`;
 }
 
 function renderDashboardVisibilityEditor() {
   const items = [
-    ["next", "Nästa"],
+    ["next", "NÃ¤sta"],
     ["schedule", "Schema"],
-    ["score", "Poäng"],
-    ["weather", "Väder"],
+    ["score", "PoÃ¤ng"],
+    ["weather", "VÃ¤der"],
     ["rsvp", "OSA"],
-    ["feed", "Händelser"],
+    ["feed", "HÃ¤ndelser"],
   ];
   return `<article class="dash-card dash-card--wide dashboard-admin-card">
-    <div class="card-title-row"><span>Startsida</span><small>Visa / dölj</small></div>
+    <div class="card-title-row"><span>Startsida</span><small>Visa / dÃ¶lj</small></div>
     <div class="dashboard-toggle-grid">
       ${items.map(([key, label]) => `<button class="dashboard-toggle ${dashboardVisible(key) ? "is-on" : ""}" type="button" data-dashboard-toggle="${key}">
-        <span>${escapeHtml(label)}</span><b>${dashboardVisible(key) ? "På" : "Av"}</b>
+        <span>${escapeHtml(label)}</span><b>${dashboardVisible(key) ? "PÃ¥" : "Av"}</b>
       </button>`).join("")}
     </div>
   </article>`;
@@ -1525,7 +1550,7 @@ function renderDashboardVisibilityEditor() {
 
 function relativeToEvent(value) {
   const diff = new Date(value).getTime() - Date.now();
-  if (diff <= 0) return "Pågår eller har precis varit";
+  if (diff <= 0) return "PÃ¥gÃ¥r eller har precis varit";
   const minutes = Math.round(diff / 60000);
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
@@ -1565,7 +1590,7 @@ function renderScoreMini() {
 
 function renderWeatherMini() {
   const days = getWeatherDays();
-  const forecast = days.length ? days : ["Tor", "Fre", "Lör"].map((label) => ({ label, icon: "☁", summary: "Väder", detail: "hämtas" }));
+  const forecast = days.length ? days : ["Tor", "Fre", "LÃ¶r"].map((label) => ({ label, icon: "â˜", summary: "VÃ¤der", detail: "hÃ¤mtas" }));
   return `<div class="weather-mini-list">${forecast.map((day) => `
     <section>
       <b>${escapeHtml(day.label)}</b>
@@ -1582,11 +1607,11 @@ function renderMatch() {
     <section class="match-wallpaper-hero">
       <span>VM 2026</span>
       <div class="match-versus">
-        <div><b>🇸🇪</b><strong>Sverige</strong></div>
+        <div><b>ðŸ‡¸ðŸ‡ª</b><strong>Sverige</strong></div>
         <em>vs</em>
-        <div><b>🇳🇱</b><strong>Netherlands</strong></div>
+        <div><b>ðŸ‡³ðŸ‡±</b><strong>Netherlands</strong></div>
       </div>
-      <p>${escapeHtml(`${matchFallback.selected.date} · ${matchFallback.selected.time}`)}</p>
+      <p>${escapeHtml(`${matchFallback.selected.date} Â· ${matchFallback.selected.time}`)}</p>
       <strong>${escapeHtml(relativeToEvent("2026-06-20T19:00:00+02:00"))}</strong>
     </section>
     <article class="match-vote-card match-vote-card--wallpaper">
@@ -1595,8 +1620,8 @@ function renderMatch() {
         <b>-</b>
         <label><span>NED</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(result.away)}" data-match-score="away" ${closed ? "disabled" : ""} /></label>
       </div>
-      <p class="match-points-note">Rätt 1X2 ger 3 p. Rätt resultat ger 5 p.</p>
-      <button class="pill-button match-save-button" type="button" data-match-save ${closed ? "disabled" : ""}>${closed ? "Tippning stängd" : "Spara tipp"}</button>
+      <p class="match-points-note">RÃ¤tt 1X2 ger 3 p. RÃ¤tt resultat ger 5 p.</p>
+      <button class="pill-button match-save-button" type="button" data-match-save ${closed ? "disabled" : ""}>${closed ? "Tippning stÃ¤ngd" : "Spara tipp"}</button>
     </article>
     ${isAdmin() ? renderMatchAdmin() : ""}
   </div>`;
@@ -1606,14 +1631,14 @@ function renderMatchAdmin() {
   const actual = normalizeMatchResult(state.matchResult || {});
   return `<article class="game-card match-admin-card">
     <span class="micro-label">Admin</span>
-    <h3>Rätta VM-tipset</h3>
+    <h3>RÃ¤tta VM-tipset</h3>
     <div class="score-inputs">
       <label><span>SWE</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(actual.home)}" data-match-final="home" ${state.matchAwarded ? "disabled" : ""} /></label>
       <b>-</b>
       <label><span>NED</span><input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(actual.away)}" data-match-final="away" ${state.matchAwarded ? "disabled" : ""} /></label>
     </div>
-    <button class="pill-button match-save-button" type="button" data-award-match ${state.matchAwarded ? "disabled" : ""}>${state.matchAwarded ? "Poäng utdelade" : "Dela ut poäng"}</button>
-    <p class="hint">Rätt 1X2 ger 3 p. Exakt resultat ger 5 p.</p>
+    <button class="pill-button match-save-button" type="button" data-award-match ${state.matchAwarded ? "disabled" : ""}>${state.matchAwarded ? "PoÃ¤ng utdelade" : "Dela ut poÃ¤ng"}</button>
+    <p class="hint">RÃ¤tt 1X2 ger 3 p. Exakt resultat ger 5 p.</p>
   </article>`;
 }
 
@@ -1634,13 +1659,13 @@ function normalizeMatchResult(vote) {
 }
 
 function matchOutcome(result) {
-  if (result.home === "" || result.away === "") return "Fyll i resultat så räknas vinnare automatiskt.";
+  if (result.home === "" || result.away === "") return "Fyll i resultat sÃ¥ rÃ¤knas vinnare automatiskt.";
   const home = Number(result.home);
   const away = Number(result.away);
-  if (Number.isNaN(home) || Number.isNaN(away)) return "Fyll i resultat så räknas vinnare automatiskt.";
-  if (home > away) return `Sverige vinner · ${home}-${away}`;
-  if (home < away) return `Netherlands vinner · ${home}-${away}`;
-  return `Oavgjort · ${home}-${away}`;
+  if (Number.isNaN(home) || Number.isNaN(away)) return "Fyll i resultat sÃ¥ rÃ¤knas vinnare automatiskt.";
+  if (home > away) return `Sverige vinner Â· ${home}-${away}`;
+  if (home < away) return `Netherlands vinner Â· ${home}-${away}`;
+  return `Oavgjort Â· ${home}-${away}`;
 }
 
 function matchTipClosed() {
@@ -1681,15 +1706,15 @@ function awardMatchPoints() {
 
 function renderGames() {
   const profile = gameProfileForRender();
-  const adminNotice = isAdmin() ? `<article class="game-card admin-game-context"><span class="micro-label">Admin</span><p>${state.adminActiveProfile ? `Visar lekar som ${escapeHtml(state.adminActiveProfile)}. Admin är inte med i spelen.` : "Välj profil i adminpanelen för att förhandsvisa personliga lekar. Redigeringarna funkar ändå."}</p></article>` : "";
-  if (!profile && !isAdmin()) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
+  const adminNotice = isAdmin() ? `<article class="game-card admin-game-context"><span class="micro-label">Admin</span><p>${state.adminActiveProfile ? `Visar lekar som ${escapeHtml(state.adminActiveProfile)}. Admin Ã¤r inte med i spelen.` : "VÃ¤lj profil i adminpanelen fÃ¶r att fÃ¶rhandsvisa personliga lekar. Redigeringarna funkar Ã¤ndÃ¥."}</p></article>` : "";
+  if (!profile && !isAdmin()) return `<article class="game-card"><h3>VÃ¤lj profil fÃ¶rst</h3><p>DÃ¥ fÃ¥r du egen bingo och egna uppdrag.</p></article>`;
   return `<div class="game-picker">
     ${renderGamePickerButton("vote", "vote", "Most likely")}
     ${renderGamePickerButton("quiz", "quiz", "Quiz")}
     ${renderGamePickerButton("snaps", "snaps", "Snapsvisor")}
     ${renderGamePickerButton("mission", "mission", "Uppdrag")}
     ${renderGamePickerButton("bingo", "bingo", "Bingo")}
-    ${renderGamePickerButton("beforeAfter", "people", "Före/efter")}
+    ${renderGamePickerButton("beforeAfter", "people", "FÃ¶re/efter")}
   </div>
   ${adminNotice}
   ${profile && state.game === "vote" ? renderVote(profile) : ""}
@@ -1698,7 +1723,7 @@ function renderGames() {
   ${profile && state.game === "mission" ? renderMission(profile) : ""}
   ${profile && state.game === "bingo" ? renderBingo(profile) : ""}
   ${profile && state.game === "beforeAfter" ? renderBeforeAfter(profile) : ""}
-  ${!profile && state.game !== "snaps" && isAdmin() ? `<article class="game-card"><p class="hint">Ingen spelprofil vald. Välj en profil i adminpanelen om du vill förhandsvisa den här leken.</p></article>` : ""}
+  ${!profile && state.game !== "snaps" && isAdmin() ? `<article class="game-card"><p class="hint">Ingen spelprofil vald. VÃ¤lj en profil i adminpanelen om du vill fÃ¶rhandsvisa den hÃ¤r leken.</p></article>` : ""}
   ${isAdmin() ? renderGameAdminEditor() : ""}`;
 }
 
@@ -1730,19 +1755,19 @@ function gameIcon(icon) {
 }
 
 function renderWheel(profile) {
-  return `<article class="wheel-card"><div class="wheel" id="wheel">${escapeHtml(profile.wheelResult)}</div><button class="spin-button" type="button" data-spin>Snurra</button><p class="hint">Bonusar delas ut av appen. Inga manuella poäng.</p></article>`;
+  return `<article class="wheel-card"><div class="wheel" id="wheel">${escapeHtml(profile.wheelResult)}</div><button class="spin-button" type="button" data-spin>Snurra</button><p class="hint">Bonusar delas ut av appen. Inga manuella poÃ¤ng.</p></article>`;
 }
 
 function renderVote(profile) {
   const question = profile.voteDeck[0] || editableVoteQuestions()[0];
-  return `<article class="game-card vote-game-card"><span class="micro-label">Most likely</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa påstående</button></article>`;
+  return `<article class="game-card vote-game-card"><span class="micro-label">Most likely</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rÃ¤ttar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>NÃ¤sta pÃ¥stÃ¥ende</button></article>`;
 }
 
 function renderQuiz(profile) {
   const questions = editableQuizQuestions();
   const index = Math.max(0, Math.min(questions.length - 1, Number(profile.quizIndex || 0)));
   const question = questions[index];
-  if (!question) return `<article class="game-card"><h3>Quiz saknas</h3><p class="hint">Admin kan lägga till frågor.</p></article>`;
+  if (!question) return `<article class="game-card"><h3>Quiz saknas</h3><p class="hint">Admin kan lÃ¤gga till frÃ¥gor.</p></article>`;
   if (state.quizCorrected) return renderQuizResults(profile, questions);
   const answer = profile.quizAnswers?.[index];
   const answered = answer !== undefined;
@@ -1757,11 +1782,11 @@ function renderQuiz(profile) {
         <b>${labels[optionIndex]}</b><span class="quiz-option-text">${escapeHtml(option)}</span>
       </button>`).join("")}
     </div>
-    <p class="hint">${submitted ? "Inskickat. Väntar på rättning." : answered ? `${quizAnsweredCount(profile)}/${questions.length} svarade.` : "Välj 1, X eller 2."}</p>
+    <p class="hint">${submitted ? "Inskickat. VÃ¤ntar pÃ¥ rÃ¤ttning." : answered ? `${quizAnsweredCount(profile)}/${questions.length} svarade.` : "VÃ¤lj 1, X eller 2."}</p>
     <div class="quiz-nav">
       <button class="pill-button" type="button" data-prev-quiz ${index === 0 ? "disabled" : ""}>Tillbaka</button>
       ${index < questions.length - 1
-        ? `<button class="pill-button" type="button" data-next-quiz>Nästa fråga</button>`
+        ? `<button class="pill-button" type="button" data-next-quiz>NÃ¤sta frÃ¥ga</button>`
         : `<button class="pill-button" type="button" data-submit-quiz ${submitted || !complete ? "disabled" : ""}>${submitted ? "Inskickat" : "Skicka in"}</button>`}
     </div>
   </article>`;
@@ -1771,9 +1796,9 @@ function renderQuizResults(profile, questions) {
   const labels = ["1", "X", "2"];
   const score = questions.reduce((sum, question, index) => sum + (Number(profile.quizAnswers?.[index]) === Number(question.answer) ? 1 : 0), 0);
   return `<article class="game-card quiz-card quiz-results-card">
-    <span class="micro-label">Quiz rättat</span>
+    <span class="micro-label">Quiz rÃ¤ttat</span>
     <h3>Dina svar</h3>
-    <p class="hint">${score}/${questions.length} rätt. Poängen är inräknade i poängställningen.</p>
+    <p class="hint">${score}/${questions.length} rÃ¤tt. PoÃ¤ngen Ã¤r inrÃ¤knade i poÃ¤ngstÃ¤llningen.</p>
     <div class="quiz-review-list">
       ${questions.map((question, index) => {
         const answer = profile.quizAnswers?.[index];
@@ -1781,7 +1806,7 @@ function renderQuizResults(profile, questions) {
         return `<section class="quiz-review-item ${Number(answer) === correct ? "is-correct" : "is-wrong"}">
           <strong>${escapeHtml(question.question)}</strong>
           <span>Ditt svar: ${answer === undefined ? "Ej svarat" : `${labels[answer]} ${escapeHtml(question.options[answer])}`}</span>
-          <span>Rätt svar: ${labels[correct]} ${escapeHtml(question.options[correct])}</span>
+          <span>RÃ¤tt svar: ${labels[correct]} ${escapeHtml(question.options[correct])}</span>
         </section>`;
       }).join("")}
     </div>
@@ -1806,16 +1831,16 @@ function renderGameAdminEditor() {
   if (config.key === "missions") {
     const missions = normalizeMissionContent(rows);
     return `<article class="admin-editor game-content-editor mission-admin-editor">
-      <div class="admin-editor-head"><strong>Redigera uppdrag</strong><small>Poäng följer med vid utdelning</small></div>
+      <div class="admin-editor-head"><strong>Redigera uppdrag</strong><small>PoÃ¤ng fÃ¶ljer med vid utdelning</small></div>
       <div class="mission-admin-table">
         ${missions.map((mission, index) => `<div class="mission-admin-row" data-mission-admin-row>
           <input class="mission-admin-text" value="${escapeHtml(mission.text)}" data-mission-admin-text aria-label="Uppdrag" />
-          <input class="mission-admin-points" type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(mission.points)}" data-mission-admin-points aria-label="Poäng" />
+          <input class="mission-admin-points" type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(mission.points)}" data-mission-admin-points aria-label="PoÃ¤ng" />
           <button class="admin-delete-button" type="button" data-delete-mission-row="${index}" aria-label="Radera uppdrag">&times;</button>
         </div>`).join("")}
       </div>
       <div class="admin-actions">
-        <button class="admin-secondary-button" type="button" data-add-mission-row>Lägg till</button>
+        <button class="admin-secondary-button" type="button" data-add-mission-row>LÃ¤gg till</button>
         <button class="admin-add-button" type="button" data-save-content="missions">Spara lista</button>
         <button class="admin-secondary-button" type="button" data-apply-content="missions">${config.applyLabel}</button>
       </div>
@@ -1827,19 +1852,19 @@ function renderGameAdminEditor() {
     const submitted = quizSubmittedCount();
     const total = allParticipants().length;
     return `<article class="admin-editor game-content-editor quiz-admin-editor">
-      <div class="admin-editor-head"><strong>Redigera quiz</strong><small>Fråga, svar och rätt alternativ</small></div>
+      <div class="admin-editor-head"><strong>Redigera quiz</strong><small>FrÃ¥ga, svar och rÃ¤tt alternativ</small></div>
       <div class="quiz-admin-status">
         <span>${submitted}/${total} inskickade</span>
-        <button class="admin-add-button" type="button" data-correct-quiz ${state.quizCorrected ? "disabled" : ""}>${state.quizCorrected ? "Rättat" : "Rätta quiz"}</button>
+        <button class="admin-add-button" type="button" data-correct-quiz ${state.quizCorrected ? "disabled" : ""}>${state.quizCorrected ? "RÃ¤ttat" : "RÃ¤tta quiz"}</button>
       </div>
       <div class="quiz-admin-table">
         ${questions.map((question, index) => `<div class="quiz-admin-row" data-quiz-admin-row>
           <div class="quiz-admin-row-head">
-            <textarea class="quiz-admin-question" data-quiz-admin-question aria-label="Fråga ${index + 1}">${escapeHtml(question.question)}</textarea>
-            <select class="quiz-admin-answer" data-quiz-admin-answer aria-label="Rätt svar">
+            <textarea class="quiz-admin-question" data-quiz-admin-question aria-label="FrÃ¥ga ${index + 1}">${escapeHtml(question.question)}</textarea>
+            <select class="quiz-admin-answer" data-quiz-admin-answer aria-label="RÃ¤tt svar">
               ${labels.map((label, answerIndex) => `<option value="${answerIndex}" ${Number(question.answer) === answerIndex ? "selected" : ""}>${label}</option>`).join("")}
             </select>
-            <button class="admin-delete-button" type="button" data-delete-quiz-row="${index}" aria-label="Radera fråga">&times;</button>
+            <button class="admin-delete-button" type="button" data-delete-quiz-row="${index}" aria-label="Radera frÃ¥ga">&times;</button>
           </div>
           <div class="quiz-admin-options">
             ${question.options.map((option, optionIndex) => `<label><span>${labels[optionIndex]}</span><input value="${escapeHtml(option)}" data-quiz-admin-option="${optionIndex}" aria-label="Svar ${labels[optionIndex]}" /></label>`).join("")}
@@ -1847,7 +1872,7 @@ function renderGameAdminEditor() {
         </div>`).join("")}
       </div>
       <div class="admin-actions">
-        <button class="admin-secondary-button" type="button" data-add-quiz-row>Lägg till</button>
+        <button class="admin-secondary-button" type="button" data-add-quiz-row>LÃ¤gg till</button>
         <button class="admin-add-button" type="button" data-save-content="quizQuestions">Spara quiz</button>
         <button class="admin-secondary-button" type="button" data-apply-content="quizQuestions">${config.applyLabel}</button>
       </div>
@@ -1864,7 +1889,7 @@ function renderGameAdminEditor() {
         </div>`).join("")}
       </div>
       <div class="admin-actions">
-        <button class="admin-secondary-button" type="button" data-add-bingo-row>Lägg till</button>
+        <button class="admin-secondary-button" type="button" data-add-bingo-row>LÃ¤gg till</button>
         <button class="admin-add-button" type="button" data-save-content="bingo">Spara bingo</button>
         <button class="admin-secondary-button" type="button" data-apply-content="bingo">${config.applyLabel}</button>
       </div>
@@ -1916,7 +1941,7 @@ function renderGameAdminEditor() {
         </div>`).join("")}
       </div>
       <div class="admin-actions">
-        <button class="admin-secondary-button" type="button" data-add-snaps-row>Lägg till</button>
+        <button class="admin-secondary-button" type="button" data-add-snaps-row>LÃ¤gg till</button>
         <button class="admin-add-button" type="button" data-save-content="snapsSongs">Spara visor</button>
       </div>
     </article>`;
@@ -1934,15 +1959,15 @@ function renderGameAdminEditor() {
 function renderMissionLegacy(profile) {
   return `<div class="mission-list">${profile.missions.map((mission, index) => `
     <article class="mission-card ${mission.photo ? "is-complete" : ""}">
-      <div><span class="micro-label">Uppdrag ${index + 1} · 2 p</span><h3>${escapeHtml(mission.text)}</h3><p class="hint">${mission.photo ? "Utfört" : profile.activeMission === index ? "För att få poäng måste du ladda upp bild när du gör uppdraget." : "Inte utfört än."}</p></div>
-      ${mission.photo ? `<img class="mission-photo" src="${mission.photo}" alt="Bevis för uppdrag ${index + 1}" /><span class="done-pill">Utfört</span>` : ""}
-      ${!mission.photo && profile.activeMission !== index ? `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button>` : ""}
+      <div><span class="micro-label">Uppdrag ${index + 1} Â· 2 p</span><h3>${escapeHtml(mission.text)}</h3><p class="hint">${mission.photo ? "UtfÃ¶rt" : profile.activeMission === index ? "FÃ¶r att fÃ¥ poÃ¤ng mÃ¥ste du ladda upp bild nÃ¤r du gÃ¶r uppdraget." : "Inte utfÃ¶rt Ã¤n."}</p></div>
+      ${mission.photo ? `<img class="mission-photo" src="${mission.photo}" alt="Bevis fÃ¶r uppdrag ${index + 1}" /><span class="done-pill">UtfÃ¶rt</span>` : ""}
+      ${!mission.photo && profile.activeMission !== index ? `<button class="upload-button" type="button" data-start-mission="${index}">UtfÃ¶r</button>` : ""}
       ${!mission.photo && profile.activeMission === index ? `<label class="upload-button">Ladda upp bild<input type="file" accept="image/*" data-mission-upload="${index}" /></label>` : ""}
     </article>`).join("")}</div>`;
 }
 
 function renderBingoLegacy(profile) {
-  return `<div class="bingo-grid">${profile.bingo.map((item) => `<button class="bingo-cell ${profile.bingoHits.includes(item) ? "is-hit" : ""}" type="button" data-bingo="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join("")}</div><p class="hint" style="margin-top:8px">${profile.bingoHits.length}/9 markerade · unik bricka för ${escapeHtml(state.profile)}</p>`;
+  return `<div class="bingo-grid">${profile.bingo.map((item) => `<button class="bingo-cell ${profile.bingoHits.includes(item) ? "is-hit" : ""}" type="button" data-bingo="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join("")}</div><p class="hint" style="margin-top:8px">${profile.bingoHits.length}/9 markerade Â· unik bricka fÃ¶r ${escapeHtml(state.profile)}</p>`;
 }
 
 function getBingoHits(profile) {
@@ -1971,8 +1996,8 @@ function evaluateBingoRewards(profile) {
 function renderMission(profile) {
   return `<article class="game-card mission-explain-card"><span class="micro-label">Hemliga uppdrag</span><p>Nedan listas dina hemliga uppdrag. Genomf&ouml;r dem utan att avsl&ouml;ja dig f&ouml;r de andra. Bild bevis kr&auml;vs.</p></article><div class="mission-list">${profile.missions.map((mission, index) => `
     <article class="mission-card mission-card--compact ${mission.photo ? "is-complete" : ""}">
-      <div class="mission-copy"><h3><span class="mission-points">${mission.points || missionPointsFor(mission.text, index)} p</span><span>${escapeHtml(mission.text)}</span></h3>${isAdmin() ? `<label class="mission-point-admin">Poäng <input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(mission.points || missionPointsFor(mission.text, index))}" data-mission-points="${index}" /></label>` : ""}</div>
-      ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*" data-mission-upload="${index}" />`}
+      <div class="mission-copy"><h3><span class="mission-points">${mission.points || missionPointsFor(mission.text, index)} p</span><span>${escapeHtml(mission.text)}</span></h3>${isAdmin() ? `<label class="mission-point-admin">PoÃ¤ng <input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(mission.points || missionPointsFor(mission.text, index))}" data-mission-points="${index}" /></label>` : ""}</div>
+      ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">UtfÃ¶r</button><input class="capture-input" type="file" accept="image/*" data-mission-upload="${index}" />`}
     </article>`).join("")}</div>`;
 }
 
@@ -1986,9 +2011,9 @@ function renderBingo(profile) {
     </button><input class="capture-input" type="file" accept="image/*" data-bingo-upload="${index}" />`;
   }).join("")}</div>
   <div class="bingo-rewards">
-    <p class="hint">${hits.length}/9 låsta · unik bricka för ${escapeHtml(state.profile)}</p>
-    <p class="hint">3 i rad ger +3 poäng.</p>
-    <p class="hint">Full bricka ger +5 poäng.</p>
+    <p class="hint">${hits.length}/9 lÃ¥sta Â· unik bricka fÃ¶r ${escapeHtml(state.profile)}</p>
+    <p class="hint">3 i rad ger +3 poÃ¤ng.</p>
+    <p class="hint">Full bricka ger +5 poÃ¤ng.</p>
   </div>`;
 }
 
@@ -1999,9 +2024,9 @@ function renderBeforeAfter(profile) {
   const afterState = beforeAfterSlotState("after", after, before);
   return `<article class="game-card before-after-card">
     <h3>Video challenge</h3>
-    <p class="hint">Spela in en video innan midsommar börjar, och senare på kvällen en video när du är i full gång.</p>
+    <p class="hint">Spela in en före-video när appen öppnar. Efter 20:00 kan du spela in efter-videon och få 20 poäng.</p>
     <div class="before-after-grid">
-      ${renderBeforeAfterSlot("before", "Före", before, beforeState)}
+      ${renderBeforeAfterSlot("before", "FÃ¶re", before, beforeState)}
       ${renderBeforeAfterSlot("after", "Efter", after, afterState)}
     </div>
   </article>`;
@@ -2010,16 +2035,17 @@ function renderBeforeAfter(profile) {
 function beforeAfterSlotState(slot, item, beforeItem) {
   const now = new Date();
   if (item.video) return { disabled: true, message: "Klar" };
-  if (slot === "before" && now < BEFORE_VIDEO_OPEN) return { disabled: true, message: "Öppnar på midsommardagen." };
-  if (slot === "before" && now >= BEFORE_VIDEO_CLOSE) return { disabled: true, message: "Före stängde 11:00." };
-  if (slot === "after" && !beforeItem?.video) return { disabled: true, message: "Ta före-videon först." };
-  if (slot === "after" && now < AFTER_VIDEO_OPEN) return { disabled: true, message: "Öppnar efter 20:00." };
-  return { disabled: false, message: "Ingen video än." };
+  if (slot === "before" && now < BEFORE_VIDEO_OPEN) return { disabled: true, message: "Ã–ppnar pÃ¥ midsommardagen." };
+  if (slot === "before" && now >= BEFORE_VIDEO_CLOSE) return { disabled: true, message: "FÃ¶re stÃ¤ngde 11:00." };
+  if (slot === "after" && !beforeItem?.video) return { disabled: true, message: "Ta fÃ¶re-videon fÃ¶rst." };
+  if (slot === "after" && now < AFTER_VIDEO_OPEN) return { disabled: true, message: "Ã–ppnar efter 20:00." };
+  return { disabled: false, message: "Ingen video Ã¤n." };
 }
 
 function renderBeforeAfterSlot(slot, label, item, slotState) {
+  const title = slot === "after" ? `${label} · 20 p` : label;
   return `<section class="before-after-slot ${item.video ? "is-done" : ""} ${slotState.disabled && !item.video ? "is-locked" : ""}">
-    <strong>${label}</strong>
+    <strong>${title}</strong>
     ${item.video ? `<video src="${item.video}" controls playsinline preload="metadata"></video><small>${escapeHtml(formatPhotoTime(item.completedAt))}</small>` : `<p class="hint">${escapeHtml(slotState.message)}</p>`}
     <button class="upload-button" type="button" data-before-after-start="${slot}" ${slotState.disabled || item.video ? "disabled" : ""}>${item.video ? "Klar" : "Ta video"}</button>
     <input class="capture-input" type="file" accept="video/*" capture="user" data-before-after-upload="${slot}" />
@@ -2047,7 +2073,7 @@ function renderScoreAdmin() {
   const selectedTeam = state.teamScores[selectedTeamIndex];
   return `<article class="game-card score-admin-card">
     <span class="micro-label">Admin</span>
-    <h3>Justera poäng</h3>
+    <h3>Justera poÃ¤ng</h3>
     <div class="score-admin-picker">
       <label><span>Profil</span><select data-score-player>${participants.map((name) => `<option value="${escapeHtml(name)}" ${name === selectedPlayer ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}</select></label>
       <div class="score-admin-row score-admin-row--single">
@@ -2075,7 +2101,7 @@ function renderVoteAdmin() {
   const participants = allParticipants();
   const answeredQuestions = [...new Set(participants.flatMap((name) => Object.keys((state.profiles[name] || {}).votes || {})))];
   if (!answeredQuestions.length) return "";
-  return `<article class="game-card"><span class="micro-label">Max admin</span><h3>Rätta omröstning</h3>${answeredQuestions.map((question) => {
+  return `<article class="game-card"><span class="micro-label">Max admin</span><h3>RÃ¤tta omrÃ¶stning</h3>${answeredQuestions.map((question) => {
     const isCorrected = state.voteCorrected?.[question];
     return `
     <div class="correction-card">
@@ -2083,7 +2109,7 @@ function renderVoteAdmin() {
       <div class="choice-grid">
         ${participants.map((name) => `<button class="choice-button ${state.voteCorrections[question] === name ? "is-selected" : ""}" type="button" data-correct-question="${escapeHtml(question)}" data-correct-target="${escapeHtml(name)}" ${isCorrected ? "disabled" : ""}>${escapeHtml(name)}</button>`).join("")}
       </div>
-      <button class="pill-button" type="button" data-award-question="${escapeHtml(question)}" ${isCorrected ? "disabled" : ""}>${isCorrected ? "Rättad" : "Rätta och dela poäng"}</button>
+      <button class="pill-button" type="button" data-award-question="${escapeHtml(question)}" ${isCorrected ? "disabled" : ""}>${isCorrected ? "RÃ¤ttad" : "RÃ¤tta och dela poÃ¤ng"}</button>
     </div>
   `;
   }).join("")}</article>`;
@@ -2099,12 +2125,12 @@ function renderPhotosLegacy() {
   });
 
   if (!photos.length) {
-    return `<article class="game-card"><h3>Inga bilder ännu</h3><p class="hint">När någon klarar ett uppdrag med bild hamnar bilden här.</p></article>`;
+    return `<article class="game-card"><h3>Inga bilder Ã¤nnu</h3><p class="hint">NÃ¤r nÃ¥gon klarar ett uppdrag med bild hamnar bilden hÃ¤r.</p></article>`;
   }
 
   return `<div class="photo-grid">${photos.map((item) => `
     <article class="photo-card">
-      <img src="${item.photo}" alt="Uppdragsbild från ${escapeHtml(item.name)}" />
+      <img src="${item.photo}" alt="Uppdragsbild frÃ¥n ${escapeHtml(item.name)}" />
       <div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.text)}</span></div>
     </article>
   `).join("")}</div>`;
@@ -2132,7 +2158,7 @@ function getGalleryPhotos() {
     return ["before", "after"]
       .map((slot) => ({ slot, item: profile.beforeAfter[slot] }))
       .filter(({ item }) => item?.video)
-      .map(({ slot, item }) => ({ name, text: slot === "before" ? "Före-video" : "Efter-video", photo: item.video, type: "Före / efter", takenAt: item.completedAt, media: "video" }));
+      .map(({ slot, item }) => ({ name, text: slot === "before" ? "FÃ¶re-video" : "Efter-video", photo: item.video, type: "FÃ¶re / efter", takenAt: item.completedAt, media: "video" }));
   });
   return dedupeGalleryPhotos([...(state.galleryArchive || []), ...missionPhotos, ...bingoPhotos, ...beforeAfterVideos]);
 }
@@ -2159,14 +2185,14 @@ function renderPhotos() {
   const photos = getGalleryPhotos();
   if (galleryIndex !== null && !photos[galleryIndex]) galleryIndex = null;
   if (!photos.length) {
-    return `<article class="game-card"><h3>Inga bilder ännu</h3><p class="hint">När någon klarar uppdrag eller bingo med bild hamnar bevisen här.</p></article>`;
+    return `<article class="game-card"><h3>Inga bilder Ã¤nnu</h3><p class="hint">NÃ¤r nÃ¥gon klarar uppdrag eller bingo med bild hamnar bevisen hÃ¤r.</p></article>`;
   }
   if (galleryIndex !== null) return renderPhotoViewer(photos);
 
   return `<div class="photo-grid">${photos.map((item, index) => `
     <button class="photo-card" type="button" data-photo-index="${index}">
-      ${item.media === "video" ? `<video src="${item.photo}" muted playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
-      <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${escapeHtml(formatPhotoTime(item.takenAt))}</small></div>
+      ${item.media === "video" ? `<video src="${item.photo}" muted playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} frÃ¥n ${escapeHtml(item.name)}" />`}
+      <div><strong>${escapeHtml(item.name)} Â· ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${escapeHtml(formatPhotoTime(item.takenAt))}</small></div>
     </button>
   `).join("")}</div>`;
 }
@@ -2175,13 +2201,13 @@ function renderPhotoViewer(photos) {
   const item = photos[galleryIndex];
   const position = `${galleryIndex + 1}/${photos.length}`;
   return `<div class="photo-viewer is-${galleryMotion}" data-photo-viewer>
-    <button class="photo-close" type="button" data-gallery-close aria-label="Stäng bildvisare">×</button>
-    <button class="photo-nav photo-nav--prev" type="button" data-gallery-prev aria-label="Föregående bild">‹</button>
+    <button class="photo-close" type="button" data-gallery-close aria-label="StÃ¤ng bildvisare">Ã—</button>
+    <button class="photo-nav photo-nav--prev" type="button" data-gallery-prev aria-label="FÃ¶regÃ¥ende bild">â€¹</button>
     <figure class="photo-viewer__stage">
-      ${item.media === "video" ? `<video src="${item.photo}" controls playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
-      <figcaption><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${position} · ${escapeHtml(formatPhotoTime(item.takenAt))}</small></figcaption>
+      ${item.media === "video" ? `<video src="${item.photo}" controls playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} frÃ¥n ${escapeHtml(item.name)}" />`}
+      <figcaption><strong>${escapeHtml(item.name)} Â· ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${position} Â· ${escapeHtml(formatPhotoTime(item.takenAt))}</small></figcaption>
     </figure>
-    <button class="photo-nav photo-nav--next" type="button" data-gallery-next aria-label="Nästa bild">›</button>
+    <button class="photo-nav photo-nav--next" type="button" data-gallery-next aria-label="NÃ¤sta bild">â€º</button>
   </div>`;
 }
 
@@ -2192,7 +2218,7 @@ function renderPentathlon() {
   const visibleEvents = started ? state.pentathlon.slice(0, visibleIndex + 1) : [];
   return `<div class="pentathlon-summary-grid pentathlon-summary-grid--stack">${renderOwnTeamCard(totals)}${renderPentathlonRanking(totals)}</div>
   ${isAdmin() ? renderPentathlonRevealControls() : ""}
-  ${!started || visibleIndex < 0 ? `<article class="game-card pentathlon-locked-card"><span class="micro-label">5-kamp</span><h3>Grenarna är hemliga</h3><p class="hint">Admin visar första grenen när det är dags.</p></article>` : ""}
+  ${!started || visibleIndex < 0 ? `<article class="game-card pentathlon-locked-card"><span class="micro-label">5-kamp</span><h3>Grenarna Ã¤r hemliga</h3><p class="hint">Admin visar fÃ¶rsta grenen nÃ¤r det Ã¤r dags.</p></article>` : ""}
   <div class="pentathlon-list">${visibleEvents.map((event, eventIndex) => {
     const status = pentathlonStatus(eventIndex);
     return `<article class="game-card pentathlon-event pentathlon-event--${status.key}">
@@ -2246,7 +2272,7 @@ function renderOwnTeamCard(rows) {
   }
   return `<article class="game-card own-team-card">
     <span class="micro-label">Mitt lag</span>
-    <input class="own-team-name-input" value="${escapeHtml(ownTeam.team)}" data-own-team-name="${ownTeam.index}" aria-label="Ändra lagnamn" />
+    <input class="own-team-name-input" value="${escapeHtml(ownTeam.team)}" data-own-team-name="${ownTeam.index}" aria-label="Ã„ndra lagnamn" />
     <strong>${ownTeam.score} p</strong>
     <p>${escapeHtml(ownTeam.members.join(", "))}</p>
   </article>`;
@@ -2269,11 +2295,11 @@ function renderPentathlonRevealControls() {
   const visibleIndex = Number(state.settings.pentathlon?.visibleIndex ?? -1);
   return `<article class="game-card pentathlon-control-card">
     <span class="micro-label">Admin</span>
-    <h3>${started ? "5-kampen är igång" : "Starta 5-kampen"}</h3>
+    <h3>${started ? "5-kampen Ã¤r igÃ¥ng" : "Starta 5-kampen"}</h3>
     <div class="admin-actions">
       <button class="admin-add-button" type="button" data-start-five>${started ? "Startad" : "START"}</button>
-      <button class="admin-secondary-button" type="button" data-prev-five ${!started || visibleIndex < 0 ? "disabled" : ""}>Ångra</button>
-      <button class="admin-secondary-button" type="button" data-next-five ${!started || visibleIndex >= state.pentathlon.length - 1 ? "disabled" : ""}>Visa nästa</button>
+      <button class="admin-secondary-button" type="button" data-prev-five ${!started || visibleIndex < 0 ? "disabled" : ""}>Ã…ngra</button>
+      <button class="admin-secondary-button" type="button" data-next-five ${!started || visibleIndex >= state.pentathlon.length - 1 ? "disabled" : ""}>Visa nÃ¤sta</button>
     </div>
   </article>`;
 }
@@ -2306,8 +2332,8 @@ function renderPentathlonEditor() {
           <textarea data-five-description="${index}" aria-label="Beskrivning ${index + 1}">${escapeHtml(event.description || "")}</textarea>
         </div>
         <div class="five-row-actions">
-          <button class="admin-secondary-button" type="button" data-move-five="${index}" data-direction="-1" ${index === 0 ? "disabled" : ""} aria-label="Flytta upp">↑</button>
-          <button class="admin-secondary-button" type="button" data-move-five="${index}" data-direction="1" ${index === state.pentathlon.length - 1 ? "disabled" : ""} aria-label="Flytta ner">↓</button>
+          <button class="admin-secondary-button" type="button" data-move-five="${index}" data-direction="-1" ${index === 0 ? "disabled" : ""} aria-label="Flytta upp">â†‘</button>
+          <button class="admin-secondary-button" type="button" data-move-five="${index}" data-direction="1" ${index === state.pentathlon.length - 1 ? "disabled" : ""} aria-label="Flytta ner">â†“</button>
           <button class="admin-delete-button" type="button" data-delete-five="${index}" aria-label="Radera gren">&times;</button>
         </div>
       </div>`).join("")}
@@ -2319,7 +2345,7 @@ function renderPentathlonEditor() {
 function pentathlonStatus(eventIndex) {
   const firstOpen = state.pentathlon.findIndex((event) => event.scores.reduce((sum, score) => sum + score, 0) === 0);
   if (firstOpen === -1 || eventIndex < firstOpen) return { key: "done", label: "Klar" };
-  if (eventIndex === firstOpen) return { key: "live", label: "Pågår" };
+  if (eventIndex === firstOpen) return { key: "live", label: "PÃ¥gÃ¥r" };
   return { key: "soon", label: "Kommer" };
 }
 
@@ -2408,7 +2434,7 @@ async function completeMissionWithFile(input) {
   if (!mission || mission.photo) return;
   const photo = await uploadProofImage(file, "mission", mission.id || missionIndex);
   if (!photo) {
-    window.alert("Bilden kunde inte laddas upp. Testa igen med en vanlig bild från kameran eller albumet.");
+    window.alert("Bilden kunde inte laddas upp. Testa igen med en vanlig bild frÃ¥n kameran eller albumet.");
     return;
   }
   mission.photo = photo;
@@ -2429,7 +2455,7 @@ async function completeBingoWithFile(input) {
   if (!item || profile.bingoProofs?.[item]?.completedAt) return;
   const photo = await uploadProofImage(file, "bingo", item);
   if (!photo) {
-    window.alert("Bilden kunde inte laddas upp. Testa igen med en vanlig bild från kameran eller albumet.");
+    window.alert("Bilden kunde inte laddas upp. Testa igen med en vanlig bild frÃ¥n kameran eller albumet.");
     return;
   }
   profile.bingoProofs = profile.bingoProofs || {};
@@ -2462,9 +2488,10 @@ async function completeBeforeAfterVideo(input) {
   }
   const completedAt = new Date().toISOString();
   profile.beforeAfter[slot] = { video, completedAt };
-  archiveGalleryItem({ name: state.profile, text: slot === "before" ? "Före-video" : "Efter-video", photo: video, type: "Före / efter", takenAt: completedAt, media: "video" });
+  archiveGalleryItem({ name: state.profile, text: slot === "before" ? "FÃ¶re-video" : "Efter-video", photo: video, type: "FÃ¶re / efter", takenAt: completedAt, media: "video" });
+  if (slot === "after") profile.points += 20;
   saveState();
-  showToast(slot === "before" ? "Före-videon sparad" : "Efter-videon sparad");
+  showToast(slot === "before" ? "FÃ¶re-videon sparad" : "Efter-videon sparad +20 p");
   renderAll();
 }
 
@@ -2557,7 +2584,7 @@ function bindDynamicEvents() {
       id: `event-${Date.now()}`,
       at: `${day}T12:00:00+02:00`,
       time: "12:00",
-      title: "Ny hÃ¥llpunkt",
+      title: "Ny hÃƒÂ¥llpunkt",
       detail: "",
       color: ["yellow", "green", "red", "blue"][state.schedule.length % 4],
     });
@@ -2567,7 +2594,7 @@ function bindDynamicEvents() {
   });
 
   document.querySelectorAll("[data-delete-schedule]").forEach((button) => button.addEventListener("click", () => {
-    if (!window.confirm("Radera hÃ¥llpunkten?")) return;
+    if (!window.confirm("Radera hÃƒÂ¥llpunkten?")) return;
     state.schedule = state.schedule.filter((item) => item.id !== button.dataset.deleteSchedule);
     saveState();
     renderAll();
@@ -2598,7 +2625,7 @@ function bindDynamicEvents() {
   document.querySelector("[data-add-quiz-row]")?.addEventListener("click", () => {
     ensureEditableContent();
     state.content.quizQuestions.push({
-      question: "Ny fråga",
+      question: "Ny frÃ¥ga",
       options: ["Alternativ 1", "Alternativ X", "Alternativ 2"],
       answer: 0,
     });
@@ -2610,7 +2637,7 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-delete-quiz-row]").forEach((button) => button.addEventListener("click", () => {
     ensureEditableContent();
     if (state.content.quizQuestions.length <= 1) {
-      showToast("Minst en fråga behövs");
+      showToast("Minst en frÃ¥ga behÃ¶vs");
       return;
     }
     state.content.quizQuestions.splice(Number(button.dataset.deleteQuizRow), 1);
@@ -2629,7 +2656,7 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-delete-bingo-row]").forEach((button) => button.addEventListener("click", () => {
     ensureEditableContent();
     if (state.content.bingo.length <= 9) {
-      showToast("Minst nio bingorutor behövs");
+      showToast("Minst nio bingorutor behÃ¶vs");
       return;
     }
     state.content.bingo.splice(Number(button.dataset.deleteBingoRow), 1);
@@ -2643,7 +2670,7 @@ function bindDynamicEvents() {
       id: `snaps-${Date.now()}`,
       title: "Ny snapsvisa",
       melody: "Melodi:",
-      text: ["Skriv första raden här"],
+      text: ["Skriv fÃ¶rsta raden hÃ¤r"],
     };
     state.content.snapsSongs.push(song);
     state.activeSnapsEditId = song.id;
@@ -2681,7 +2708,7 @@ function bindDynamicEvents() {
       .map((line) => line.trim())
       .filter(Boolean) || [];
     if (!title || !text.length) {
-      showToast("Titel och text behÃ¶vs");
+      showToast("Titel och text behÃƒÂ¶vs");
       return;
     }
     song.title = title;
@@ -2697,7 +2724,7 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-delete-snaps-row]").forEach((button) => button.addEventListener("click", () => {
     ensureEditableContent();
     if (state.content.snapsSongs.length <= 1) {
-      showToast("Minst en snapsvisa behövs");
+      showToast("Minst en snapsvisa behÃ¶vs");
       return;
     }
     if (!window.confirm("Radera snapsvisan?")) return;
@@ -2711,10 +2738,10 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-apply-content]").forEach((button) => button.addEventListener("click", () => {
     const key = button.dataset.applyContent;
     if (!saveContentList(key)) return;
-    if (!window.confirm("Applicera listan pÃ¥ profilerna? Det kan skriva Ã¶ver personliga uppdrag, brickor eller frÃ¥gor.")) return;
+    if (!window.confirm("Applicera listan pÃƒÂ¥ profilerna? Det kan skriva ÃƒÂ¶ver personliga uppdrag, brickor eller frÃƒÂ¥gor.")) return;
     applyContentList(key);
     saveState();
-    showToast("InnehÃ¥ll uppdaterat");
+    showToast("InnehÃƒÂ¥ll uppdaterat");
     renderAll();
   }));
 
@@ -2758,21 +2785,21 @@ function bindDynamicEvents() {
   document.querySelector("[data-submit-quiz]")?.addEventListener("click", () => {
     const profile = activeProfile();
     if (!profile || profile.quizSubmitted || !quizIsComplete(profile)) return;
-    if (!window.confirm("Skicka in quizet? Efter inskickning kan du inte ändra svaren.")) return;
+    if (!window.confirm("Skicka in quizet? Efter inskickning kan du inte Ã¤ndra svaren.")) return;
     profile.quizSubmitted = true;
     profile.quizSubmittedAt = new Date().toISOString();
     awardQuizResults(false);
     saveState();
-    showToast(state.quizCorrected ? "Alla har svarat. Quizet är rättat." : "Quiz inskickat");
+    showToast(state.quizCorrected ? "Alla har svarat. Quizet Ã¤r rÃ¤ttat." : "Quiz inskickat");
     renderAll();
   });
 
   document.querySelector("[data-correct-quiz]")?.addEventListener("click", () => {
     if (!isAdmin() || state.quizCorrected) return;
-    if (!window.confirm("Rätta quizet och dela ut poäng nu?")) return;
+    if (!window.confirm("RÃ¤tta quizet och dela ut poÃ¤ng nu?")) return;
     awardQuizResults(true);
     saveState();
-    showToast("Quizet är rättat");
+    showToast("Quizet Ã¤r rÃ¤ttat");
     renderAll();
   });
 
@@ -2874,7 +2901,7 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-match-score]").forEach((input) => input.addEventListener("input", () => {
     if (!state.profile) return;
     if (matchTipClosed()) {
-      showToast("Tippningen stängde 19:00");
+      showToast("Tippningen stÃ¤ngde 19:00");
       renderAll();
       return;
     }
@@ -2902,32 +2929,32 @@ function bindDynamicEvents() {
   document.querySelector("[data-award-match]")?.addEventListener("click", () => {
     const awarded = awardMatchPoints();
     if (awarded < 0) {
-      showToast("Fyll i slutresultat först");
+      showToast("Fyll i slutresultat fÃ¶rst");
       return;
     }
     saveState();
-    showToast(`VM-poäng utdelade: ${awarded} p`);
+    showToast(`VM-poÃ¤ng utdelade: ${awarded} p`);
     renderAll();
   });
 
   document.querySelector("[data-match-save]")?.addEventListener("click", () => {
     if (matchTipClosed()) {
-      showToast("Tippningen stängde 19:00");
+      showToast("Tippningen stÃ¤ngde 19:00");
       return;
     }
     const result = normalizeMatchResult(state.matchVotes[state.profile] || {});
-    showToast(result.text ? `Tipp sparat: ${matchOutcome(result)}` : "Fyll i resultat först");
+    showToast(result.text ? `Tipp sparat: ${matchOutcome(result)}` : "Fyll i resultat fÃ¶rst");
   });
 
   document.querySelector("[data-spin]")?.addEventListener("click", () => {
     const profile = activeProfile();
     const actions = [
       { text: "Alla byter plats" },
-      { text: "Välj nästa låt" },
-      { text: "Utse kvällens DJ i 10 min" },
+      { text: "VÃ¤lj nÃ¤sta lÃ¥t" },
+      { text: "Utse kvÃ¤llens DJ i 10 min" },
       { text: "Alla tar vattenpaus" },
-      { text: "Välj nästa 5-kampsgren" },
-      { text: "Skål med valfri person" },
+      { text: "VÃ¤lj nÃ¤sta 5-kampsgren" },
+      { text: "SkÃ¥l med valfri person" },
       { text: "Ta en gruppbild nu" },
       { bonus: true },
     ];
@@ -2938,7 +2965,7 @@ function bindDynamicEvents() {
       const winnerProfile = state.profiles[winner] || makeProfile(winner);
       winnerProfile.points += 1;
       state.profiles[winner] = winnerProfile;
-      profile.wheelResult = `${winner} får +1 bonuspoäng`;
+      profile.wheelResult = `${winner} fÃ¥r +1 bonuspoÃ¤ng`;
     } else {
       profile.wheelResult = action.text;
     }
@@ -2963,7 +2990,7 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-start-mission]").forEach((button) => button.addEventListener("click", () => {
     const missionIndex = Number(button.dataset.startMission);
-    if (!window.confirm("Ta en bild nu för att låsa uppdraget och få poäng?")) return;
+    if (!window.confirm("Ta en bild nu fÃ¶r att lÃ¥sa uppdraget och fÃ¥ poÃ¤ng?")) return;
     document.querySelector(`[data-mission-upload="${missionIndex}"]`)?.click();
   }));
 
@@ -2972,7 +2999,7 @@ function bindDynamicEvents() {
     const bingoIndex = Number(button.dataset.bingoIndex);
     const item = profile.bingo[bingoIndex];
     if (!item || profile.bingoProofs?.[item]?.completedAt) return;
-    if (!window.confirm("Ta en bild nu för att låsa bingorutan?")) return;
+    if (!window.confirm("Ta en bild nu fÃ¶r att lÃ¥sa bingorutan?")) return;
     document.querySelector(`[data-bingo-upload="${bingoIndex}"]`)?.click();
   }));
 
@@ -3097,7 +3124,7 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-delete-team]").forEach((button) => button.addEventListener("click", () => {
     if (state.teamScores.length <= 1) {
-      showToast("Minst ett lag behövs");
+      showToast("Minst ett lag behÃ¶vs");
       return;
     }
     const index = Number(button.dataset.deleteTeam);
@@ -3153,7 +3180,7 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-delete-five]").forEach((button) => button.addEventListener("click", () => {
     if (state.pentathlon.length <= 1) {
-      showToast("Minst en gren behÃ¶vs");
+      showToast("Minst en gren behÃƒÂ¶vs");
       return;
     }
     if (!window.confirm("Radera grenen?")) return;
@@ -3201,7 +3228,7 @@ function saveContentList(key) {
       .map((row) => row.querySelector("[data-bingo-admin-text]")?.value.trim() || "")
       .filter(Boolean);
     if (rows.length < 9) {
-      showToast("Minst nio bingorutor behövs");
+      showToast("Minst nio bingorutor behÃ¶vs");
       return false;
     }
     state.content.bingo = [...new Set(rows)];
@@ -3221,7 +3248,7 @@ function saveContentList(key) {
       })
       .filter((song) => song.title && song.text.length);
     if (!rows.length) {
-      showToast("Minst en snapsvisa behövs");
+      showToast("Minst en snapsvisa behÃ¶vs");
       return false;
     }
     state.content.snapsSongs = normalizeSnapsSongs(rows);
@@ -3290,7 +3317,7 @@ async function fetchSmhiWeather() {
   const targets = [
     ["2026-06-18", "Tor"],
     ["2026-06-19", "Fre"],
-    ["2026-06-20", "Lör"],
+    ["2026-06-20", "LÃ¶r"],
   ];
   const days = targets.map(([date, label]) => smhiDayFromSeries(data.timeSeries || [], date, label)).filter(Boolean);
   if (!days.length) throw new Error("smhi-empty");
@@ -3327,7 +3354,7 @@ function smhiDayFromSeries(series, date, label) {
   return {
     label,
     icon: smhiWeatherIcon(symbol),
-    summary: `${smhiWeatherName(symbol)} ${Math.round(temperature)}°`,
+    summary: `${smhiWeatherName(symbol)} ${Math.round(temperature)}Â°`,
     detail: `${formatRainAmount(precip)} mm regn`,
   };
 }
@@ -3344,7 +3371,7 @@ function formatRainAmount(value) {
 }
 
 async function loadWorldCupMatch() {
-  state.matchApiStatus = "Hämtar från no-key API...";
+  state.matchApiStatus = "HÃ¤mtar frÃ¥n no-key API...";
   renderAll();
   try {
     const response = await fetch("https://worldcup26.ir/get/games");
@@ -3356,9 +3383,9 @@ async function loadWorldCupMatch() {
     const teams = extractTeams(swedenMatch);
     state.matchApiData = {
       title: `${teams.away || "Sweden"} vs ${teams.home || "TBD"}`,
-      detail: [swedenMatch.date, swedenMatch.time, swedenMatch.stadium?.name || swedenMatch.stadium || swedenMatch.venue || swedenMatch.location].filter(Boolean).join(" · "),
+      detail: [swedenMatch.date, swedenMatch.time, swedenMatch.stadium?.name || swedenMatch.stadium || swedenMatch.venue || swedenMatch.location].filter(Boolean).join(" Â· "),
     };
-    state.matchApiStatus = "Matchdata hämtad från no-key API";
+    state.matchApiStatus = "Matchdata hÃ¤mtad frÃ¥n no-key API";
   } catch {
     state.matchApiStatus = "No-key API kunde inte ge Sverige-match just nu";
   }
@@ -3380,9 +3407,9 @@ function getWeatherDays() {
     .map((date, dayIndex) => ({ dayIndex, index: daily.time.indexOf(date) }))
     .filter((item) => item.index >= 0)
     .map(({ dayIndex, index }) => ({
-      label: ["Tor", "Fre", "Lör"][dayIndex],
+      label: ["Tor", "Fre", "LÃ¶r"][dayIndex],
       icon: weatherIcon(daily.weather_code[index]),
-      summary: `${weatherName(daily.weather_code[index])} ${Math.round(daily.temperature_2m_max[index])}°`,
+      summary: `${weatherName(daily.weather_code[index])} ${Math.round(daily.temperature_2m_max[index])}Â°`,
       detail: `${formatRainAmount(daily.precipitation_sum?.[index] || 0)} mm regn`,
     }));
 }
@@ -3422,13 +3449,13 @@ function shuffle(items) {
 }
 
 function weatherIcon(code) {
-  if (code === 0) return "☀";
-  if ([1, 2].includes(code)) return "🌤";
-  if (code === 3) return "☁";
-  if ([51, 53, 55, 56, 57].includes(code)) return "🌦";
-  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "🌧";
-  if ([95, 96, 99].includes(code)) return "⛈";
-  return "☁";
+  if (code === 0) return "â˜€";
+  if ([1, 2].includes(code)) return "ðŸŒ¤";
+  if (code === 3) return "â˜";
+  if ([51, 53, 55, 56, 57].includes(code)) return "ðŸŒ¦";
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "ðŸŒ§";
+  if ([95, 96, 99].includes(code)) return "â›ˆ";
+  return "â˜";
 }
 
 function weatherName(code) {
@@ -3437,20 +3464,20 @@ function weatherName(code) {
   if (code === 3) return "Moln";
   if ([51, 53, 55, 56, 57].includes(code)) return "Dugg";
   if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Regn";
-  if ([95, 96, 99].includes(code)) return "Åska";
-  return "Väder";
+  if ([95, 96, 99].includes(code)) return "Ã…ska";
+  return "VÃ¤der";
 }
 
 function smhiWeatherIcon(code) {
-  if ([1, 2].includes(code)) return "☀";
-  if ([3, 4].includes(code)) return "🌤";
-  if ([5, 6].includes(code)) return "☁";
-  if (code === 7) return "🌫";
-  if ([8, 9, 10, 18, 19, 20].includes(code)) return "🌧";
-  if ([11, 21].includes(code)) return "⛈";
-  if ([12, 13, 22, 23].includes(code)) return "🌨";
-  if ([14, 15, 24, 25].includes(code)) return "❄";
-  return "☁";
+  if ([1, 2].includes(code)) return "â˜€";
+  if ([3, 4].includes(code)) return "ðŸŒ¤";
+  if ([5, 6].includes(code)) return "â˜";
+  if (code === 7) return "ðŸŒ«";
+  if ([8, 9, 10, 18, 19, 20].includes(code)) return "ðŸŒ§";
+  if ([11, 21].includes(code)) return "â›ˆ";
+  if ([12, 13, 22, 23].includes(code)) return "ðŸŒ¨";
+  if ([14, 15, 24, 25].includes(code)) return "â„";
+  return "â˜";
 }
 
 function smhiWeatherName(code) {
@@ -3460,10 +3487,10 @@ function smhiWeatherName(code) {
   if (code === 7) return "Dimma";
   if ([8, 9, 10].includes(code)) return "Skurar";
   if ([18, 19, 20].includes(code)) return "Regn";
-  if ([11, 21].includes(code)) return "Åska";
-  if ([12, 13, 22, 23].includes(code)) return "Snöblandat";
-  if ([14, 15, 24, 25].includes(code)) return "Snö";
-  return "Väder";
+  if ([11, 21].includes(code)) return "Ã…ska";
+  if ([12, 13, 22, 23].includes(code)) return "SnÃ¶blandat";
+  if ([14, 15, 24, 25].includes(code)) return "SnÃ¶";
+  return "VÃ¤der";
 }
 
 function pad(value) {
@@ -3511,6 +3538,12 @@ document.querySelectorAll("[data-section]").forEach((button) => button.addEventL
 }));
 
 document.addEventListener("click", (event) => {
+  const introClose = event.target.closest("[data-close-intro]");
+  if (introClose) {
+    localStorage.setItem(introSeenKey(), "1");
+    document.querySelector("#intro-modal")?.remove();
+    return;
+  }
   const dashboardToggle = event.target.closest("[data-dashboard-toggle]");
   if (!dashboardToggle) return;
   event.preventDefault();
@@ -3528,14 +3561,14 @@ document.querySelector("#login-form").addEventListener("submit", async (event) =
   if (state.profile) return;
   const name = normalizeProfileName(document.querySelector("#login-name").value);
   if (!name) {
-    showToast("Skriv ditt namn först");
+    showToast("Skriv ditt namn fÃ¶rst");
     return;
   }
   const photoInput = document.querySelector("#login-photo");
   const photoFile = photoInput?.files?.[0];
   const existingAvatar = state.profiles?.[name]?.avatarUrl || "";
   if (!photoFile && !existingAvatar) {
-    showToast("Ta en profilbild först");
+    showToast("Ta en profilbild fÃ¶rst");
     return;
   }
   const submitButton = event.currentTarget.querySelector("button[type='submit']");
@@ -3594,7 +3627,7 @@ function returnToPrepFromStartTab() {
   state.page = "prep";
   galleryIndex = null;
   galleryMotion = "open";
-  showToast("Prepp öppnad");
+  showToast("Prepp Ã¶ppnad");
   saveState();
   renderAll();
 }
@@ -3648,7 +3681,7 @@ function returnToLoginForTest() {
 }
 
 function openEventAddressInMaps() {
-  const address = "Taltrastvägen 12, Eskilstuna";
+  const address = "TaltrastvÃ¤gen 12, Eskilstuna";
   const encodedAddress = encodeURIComponent(address);
   const agent = navigator.userAgent || "";
   if (/iPad|iPhone|iPod/.test(agent)) {
@@ -3683,10 +3716,10 @@ function updateInstallButton() {
 function showInstallInstructions() {
   const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent || "");
   if (isAppleMobile) {
-    window.alert("På iPhone: tryck på dela-knappen i Safari och välj Lägg till på hemskärmen.");
+    window.alert("PÃ¥ iPhone: tryck pÃ¥ dela-knappen i Safari och vÃ¤lj LÃ¤gg till pÃ¥ hemskÃ¤rmen.");
     return;
   }
-  window.alert("Öppna webbläsarens meny och välj Installera app eller Lägg till på hemskärmen.");
+  window.alert("Ã–ppna webblÃ¤sarens meny och vÃ¤lj Installera app eller LÃ¤gg till pÃ¥ hemskÃ¤rmen.");
 }
 
 window.addEventListener("beforeinstallprompt", (event) => {
@@ -3698,7 +3731,7 @@ window.addEventListener("beforeinstallprompt", (event) => {
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
   updateInstallButton();
-  showToast("Appen är tillagd");
+  showToast("Appen Ã¤r tillagd");
 });
 
 document.querySelector("[data-install-app]")?.addEventListener("click", async () => {
@@ -3732,7 +3765,7 @@ function skipLoginForTest() {
   clearPrepBypass();
   if (Date.now() < EVENT_START.getTime()) state.page = "prep";
   activeProfile();
-  showToast("Testläge öppnat");
+  showToast("TestlÃ¤ge Ã¶ppnat");
   saveState();
   renderAll();
 }
@@ -3784,7 +3817,7 @@ document.querySelector("[data-admin-mode]").addEventListener("click", () => {
 document.querySelector("[data-admin-code]").addEventListener("click", () => {
   const input = document.querySelector("#admin-code-input");
   if (!canUseAdmin()) {
-    showToast("Välj profil först");
+    showToast("VÃ¤lj profil fÃ¶rst");
     return;
   }
   if (input.value.trim() !== "0202") {
@@ -3800,7 +3833,7 @@ document.querySelector("[data-admin-code]").addEventListener("click", () => {
 
 function enterAdminMode() {
   if (!state.profile && state.page !== "party") {
-    showToast("Välj profil först");
+    showToast("VÃ¤lj profil fÃ¶rst");
     return;
   }
   if (!isAdmin()) state.adminReturnProfile = isAdminProfileName(state.profile) ? "" : state.profile;
@@ -3811,7 +3844,7 @@ function enterAdminMode() {
   state.profile = ADMIN_PROFILE;
   state.page = "party";
   state.section = "today";
-  showToast("Admin mode på");
+  showToast("Admin mode pÃ¥");
 }
 
 function leaveAdminMode() {
@@ -3876,7 +3909,7 @@ document.querySelector("#admin-code-input").addEventListener("keydown", (event) 
 });
 document.querySelector("[data-admin-logout-all]")?.addEventListener("click", () => {
   if (!isAdmin()) return;
-  if (!window.confirm("Logga ut alla enheter? Profiler, bilder och poäng sparas.")) return;
+  if (!window.confirm("Logga ut alla enheter? Profiler, bilder och poÃ¤ng sparas.")) return;
   ensureEditableContent();
   state.settings.logoutAt = new Date().toISOString();
   saveState();
@@ -3887,7 +3920,7 @@ document.querySelector("[data-admin-switch-profile]")?.addEventListener("click",
   if (!isAdmin()) return;
   const target = state.adminActiveProfile;
   if (!target) {
-    showToast("VÃ¤lj profil fÃ¶rst");
+    showToast("VÃƒÂ¤lj profil fÃƒÂ¶rst");
     return;
   }
   switchAdminToProfile(target);
@@ -3901,7 +3934,7 @@ document.querySelector("[data-admin-login]").addEventListener("click", () => {
   if (!name) return;
   const oldName = state.adminActiveProfile;
   if (isAdminProfileName(oldName)) {
-    showToast("Välj en profil att byta namn på");
+    showToast("VÃ¤lj en profil att byta namn pÃ¥");
     return;
   }
   if (name !== oldName && allParticipants().includes(name)) {
@@ -3911,7 +3944,7 @@ document.querySelector("[data-admin-login]").addEventListener("click", () => {
   renameProfile(oldName, name, { activate: false });
   state.profile = ADMIN_PROFILE;
   state.adminActiveProfile = name;
-  showToast(oldName === name ? "Namnet är oförändrat" : `Bytte namn till ${name}`);
+  showToast(oldName === name ? "Namnet Ã¤r ofÃ¶rÃ¤ndrat" : `Bytte namn till ${name}`);
   saveState();
   renderAll();
 });
@@ -3923,7 +3956,7 @@ function handleProfileGridAction(event) {
     event.stopPropagation();
     const name = deleteButton.dataset.deleteProfile;
     if (skipRepeatedProfileAction(`delete:${name}`)) return;
-    if (!window.confirm(`Radera profilen ${name}? Det går inte att ångra.`)) return;
+    if (!window.confirm(`Radera profilen ${name}? Det gÃ¥r inte att Ã¥ngra.`)) return;
     if (!deleteProfile(name)) return;
     showToast(`Raderade ${name}`);
     saveState();
@@ -4005,12 +4038,12 @@ function showToast(message) {
   const toast = document.querySelector("#toast");
   if (!toast) return;
   toast.textContent = String(message)
-    .replaceAll("ÃƒÂ¥", "å")
-    .replaceAll("ÃƒÂ¤", "ä")
-    .replaceAll("ÃƒÂ¶", "ö")
-    .replaceAll("Ãƒâ€¦", "Å")
-    .replaceAll("Ãƒâ€ž", "Ä")
-    .replaceAll("Ãƒâ€“", "Ö");
+    .replaceAll("ÃƒÆ’Ã‚Â¥", "Ã¥")
+    .replaceAll("ÃƒÆ’Ã‚Â¤", "Ã¤")
+    .replaceAll("ÃƒÆ’Ã‚Â¶", "Ã¶")
+    .replaceAll("ÃƒÆ’Ã¢â‚¬Â¦", "Ã…")
+    .replaceAll("ÃƒÆ’Ã¢â‚¬Å¾", "Ã„")
+    .replaceAll("ÃƒÆ’Ã¢â‚¬â€œ", "Ã–");
   toast.classList.add("is-visible");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 1600);
