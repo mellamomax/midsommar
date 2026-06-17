@@ -1,4 +1,4 @@
-const CACHE_NAME = "midsommar-app-v35";
+const CACHE_NAME = "midsommar-app-v37";
 const APP_SHELL = [
   "/",
   "/index.html",
