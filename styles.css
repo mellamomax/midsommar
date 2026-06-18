@@ -7180,45 +7180,40 @@ body[data-section="score"] .scoreboard--leaderboard {
 }
 
 .forecast-strip article.weather-tone-sun,
-.weather-mini-list section.weather-tone-sun {
-  border-color: #ebc95f;
-  background: #fff2b9;
-}
-
+.weather-mini-list section.weather-tone-sun,
 .forecast-strip article.weather-tone-mixed,
-.weather-mini-list section.weather-tone-mixed {
-  border-color: #9ac9df;
-  background: #dff2f8;
-}
-
+.weather-mini-list section.weather-tone-mixed,
 .forecast-strip article.weather-tone-rain,
-.weather-mini-list section.weather-tone-rain {
-  border-color: #8dafca;
-  background: #dce9f4;
-}
-
+.weather-mini-list section.weather-tone-rain,
 .forecast-strip article.weather-tone-cloud,
 .weather-mini-list section.weather-tone-cloud {
-  border-color: #c9ced0;
-  background: #edf0ef;
+  border-color: rgba(38, 73, 57, 0.12);
+  background: rgba(255, 255, 255, 0.68);
 }
 
-.forecast-strip article.weather-tone-sun > span,
-.weather-mini-list section.weather-tone-sun > b {
-  color: #88610d;
+.weather-symbol {
+  display: inline-grid;
+  width: 1.35em;
+  height: 1.35em;
+  place-items: center;
+  font-family: "Segoe UI Symbol", sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1;
 }
 
-.forecast-strip article.weather-tone-mixed > span,
-.weather-mini-list section.weather-tone-mixed > b {
-  color: #256482;
+.weather-tone-sun .weather-symbol {
+  color: #e2a91f;
 }
 
-.forecast-strip article.weather-tone-rain > span,
-.weather-mini-list section.weather-tone-rain > b {
-  color: #315e7d;
+.weather-tone-mixed .weather-symbol {
+  color: #4d9bc0;
 }
 
-.forecast-strip article.weather-tone-cloud > span,
-.weather-mini-list section.weather-tone-cloud > b {
-  color: #596365;
+.weather-tone-rain .weather-symbol {
+  color: #397cab;
+}
+
+.weather-tone-cloud .weather-symbol {
+  color: #7a8588;
 }
