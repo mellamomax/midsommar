@@ -3478,7 +3478,7 @@ function metNoDayFromHourly(hourly, date, label) {
     label,
     icon: outlook.icon,
     summary: `${outlook.name} ${Math.round(temperature)}°`,
-    detail: rain >= 0.2 ? `${formatRainAmount(rain)} mm regn` : `${Math.round(sunshineHours)} h sol`,
+    detail: rain >= 0.2 ? `${formatRainAmount(rain)} mm regn` : "",
   };
 }
 
