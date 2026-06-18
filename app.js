@@ -2205,6 +2205,34 @@ function archiveGalleryItem(item) {
   state.galleryArchive = dedupeGalleryPhotos([item, ...(state.galleryArchive || [])]);
 }
 
+function archiveProfileProofs(name, profile, key) {
+  if (!profile) return;
+  if (key === "missions") {
+    (profile.missions || [])
+      .filter((mission) => mission?.photo)
+      .forEach((mission) => archiveGalleryItem({
+        name,
+        text: mission.text || "Tidigare uppdrag",
+        photo: mission.photo,
+        type: "Uppdrag",
+        takenAt: mission.completedAt,
+        media: "image",
+      }));
+  }
+  if (key === "bingo") {
+    Object.entries(profile.bingoProofs || {})
+      .filter(([, proof]) => proof?.photo)
+      .forEach(([text, proof]) => archiveGalleryItem({
+        name,
+        text,
+        photo: proof.photo,
+        type: "Bingo",
+        takenAt: proof.completedAt,
+        media: "image",
+      }));
+  }
+}
+
 function renderPhotos() {
   const photos = getGalleryPhotos();
   if (galleryIndex !== null && !photos[galleryIndex]) galleryIndex = null;
@@ -3298,6 +3326,7 @@ function saveContentList(key) {
 function applyContentList(key) {
   allParticipants().forEach((name) => {
     const profile = state.profiles[name] || makeProfile(name);
+    archiveProfileProofs(name, profile, key);
     if (key === "missions") {
       profile.missions = getMissionsFor(name);
       profile.activeMission = null;
