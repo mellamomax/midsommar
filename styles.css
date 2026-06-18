@@ -7252,8 +7252,11 @@ body[data-section="games"] .game-menu-button[data-game="quiz"] .game-menu-icon i
 }
 
 body[data-section="games"] .game-menu-button[data-game="mission"] .game-menu-icon img {
-  transform: scale(1.34);
-  object-position: 50% 38%;
+  width: 94%;
+  height: 94%;
+  object-fit: contain;
+  object-position: center;
+  transform: none;
 }
 
 body[data-section="games"] .game-menu-button[data-game="snaps"] .game-menu-icon,
