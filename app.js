@@ -4,7 +4,7 @@ const BEFORE_VIDEO_CLOSE = new Date("2026-06-19T11:00:00+02:00");
 const AFTER_VIDEO_OPEN = new Date("2026-06-19T20:00:00+02:00");
 const MATCH_TIP_DEADLINE = new Date("2026-06-20T19:00:00+02:00");
 const STORAGE_KEY = "midsommar-dashboard-v6";
-const WEATHER = { latitude: 59.3333, longitude: 16.4333 };
+const WEATHER = { latitude: 59.3429, longitude: 16.4247 };
 const SUPABASE_URL = "https://wugavohwdfuhahbwxcea.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DWh8fecFXYWycKx1mLwCbQ_GYKfLqz5";
 const REMOTE_STATE_ID = "main";
@@ -3386,28 +3386,33 @@ function applyContentList(key) {
 
 async function loadWeather() {
   try {
-    state.weather = await fetchSmhiWeather();
+    state.weather = await fetchMetNoWeather();
   } catch {
     state.weather = await fetchOpenMeteoWeather();
   }
   renderAll();
 }
 
-async function fetchSmhiWeather() {
-  const lon = Number(WEATHER.longitude).toFixed(6);
-  const lat = Number(WEATHER.latitude).toFixed(6);
-  const response = await fetch(`https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`);
-  if (!response.ok) throw new Error("smhi-weather");
+async function fetchMetNoWeather() {
+  const params = new URLSearchParams({
+    latitude: WEATHER.latitude,
+    longitude: WEATHER.longitude,
+    hourly: "temperature_2m,precipitation,weather_code,sunshine_duration",
+    timezone: "Europe/Stockholm",
+    forecast_days: "3",
+  });
+  const response = await fetch(`https://api.open-meteo.com/v1/metno?${params}`);
+  if (!response.ok) throw new Error("metno-weather");
   const data = await response.json();
   const targets = [
     ["2026-06-18", "Tor"],
     ["2026-06-19", "Fre"],
     ["2026-06-20", "Lör"],
   ];
-  const days = targets.map(([date, label]) => smhiDayFromSeries(data.timeSeries || [], date, label)).filter(Boolean);
-  if (!days.length) throw new Error("smhi-empty");
+  const days = targets.map(([date, label]) => metNoDayFromHourly(data.hourly, date, label)).filter(Boolean);
+  if (!days.length) throw new Error("metno-empty");
   return {
-    source: "SMHI",
+    source: "MET Norway",
     days,
   };
 }
@@ -3428,26 +3433,32 @@ async function fetchOpenMeteoWeather() {
   }
 }
 
-function smhiDayFromSeries(series, date, label) {
-  const entries = series.filter((entry) => localDateKey(new Date(entry.validTime)) === date);
-  if (!entries.length) return null;
-  const noonEntry = entries.find((entry) => new Date(entry.validTime).getHours() === 12) || entries[Math.floor(entries.length / 2)];
-  const temps = entries.map((entry) => smhiParam(entry, "t")).filter((value) => Number.isFinite(value));
-  const precip = entries.reduce((sum, entry) => sum + Math.max(0, smhiParam(entry, "pmean") || 0), 0);
-  const symbol = smhiParam(noonEntry, "Wsymb2") || 0;
-  const temperature = temps.length ? Math.max(...temps) : smhiParam(noonEntry, "t");
+function metNoDayFromHourly(hourly, date, label) {
+  if (!hourly?.time) return null;
+  const indices = hourly.time
+    .map((time, index) => ({ time, index }))
+    .filter((item) => item.time.startsWith(date))
+    .map((item) => item.index);
+  if (!indices.length) return null;
+  const temperatures = indices.map((index) => Number(hourly.temperature_2m?.[index])).filter(Number.isFinite);
+  const rain = indices.reduce((sum, index) => sum + Math.max(0, Number(hourly.precipitation?.[index]) || 0), 0);
+  const sunshineHours = indices.reduce((sum, index) => sum + Math.max(0, Number(hourly.sunshine_duration?.[index]) || 0), 0) / 3600;
+  const temperature = temperatures.length ? Math.max(...temperatures) : 0;
+  const outlook = weatherOutlook(sunshineHours, rain);
   return {
     label,
-    icon: smhiWeatherIcon(symbol),
-    summary: `${smhiWeatherName(symbol)} ${Math.round(temperature)}°`,
-    detail: `${formatRainAmount(precip)} mm regn`,
+    icon: outlook.icon,
+    summary: `${outlook.name} ${Math.round(temperature)}°`,
+    detail: rain >= 0.2 ? `${formatRainAmount(rain)} mm regn` : `${Math.round(sunshineHours)} h sol`,
   };
 }
 
-function smhiParam(entry, name) {
-  const param = entry?.parameters?.find((item) => item.name === name);
-  const value = Number(param?.values?.[0]);
-  return Number.isFinite(value) ? value : null;
+function weatherOutlook(sunshineHours, rain) {
+  if (rain >= 3) return { icon: "🌧", name: "Regn" };
+  if (rain >= 0.2) return { icon: "🌦", name: "Skurar" };
+  if (sunshineHours >= 11) return { icon: "☀", name: "Mest sol" };
+  if (sunshineHours >= 6) return { icon: "🌤", name: "Sol/moln" };
+  return { icon: "☁", name: "Moln" };
 }
 
 function formatRainAmount(value) {
