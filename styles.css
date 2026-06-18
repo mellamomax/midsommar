@@ -7140,3 +7140,39 @@ body[data-section="score"] .scoreboard--leaderboard {
     padding: 0 10px;
   }
 }
+.pentathlon-event-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.pentathlon-event-results span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid rgba(38, 73, 57, 0.14);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--green-900);
+}
+
+.pentathlon-event-results b {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pentathlon-event-results strong {
+  flex: 0 0 auto;
+  margin-left: 6px;
+  font-size: 13px;
+}
+
+.pentathlon-event-results .place-1 {
+  border-color: rgba(192, 145, 41, 0.45);
+  background: #fff5cf;
+}

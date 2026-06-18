@@ -1018,28 +1018,35 @@ function migrateProfile(name, profile) {
 function getMissionsFor(name) {
   const source = editableMissions();
   const participants = allParticipants().filter((participant) => participant !== ADMIN_PROFILE);
-  const participantIndex = Math.max(0, participants.indexOf(originalGuestForDisplay(name) || name));
+  const assignments = Object.fromEntries(participants.map((participant) => [participant, []]));
+  if (!participants.length) return [];
   const pointGroups = source.reduce((groups, mission, index) => {
     const points = Number(mission.points ?? missionPointsFor(mission.text || mission, index));
     if (!groups.has(points)) groups.set(points, []);
     groups.get(points).push({ ...mission, points });
     return groups;
   }, new Map());
-  const pointLevels = [...pointGroups.keys()].sort((a, b) => a - b);
-  if (!pointLevels.length) return [];
-  return Array.from({ length: Math.min(4, source.length || 4) }, (_, index) => {
-    const level = pointLevels[index % pointLevels.length];
-    const round = Math.floor(index / pointLevels.length);
-    const group = pointGroups.get(level) || source;
-    const mission = group[(participantIndex + round * Math.max(1, participants.length)) % group.length];
-    return {
-      id: `${name}-${index}-${level}`,
-      text: mission.text || String(mission),
-      points: Number(mission.points ?? level),
-      photo: "",
-      completedAt: "",
-    };
-  }).sort((a, b) => Number(b.points || 0) - Number(a.points || 0) || a.text.localeCompare(b.text, "sv"));
+  [...pointGroups.entries()]
+    .sort(([a], [b]) => b - a)
+    .forEach(([points, missions], levelIndex) => {
+      const missionsPerPerson = Math.ceil(missions.length / participants.length);
+      const slots = missionsPerPerson * participants.length;
+      for (let slot = 0; slot < slots; slot += 1) {
+        const participant = participants[(slot + levelIndex) % participants.length];
+        const mission = missions[slot % missions.length];
+        assignments[participant].push({
+          id: `${slugify(participant)}-${points}-${slot}`,
+          text: mission.text || String(mission),
+          points,
+          photo: "",
+          completedAt: "",
+        });
+      }
+    });
+  const participantName = participants.find((participant) => participant === name)
+    || participants.find((participant) => originalGuestForDisplay(participant) === originalGuestForDisplay(name));
+  return (assignments[participantName] || [])
+    .sort((a, b) => Number(b.points || 0) - Number(a.points || 0) || a.text.localeCompare(b.text, "sv"));
 }
 
 function missionPointsFor(text, index = 0) {
@@ -2050,7 +2057,7 @@ function evaluateBingoRewards(profile) {
 }
 
 function renderMission(profile) {
-  return `<article class="game-card mission-explain-card"><span class="micro-label">Hemliga uppdrag</span><p>Nedan listas dina hemliga uppdrag. Genomf&ouml;r dem utan att avsl&ouml;ja dig f&ouml;r de andra. Bild bevis kr&auml;vs.</p></article><div class="mission-list">${profile.missions.map((mission, index) => `
+  return `<article class="game-card mission-explain-card"><span class="micro-label">Hemliga uppdrag</span><p>Nedan listas dina hemliga uppdrag. Genomf&ouml;r dem utan att avsl&ouml;ja dig f&ouml;r de andra. Bildbevis kr&auml;vs.</p></article><div class="mission-list">${profile.missions.map((mission, index) => `
     <article class="mission-card mission-card--compact ${mission.photo ? "is-complete" : ""}">
       <div class="mission-copy"><h3><span class="mission-points">${mission.points || missionPointsFor(mission.text, index)} p</span><span>${escapeHtml(mission.text)}</span></h3>${isAdmin() ? `<label class="mission-point-admin">Poäng <input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(mission.points || missionPointsFor(mission.text, index))}" data-mission-points="${index}" /></label>` : ""}</div>
       ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*" data-mission-upload="${index}" />`}
@@ -2305,9 +2312,14 @@ function renderPentathlon() {
   ${!started || visibleIndex < 0 ? `<article class="game-card pentathlon-locked-card"><span class="micro-label">5-kamp</span><h3>Grenarna är hemliga</h3><p class="hint">Admin visar första grenen när det är dags.</p></article>` : ""}
   <div class="pentathlon-list">${visibleEvents.map((event, eventIndex) => {
     const status = pentathlonStatus(eventIndex);
+    const hasPoints = event.scores.some((score) => Number(score || 0) > 0);
+    const results = state.teamScores
+      .map((team, teamIndex) => ({ team: team.team, points: Number(event.scores[teamIndex] || 0) }))
+      .sort((a, b) => b.points - a.points || a.team.localeCompare(b.team, "sv"));
     return `<article class="game-card pentathlon-event pentathlon-event--${status.key}">
       <div class="pentathlon-event__head"><span class="micro-label">${eventIndex + 1}/5</span><span class="event-status">${escapeHtml(status.label)}</span></div>
       <h3>${escapeHtml(event.name)}</h3>
+      ${hasPoints ? `<div class="pentathlon-event-results">${results.map((result, index) => `<span class="place-${index + 1}"><b>${escapeHtml(result.team)}</b><strong>${result.points} p</strong></span>`).join("")}</div>` : ""}
       ${!isAdmin() ? `<button class="pentathlon-info-button" type="button" data-five-info="${eventIndex}">Regler &amp; vinst</button>` : ""}
       ${isAdmin() ? `<div class="five-placement-grid">${state.teamScores.map((team, teamIndex) => `<section>
         <strong>${escapeHtml(team.team)} <b>${event.scores[teamIndex] || 0} p</b></strong>
