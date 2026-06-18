@@ -1779,9 +1779,6 @@ function awardMatchPoints() {
 }
 
 function renderGames() {
-  const profile = gameProfileForRender();
-  const adminNotice = isAdmin() ? `<article class="game-card admin-game-context"><span class="micro-label">Admin</span><p>${state.adminActiveProfile ? `Visar lekar som ${escapeHtml(state.adminActiveProfile)}. Admin är inte med i spelen.` : "Välj profil i adminpanelen för att förhandsvisa personliga lekar. Redigeringarna funkar ändå."}</p></article>` : "";
-  if (!profile && !isAdmin()) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
   return `<div class="game-picker">
     ${renderGamePickerButton("vote", "vote", "Most likely")}
     ${renderGamePickerButton("quiz", "quiz", "Quiz")}
@@ -1789,7 +1786,14 @@ function renderGames() {
     ${renderGamePickerButton("mission", "mission", "Uppdrag")}
     ${renderGamePickerButton("bingo", "bingo", "Bingo")}
     ${renderGamePickerButton("beforeAfter", "people", "Före/efter")}
-  </div>
+  </div><div class="game-stage" id="game-stage">${renderGameStage()}</div>`;
+}
+
+function renderGameStage() {
+  const profile = gameProfileForRender();
+  const adminNotice = isAdmin() ? `<article class="game-card admin-game-context"><span class="micro-label">Admin</span><p>${state.adminActiveProfile ? `Visar lekar som ${escapeHtml(state.adminActiveProfile)}. Admin är inte med i spelen.` : "Välj profil i adminpanelen för att förhandsvisa personliga lekar. Redigeringarna funkar ändå."}</p></article>` : "";
+  if (!profile && !isAdmin()) return `<article class="game-card"><h3>Välj profil först</h3><p>Då får du egen bingo och egna uppdrag.</p></article>`;
+  return `
   ${adminNotice}
   ${profile && state.game === "vote" ? renderVote(profile) : ""}
   ${profile && state.game === "quiz" ? renderQuiz(profile) : ""}
@@ -4157,8 +4161,21 @@ function selectGame(game) {
   if (state.game === game) return;
   state.game = game;
   state.adminEdit = "";
+  if (game !== "snaps") {
+    state.activeSnapId = "";
+    state.activeSnapsEditId = "";
+  }
   saveState();
-  renderAll();
+  document.querySelectorAll(".game-picker [data-game]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.game === game);
+  });
+  const stage = document.querySelector("#game-stage");
+  if (!stage) {
+    renderAll();
+    return;
+  }
+  stage.innerHTML = renderGameStage();
+  bindDynamicEvents();
 }
 
 ["pointerdown", "click", "touchstart", "touchend"].forEach((eventName) => {

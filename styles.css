@@ -4089,6 +4089,12 @@ body[data-section="games"] #party-content:has(.snaps-card) .snaps-card {
   max-height: none;
 }
 
+body[data-section="games"] #party-content:has(.snaps-card) .game-stage {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .snaps-card > * {
   position: relative;
   z-index: 1;
@@ -7268,4 +7274,8 @@ body[data-section="games"] .game-menu-button[data-game="beforeAfter"] .game-menu
 body[data-section="games"] .game-menu-button strong {
   font-size: 0.78rem;
   line-height: 1;
+}
+
+body[data-section="games"] .game-stage {
+  min-height: 0;
 }
