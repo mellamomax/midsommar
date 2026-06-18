@@ -1335,7 +1335,7 @@ function renderForecast() {
   const days = getWeatherDays();
   document.querySelector("#forecast-strip").innerHTML = (days.length ? days : ["Tor", "Fre", "Lör"].map((label) => ({ label, icon: "☁", summary: "Väder", detail: "hämtas" })))
     .map(
-      (day) => `<article><span>${escapeHtml(day.label)}</span><strong><b>${day.icon}</b>${escapeHtml(day.summary)}</strong><small>${escapeHtml(day.detail)}</small></article>`,
+      (day) => `<article class="weather-tone-${weatherTone(day)}"><span>${escapeHtml(day.label)}</span><strong><b>${day.icon}</b>${escapeHtml(day.summary)}</strong><small>${escapeHtml(day.detail)}</small></article>`,
     )
     .join("");
 }
@@ -1655,7 +1655,7 @@ function renderWeatherMini() {
   const days = getWeatherDays();
   const forecast = days.length ? days : ["Tor", "Fre", "Lör"].map((label) => ({ label, icon: "☁", summary: "Väder", detail: "hämtas" }));
   return `<div class="weather-mini-list">${forecast.map((day) => `
-    <section>
+    <section class="weather-tone-${weatherTone(day)}">
       <b>${escapeHtml(day.label)}</b>
       <strong><span>${day.icon}</span>${escapeHtml(day.summary)}</strong>
       <small>${escapeHtml(day.detail)}</small>
@@ -3471,6 +3471,14 @@ function weatherOutlook(sunshineHours, rain) {
   if (sunshineHours >= 11) return { icon: "☀", name: "Mest sol" };
   if (sunshineHours >= 6) return { icon: "🌤", name: "Sol/moln" };
   return { icon: "☁", name: "Moln" };
+}
+
+function weatherTone(day) {
+  const text = `${day?.summary || ""} ${day?.icon || ""}`.toLowerCase();
+  if (text.includes("regn") || text.includes("skur") || text.includes("🌧") || text.includes("🌦")) return "rain";
+  if (text.includes("mest sol") || text.includes("☀")) return "sun";
+  if (text.includes("sol/moln") || text.includes("🌤")) return "mixed";
+  return "cloud";
 }
 
 function formatRainAmount(value) {
