@@ -7217,3 +7217,52 @@ body[data-section="score"] .scoreboard--leaderboard {
 .weather-tone-cloud .weather-symbol {
   color: #7a8588;
 }
+
+body[data-section="games"] .game-menu-button {
+  grid-template-rows: 58px auto;
+  align-content: center;
+  gap: 5px;
+  min-height: 108px;
+  padding: 8px 7px 10px;
+}
+
+body[data-section="games"] .game-menu-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 11px;
+  background: #fff;
+}
+
+body[data-section="games"] .game-menu-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+body[data-section="games"] .game-menu-button[data-game="vote"] .game-menu-icon img {
+  transform: scale(1.18);
+}
+
+body[data-section="games"] .game-menu-button[data-game="quiz"] .game-menu-icon img {
+  transform: scale(1.12);
+}
+
+body[data-section="games"] .game-menu-button[data-game="mission"] .game-menu-icon img {
+  transform: scale(1.34);
+  object-position: 50% 38%;
+}
+
+body[data-section="games"] .game-menu-button[data-game="snaps"] .game-menu-icon,
+body[data-section="games"] .game-menu-button[data-game="bingo"] .game-menu-icon,
+body[data-section="games"] .game-menu-button[data-game="beforeAfter"] .game-menu-icon {
+  background: transparent;
+}
+
+body[data-section="games"] .game-menu-button strong {
+  font-size: 0.78rem;
+  line-height: 1;
+}

@@ -1,11 +1,17 @@
-const CACHE_NAME = "midsommar-app-v45";
+const CACHE_NAME = "midsommar-app-v46";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/styles.css",
   "/app.js",
   "/manifest.webmanifest",
-  "/assets/prep-sunny-bg.png"
+  "/assets/prep-sunny-bg.png",
+  "/assets/game-icons/most-likely.png",
+  "/assets/game-icons/quiz.png",
+  "/assets/game-icons/snapsvisor.png",
+  "/assets/game-icons/uppdrag.png",
+  "/assets/game-icons/bingo.png",
+  "/assets/game-icons/before-after.png"
 ];
 
 self.addEventListener("install", (event) => {

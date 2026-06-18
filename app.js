@@ -1812,7 +1812,18 @@ function gameProfileForRender() {
 }
 
 function renderGamePickerButton(game, icon, label) {
-  return `<button class="game-menu-button ${state.game === game ? "is-active" : ""}" type="button" data-game="${game}"><span class="game-menu-icon game-menu-icon--${icon}" aria-hidden="true">${gameIcon(icon)}</span><strong>${label}</strong></button>`;
+  return `<button class="game-menu-button ${state.game === game ? "is-active" : ""}" type="button" data-game="${game}"><span class="game-menu-icon game-menu-icon--${icon}" aria-hidden="true"><img src="${gameIconImage(game)}" alt="" /></span><strong>${label}</strong></button>`;
+}
+
+function gameIconImage(game) {
+  return {
+    vote: "assets/game-icons/most-likely.png",
+    quiz: "assets/game-icons/quiz.png",
+    snaps: "assets/game-icons/snapsvisor.png",
+    mission: "assets/game-icons/uppdrag.png",
+    bingo: "assets/game-icons/bingo.png",
+    beforeAfter: "assets/game-icons/before-after.png",
+  }[game] || "assets/game-icons/quiz.png";
 }
 
 function gameIcon(icon) {
