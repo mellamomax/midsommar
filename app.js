@@ -626,6 +626,13 @@ function slugify(value) {
     .replace(/^-+|-+$/g, "") || `item-${Date.now()}`;
 }
 
+function stableHash(value) {
+  return [...String(value || "")].reduce((hash, character) => {
+    const next = ((hash << 5) - hash) + character.charCodeAt(0);
+    return next | 0;
+  }, 0);
+}
+
 function normalizeQuizContent(items) {
   return (Array.isArray(items) ? items : [])
     .map((item) => {
@@ -1019,6 +1026,7 @@ function getMissionsFor(name) {
   const source = editableMissions();
   const participants = allParticipants().filter((participant) => participant !== ADMIN_PROFILE);
   const assignments = Object.fromEntries(participants.map((participant) => [participant, []]));
+  const distributionSeed = Number(state.settings?.missionDistributionSeed || 0);
   if (!participants.length) return [];
   const pointGroups = source.reduce((groups, mission, index) => {
     const points = Number(mission.points ?? missionPointsFor(mission.text || mission, index));
@@ -1029,13 +1037,16 @@ function getMissionsFor(name) {
   [...pointGroups.entries()]
     .sort(([a], [b]) => b - a)
     .forEach(([points, missions], levelIndex) => {
+      const shuffledMissions = [...missions].sort((a, b) =>
+        stableHash(`${distributionSeed}:${points}:${a.text}`) - stableHash(`${distributionSeed}:${points}:${b.text}`),
+      );
       const missionsPerPerson = Math.ceil(missions.length / participants.length);
       const slots = missionsPerPerson * participants.length;
       for (let slot = 0; slot < slots; slot += 1) {
-        const participant = participants[(slot + levelIndex) % participants.length];
-        const mission = missions[slot % missions.length];
+        const participant = participants[(slot + levelIndex + distributionSeed) % participants.length];
+        const mission = shuffledMissions[slot % shuffledMissions.length];
         assignments[participant].push({
-          id: `${slugify(participant)}-${points}-${slot}`,
+          id: `${slugify(participant)}-${distributionSeed}-${points}-${slot}`,
           text: mission.text || String(mission),
           points,
           photo: "",
@@ -2837,7 +2848,9 @@ function bindDynamicEvents() {
     if (!window.confirm("Applicera listan på profilerna? Det kan skriva över personliga uppdrag, brickor eller frågor.")) return;
     applyContentList(key);
     saveState();
-    showToast("Innehåll uppdaterat");
+    showToast(key === "missions"
+      ? `Nya uppdrag utdelade · omgång ${state.settings.missionDistributionSeed}`
+      : "Innehåll uppdaterat");
     renderAll();
   }));
 
@@ -3368,6 +3381,10 @@ function saveContentList(key) {
 }
 
 function applyContentList(key) {
+  if (key === "missions") {
+    state.settings = state.settings || {};
+    state.settings.missionDistributionSeed = Number(state.settings.missionDistributionSeed || 0) + 1;
+  }
   allParticipants().forEach((name) => {
     const profile = state.profiles[name] || makeProfile(name);
     archiveProfileProofs(name, profile, key);
