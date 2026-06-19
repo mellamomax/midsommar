@@ -2263,16 +2263,21 @@ function renderScoreAdmin() {
 
 function renderVoteAdmin() {
   const participants = allParticipants();
-  const answeredQuestions = [...new Set(participants.flatMap((name) => Object.keys((state.profiles[name] || {}).votes || {})))];
-  if (!answeredQuestions.length) {
-    return `<article class="game-card vote-correction-admin"><span class="micro-label">Admin</span><h3>Rätta Most likely</h3><p class="hint">Inga svar har kommit in ännu.</p></article>`;
-  }
-  return `<article class="game-card vote-correction-admin"><span class="micro-label">Admin</span><h3>Rätta Most likely</h3><p class="hint">Välj rätt person. Alla som röstade på den personen får 1 poäng.</p>${answeredQuestions.map((question) => {
+  const questions = [...new Set([
+    ...editableVoteQuestions(),
+    ...participants.flatMap((name) => Object.keys((state.profiles[name] || {}).votes || {})),
+  ])];
+  return `<article class="game-card vote-correction-admin"><span class="micro-label">Admin</span><h3>Rätta Most likely</h3><p class="hint">Välj rätt person. Alla som röstade på den personen får 1 poäng.</p>${questions.map((question) => {
     const isCorrected = state.voteCorrected?.[question];
-    const answerCount = participants.filter((name) => Boolean(state.profiles[name]?.votes?.[question])).length;
+    const answered = participants.filter((name) => Boolean(state.profiles[name]?.votes?.[question]));
+    const missing = participants.filter((name) => !answered.includes(name));
     return `
     <div class="correction-card">
-      <div class="correction-card__head"><strong>Vem ${escapeHtml(question)}</strong><small>${answerCount} svar</small></div>
+      <div class="correction-card__head"><strong>Vem ${escapeHtml(question)}</strong><small>${answered.length}/${participants.length} svar</small></div>
+      <div class="vote-response-status ${missing.length ? "has-missing" : "is-complete"}">
+        <strong>${missing.length ? "Saknar svar" : "Alla har svarat"}</strong>
+        ${missing.length ? `<span>${missing.map(escapeHtml).join(", ")}</span>` : ""}
+      </div>
       <div class="choice-grid">
         ${participants.map((name) => `<button class="choice-button ${state.voteCorrections[question] === name ? "is-selected" : ""}" type="button" data-correct-question="${escapeHtml(question)}" data-correct-target="${escapeHtml(name)}" ${isCorrected ? "disabled" : ""}>${escapeHtml(name)}</button>`).join("")}
       </div>

@@ -7459,6 +7459,30 @@ body[data-section="games"] .game-menu-icon {
   font-weight: 750;
 }
 
+.vote-response-status {
+  display: grid;
+  gap: 2px;
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.vote-response-status strong {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.vote-response-status.has-missing {
+  color: #7c3d32;
+  background: #f9e8e3;
+}
+
+.vote-response-status.is-complete {
+  color: #245d3b;
+  background: #e3f1e6;
+}
+
 body[data-section="games"] .game-menu-icon img {
   width: 100%;
   height: 100%;
