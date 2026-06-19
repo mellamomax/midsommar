@@ -9,6 +9,7 @@ const SUPABASE_URL = "https://wugavohwdfuhahbwxcea.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DWh8fecFXYWycKx1mLwCbQ_GYKfLqz5";
 const REMOTE_STATE_ID = "main";
 const PROOF_BUCKET = "proofs";
+const PROOF_MAX_BYTES = 50 * 1024 * 1024;
 const SHARED_STATE_KEYS = [
   "profiles",
   "nameOverrides",
@@ -2643,7 +2644,11 @@ async function uploadProofFile(file, kind, label, options = {}) {
     body: blob,
   });
   if (!response.ok) {
-    console.warn("Kunde inte ladda upp bevis till Supabase", await response.text());
+    const errorText = await response.text();
+    console.warn("Kunde inte ladda upp bevis till Supabase", errorText);
+    if (/maximum allowed size|payload too large|entity too large/i.test(errorText)) {
+      window.alert("Videon är för stor för uppladdning. Spela in ett kortare klipp och försök igen.");
+    }
     return "";
   }
   return `${SUPABASE_URL}/storage/v1/object/public/${PROOF_BUCKET}/${encodeURI(path)}`;
@@ -2666,9 +2671,9 @@ async function completeMissionWithFile(input) {
     window.alert("Välj ett foto eller en video.");
     return;
   }
-  if (file.size > 25 * 1024 * 1024) {
+  if (file.size > PROOF_MAX_BYTES) {
     input.value = "";
-    window.alert("Filen är större än 25 MB. Välj en kortare video eller ett mindre foto.");
+    window.alert(`Filen är ${Math.ceil(file.size / 1024 / 1024)} MB. Max är 50 MB.`);
     return;
   }
   if (uploadButton) {
@@ -2709,9 +2714,9 @@ async function completeBingoWithFile(input) {
     window.alert("Välj ett foto eller en video.");
     return;
   }
-  if (file.size > 25 * 1024 * 1024) {
+  if (file.size > PROOF_MAX_BYTES) {
     input.value = "";
-    window.alert("Filen är större än 25 MB. Välj en kortare video eller ett mindre foto.");
+    window.alert(`Filen är ${Math.ceil(file.size / 1024 / 1024)} MB. Max är 50 MB.`);
     return;
   }
   if (bingoButton) {
@@ -2719,6 +2724,7 @@ async function completeBingoWithFile(input) {
     const status = bingoButton.querySelector("small");
     if (status) status.textContent = "Laddar...";
   }
+  showToast("Laddar upp bingobevis...");
   const media = mediaTypeForFile(file);
   const proof = await uploadProofFile(file, "bingo", item);
   if (!proof) {
@@ -2739,14 +2745,15 @@ async function completeBingoWithFile(input) {
   evaluateBingoRewards(profile);
   saveState();
   renderAll();
+  showToast(media === "video" ? "Videon är sparad och bingorutan är klar" : "Bilden är sparad och bingorutan är klar");
 }
 
 async function completeBeforeAfterVideo(input) {
   const file = input.files?.[0];
   if (!file) return;
-  if (file.size > 25 * 1024 * 1024) {
+  if (file.size > PROOF_MAX_BYTES) {
     input.value = "";
-    window.alert("Videon är större än 25 MB. Välj en kortare eller mindre video.");
+    window.alert("Videon är större än 50 MB. Välj en kortare eller mindre video.");
     return;
   }
   const slot = input.dataset.beforeAfterUpload;
