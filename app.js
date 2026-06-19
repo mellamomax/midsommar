@@ -1911,7 +1911,7 @@ function renderWheel(profile) {
 
 function renderVote(profile) {
   const question = profile.voteDeck[0] || editableVoteQuestions()[0];
-  return `<article class="game-card vote-game-card"><span class="micro-label">Most likely</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Max rättar sista dagen."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa påstående</button></article>`;
+  return `<article class="game-card vote-game-card"><span class="micro-label">Most likely</span><h3>Vem ${escapeHtml(question)}</h3><div class="vote-options">${allParticipants().filter((name) => name !== state.profile).map((name) => `<button class="vote-button ${profile.votes[question] === name ? "is-selected" : ""}" type="button" data-vote="${escapeHtml(question)}" data-target="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div><p class="hint">${profile.votes[question] ? `Ditt svar: ${escapeHtml(profile.votes[question])}` : "Spara svar nu. Admin rättar senare."}</p><button class="pill-button" type="button" data-next-personal-question>Nästa påstående</button></article>`;
 }
 
 function renderQuiz(profile) {
@@ -1979,6 +1979,19 @@ function renderGameAdminEditor() {
     </article>`;
   }
   const rows = state.content?.[config.key] || [];
+  if (config.key === "voteQuestions") {
+    return `<div class="vote-admin-stack">
+      ${renderVoteAdmin()}
+      <article class="admin-editor game-content-editor">
+        <div class="admin-editor-head"><strong>Redigera Most likely</strong><small>En rad per påstående</small></div>
+        <textarea class="admin-textarea" data-content-editor="voteQuestions">${escapeHtml(rows.join("\n"))}</textarea>
+        <div class="admin-actions">
+          <button class="admin-add-button" type="button" data-save-content="voteQuestions">Spara lista</button>
+          <button class="admin-secondary-button" type="button" data-apply-content="voteQuestions">${config.applyLabel}</button>
+        </div>
+      </article>
+    </div>`;
+  }
   if (config.key === "missions") {
     const missions = normalizeMissionContent(rows);
     return `<article class="admin-editor game-content-editor mission-admin-editor">
@@ -2213,7 +2226,7 @@ function renderPersonalScore() {
       <span class="rank-badge">${index + 1}</span>
       <strong>${escapeHtml(row.name)}</strong>
       <span class="score-points">${row.points} p</span>
-    </article>`).join("")}${isAdmin() ? renderScoreAdmin() + renderVoteAdmin() : ""}</div>`;
+    </article>`).join("")}${isAdmin() ? renderScoreAdmin() : ""}</div>`;
 }
 
 function renderScoreAdmin() {
@@ -2251,12 +2264,15 @@ function renderScoreAdmin() {
 function renderVoteAdmin() {
   const participants = allParticipants();
   const answeredQuestions = [...new Set(participants.flatMap((name) => Object.keys((state.profiles[name] || {}).votes || {})))];
-  if (!answeredQuestions.length) return "";
-  return `<article class="game-card"><span class="micro-label">Max admin</span><h3>Rätta omröstning</h3>${answeredQuestions.map((question) => {
+  if (!answeredQuestions.length) {
+    return `<article class="game-card vote-correction-admin"><span class="micro-label">Admin</span><h3>Rätta Most likely</h3><p class="hint">Inga svar har kommit in ännu.</p></article>`;
+  }
+  return `<article class="game-card vote-correction-admin"><span class="micro-label">Admin</span><h3>Rätta Most likely</h3><p class="hint">Välj rätt person. Alla som röstade på den personen får 1 poäng.</p>${answeredQuestions.map((question) => {
     const isCorrected = state.voteCorrected?.[question];
+    const answerCount = participants.filter((name) => Boolean(state.profiles[name]?.votes?.[question])).length;
     return `
     <div class="correction-card">
-      <strong>Vem ${escapeHtml(question)}</strong>
+      <div class="correction-card__head"><strong>Vem ${escapeHtml(question)}</strong><small>${answerCount} svar</small></div>
       <div class="choice-grid">
         ${participants.map((name) => `<button class="choice-button ${state.voteCorrections[question] === name ? "is-selected" : ""}" type="button" data-correct-question="${escapeHtml(question)}" data-correct-target="${escapeHtml(name)}" ${isCorrected ? "disabled" : ""}>${escapeHtml(name)}</button>`).join("")}
       </div>
@@ -3130,7 +3146,12 @@ function bindDynamicEvents() {
     const question = button.dataset.awardQuestion;
     if (state.voteCorrected?.[question]) return;
     const correct = state.voteCorrections[question];
-    if (!correct) return;
+    if (!correct) {
+      showToast("Välj rätt person först");
+      return;
+    }
+    if (!window.confirm(`Rätta påståendet med ${correct} som rätt svar? Detta delar ut poäng direkt.`)) return;
+    let awarded = 0;
     allParticipants().forEach((name) => {
       const profile = state.profiles[name];
       if (!profile?.votes || profile.votes[question] !== correct) return;
@@ -3138,11 +3159,13 @@ function bindDynamicEvents() {
       if (state.voteAwarded[key]) return;
       profile.points += 1;
       state.voteAwarded[key] = true;
+      awarded += 1;
     });
     state.voteCorrected = state.voteCorrected || {};
     state.voteCorrected[question] = true;
     saveState();
     renderAll();
+    showToast(awarded ? `${awarded} fick 1 poäng` : "Rättat · ingen hade valt rätt");
   }));
 
   document.querySelector("[data-score-player]")?.addEventListener("change", (event) => {

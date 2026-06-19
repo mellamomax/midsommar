@@ -7431,6 +7431,34 @@ body[data-section="games"] .game-menu-icon {
   background: #fff;
 }
 
+.vote-admin-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.vote-correction-admin {
+  display: grid;
+  gap: 9px;
+}
+
+.vote-correction-admin > .hint {
+  margin: -2px 0 2px;
+}
+
+.correction-card__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.correction-card__head small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
 body[data-section="games"] .game-menu-icon img {
   width: 100%;
   height: 100%;
