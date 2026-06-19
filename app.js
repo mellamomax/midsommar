@@ -31,7 +31,7 @@ const SHARED_STATE_KEYS = [
   "galleryArchive",
 ];
 const LOCAL_LOGOUT_KEY = "midsommar-last-global-logout";
-const LOCAL_INTRO_PREFIX = "midsommar-intro-seen-v2";
+const LOCAL_INTRO_PREFIX = "midsommar-intro-seen-v3";
 
 let remoteReady = false;
 let remoteSaveTimer = null;
@@ -1169,10 +1169,26 @@ function renderIntroModal() {
   if (!shouldShowIntroModal()) return;
   document.body.insertAdjacentHTML("beforeend", `<div class="intro-modal" id="intro-modal" role="dialog" aria-modal="true" aria-label="Välkommen till Midsommar 2026">
     <section class="intro-card">
-      <span class="micro-label">Midsommar 2026</span>
-      <h2>Nu är appen igång</h2>
-      <p>Samla poäng genom uppdrag, bingo, quiz, matchtippning och efter-videon. Bilder eller video låser bevisen. Admin startar 5-kampen och rättar quiz/Most likely.</p>
-      <button class="pill-button" type="button" data-close-intro>Jag fattar</button>
+      <div class="intro-card__hero">
+        <span class="intro-card__eyebrow">Midsommar 2026</span>
+        <h2>Välkommen, ${escapeHtml(state.profile)}</h2>
+        <p>Samla poäng, klara utmaningar och följ dagens tävlingar.</p>
+      </div>
+      <div class="intro-guide">
+        <div>
+          <span class="intro-guide__icon intro-guide__icon--score" aria-hidden="true">#</span>
+          <p><strong>Poäng</strong><small>Uppdrag, bingo, quiz, matchtippning och efter-videon ger poäng.</small></p>
+        </div>
+        <div>
+          <span class="intro-guide__icon intro-guide__icon--proof" aria-hidden="true">▣</span>
+          <p><strong>Bildbevis</strong><small>Foto eller video sparar beviset och låser avklarade moment.</small></p>
+        </div>
+        <div>
+          <span class="intro-guide__icon intro-guide__icon--admin" aria-hidden="true">✓</span>
+          <p><strong>Gemensamma lekar</strong><small>Admin startar 5-kampen och rättar quiz samt Most likely.</small></p>
+        </div>
+      </div>
+      <button class="pill-button intro-card__start" type="button" data-close-intro>Nu kör vi</button>
     </section>
   </div>`);
 }
