@@ -2189,8 +2189,8 @@ function renderBeforeAfterSlot(slot, label, item, slotState) {
   const title = slot === "after" ? `${label} · 20 p` : label;
   return `<section class="before-after-slot ${item.video ? "is-done" : ""} ${slotState.disabled && !item.video ? "is-locked" : ""}">
     <strong>${title}</strong>
-    ${item.video ? `<video class="before-after-video" src="${item.video}" controls playsinline preload="metadata"></video><small>${escapeHtml(formatPhotoTime(item.completedAt))}</small>` : `<p class="hint">${escapeHtml(slotState.message)}</p>`}
-    <button class="upload-button" type="button" data-before-after-start="${slot}" ${slotState.disabled || item.video ? "disabled" : ""}>${item.video ? "Klar" : "Ta video"}</button>
+    ${item.video ? `<span class="video-saved-badge">✓ Video sparad</span><video class="before-after-video" src="${item.video}" controls playsinline preload="metadata"></video><small>${escapeHtml(formatPhotoTime(item.completedAt))}</small>` : `<p class="hint">${escapeHtml(slotState.message)}</p>`}
+    <button class="upload-button" type="button" data-before-after-start="${slot}" ${slotState.disabled || item.video ? "disabled" : ""}>${item.video ? "Sparad" : "Ta video"}</button>
     <input class="capture-input" type="file" accept="video/*" capture="user" data-before-after-upload="${slot}" />
   </section>`;
 }
@@ -2572,15 +2572,23 @@ function videoDuration(file) {
   return new Promise((resolve) => {
     const video = document.createElement("video");
     const objectUrl = URL.createObjectURL(file);
+    let settled = false;
     const finish = (duration = 0) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
       URL.revokeObjectURL(objectUrl);
       video.remove();
       resolve(Number(duration) || 0);
     };
+    const timeout = setTimeout(() => finish(0), 3000);
     video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
     video.addEventListener("loadedmetadata", () => finish(video.duration), { once: true });
     video.addEventListener("error", () => finish(0), { once: true });
     video.src = objectUrl;
+    video.load();
   });
 }
 
@@ -2678,20 +2686,30 @@ async function completeBeforeAfterVideo(input) {
     showToast(slotState.message);
     return;
   }
-  const duration = await videoDuration(file);
-  if (!duration) {
-    input.value = "";
-    window.alert("Videons längd kunde inte läsas. Testa att välja videon igen.");
-    return;
+  const uploadButton = document.querySelector(`[data-before-after-start="${slot}"]`);
+  if (uploadButton) {
+    uploadButton.disabled = true;
+    uploadButton.textContent = "Kontrollerar...";
   }
+  const duration = await videoDuration(file);
   if (duration > 10.25) {
     input.value = "";
+    if (uploadButton) {
+      uploadButton.disabled = false;
+      uploadButton.textContent = "Ta video";
+    }
     window.alert(`Videon är ${Math.ceil(duration)} sekunder. Välj en video som är högst 10 sekunder.`);
     return;
   }
+  if (uploadButton) uploadButton.textContent = "Laddar upp...";
   const video = await uploadProofFile(file, "fore-efter", slot, { compressImage: false });
   if (!video) {
-    window.alert("Videon kunde inte laddas upp. Testa igen med en kortare video.");
+    input.value = "";
+    if (uploadButton) {
+      uploadButton.disabled = false;
+      uploadButton.textContent = "Försök igen";
+    }
+    window.alert("Videon kunde inte laddas upp. Kontrollera anslutningen och försök igen.");
     return;
   }
   const completedAt = new Date().toISOString();

@@ -4142,6 +4142,24 @@ body[data-page="prep"] .rsvp-choice-group button {
   opacity: 0.55;
 }
 
+.before-after-slot.is-done {
+  border-color: rgba(47, 113, 71, 0.42);
+  background: #f1f8f2;
+}
+
+.video-saved-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 25px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #1f5b37;
+  background: #dceede;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
 body[data-page="party"] .topbar {
   width: 100%;
   margin: 0;
