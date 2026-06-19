@@ -8,6 +8,7 @@ const WEATHER = { latitude: 59.3429, longitude: 16.4247 };
 const SUPABASE_URL = "https://wugavohwdfuhahbwxcea.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DWh8fecFXYWycKx1mLwCbQ_GYKfLqz5";
 const REMOTE_STATE_ID = "main";
+const PENTATHLON_CONTROL_ID = "pentathlon-control";
 const PROOF_BUCKET = "proofs";
 const PROOF_MAX_BYTES = 50 * 1024 * 1024;
 const SHARED_STATE_KEYS = [
@@ -39,6 +40,7 @@ let remoteReady = false;
 let remoteSaveTimer = null;
 let applyingRemoteState = false;
 let lastRemoteStateJson = "";
+let lastPentathlonControlJson = "";
 let remotePollTimer = null;
 let pendingRemoteSave = false;
 let galleryIndex = null;
@@ -901,9 +903,16 @@ async function loadRemoteState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     applyingRemoteState = false;
     lastRemoteStateJson = JSON.stringify(sharedState);
-    return;
+  } else {
+    await saveRemoteState();
   }
-  await saveRemoteState();
+  const control = await fetchPentathlonControl();
+  if (control) {
+    applyPentathlonControl(control);
+  } else {
+    await savePentathlonControl();
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 async function fetchRemoteState() {
@@ -920,16 +929,80 @@ async function fetchRemoteState() {
 
 async function pollRemoteState() {
   if (!remoteReady || pendingRemoteSave) return;
-  const sharedState = await fetchRemoteState();
-  if (!sharedState) return;
-  const nextJson = JSON.stringify(sharedState);
-  if (nextJson === lastRemoteStateJson) return;
-  lastRemoteStateJson = nextJson;
-  applyingRemoteState = true;
-  applySharedState(sharedState);
+  const [sharedState, control] = await Promise.all([fetchRemoteState(), fetchPentathlonControl()]);
+  let changed = false;
+  if (sharedState) {
+    const nextJson = JSON.stringify(sharedState);
+    if (nextJson !== lastRemoteStateJson) {
+      lastRemoteStateJson = nextJson;
+      applyingRemoteState = true;
+      applySharedState(sharedState);
+      applyingRemoteState = false;
+      changed = true;
+    }
+  }
+  if (control && applyPentathlonControl(control)) changed = true;
+  if (!changed) return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  applyingRemoteState = false;
   renderAll();
+}
+
+function pentathlonControl() {
+  ensureEditableContent();
+  return {
+    started: Boolean(state.settings.pentathlon?.started),
+    visibleIndex: Math.max(-1, Math.min(state.pentathlon.length - 1, Number(state.settings.pentathlon?.visibleIndex ?? -1))),
+  };
+}
+
+function applyPentathlonControl(control) {
+  if (!control || typeof control !== "object") return false;
+  const normalized = {
+    started: Boolean(control.started),
+    visibleIndex: Math.max(-1, Math.min(state.pentathlon.length - 1, Number(control.visibleIndex ?? -1))),
+  };
+  const nextJson = JSON.stringify(normalized);
+  const currentJson = JSON.stringify({
+    started: Boolean(state.settings?.pentathlon?.started),
+    visibleIndex: Math.max(-1, Math.min(state.pentathlon.length - 1, Number(state.settings?.pentathlon?.visibleIndex ?? -1))),
+  });
+  lastPentathlonControlJson = nextJson;
+  if (nextJson === currentJson) return false;
+  state.settings = state.settings || {};
+  state.settings.pentathlon = { ...(state.settings.pentathlon || {}), ...normalized };
+  return true;
+}
+
+async function fetchPentathlonControl() {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/app_controls?id=eq.${PENTATHLON_CONTROL_ID}&select=data`, {
+    headers: remoteHeaders(),
+  });
+  if (!response.ok) {
+    console.warn("Kunde inte hämta 5-kampsläge", await response.text());
+    return null;
+  }
+  const rows = await response.json();
+  return rows[0]?.data || null;
+}
+
+async function savePentathlonControl() {
+  if (!remoteReady) return false;
+  const control = pentathlonControl();
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/app_controls`, {
+    method: "POST",
+    headers: remoteHeaders({
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    }),
+    body: JSON.stringify({ id: PENTATHLON_CONTROL_ID, data: control, updated_at: new Date().toISOString() }),
+  });
+  if (!response.ok) {
+    console.warn("Kunde inte spara 5-kampsläge", await response.text());
+    showToast("Kunde inte spara visad gren");
+    return false;
+  }
+  lastPentathlonControlJson = JSON.stringify(control);
+  return true;
 }
 
 function subscribeRemoteState() {
@@ -3400,25 +3473,28 @@ function bindDynamicEvents() {
     renderAll();
   });
 
-  document.querySelector("[data-start-five]")?.addEventListener("click", () => {
+  document.querySelector("[data-start-five]")?.addEventListener("click", async () => {
     state.settings.pentathlon.started = true;
     state.settings.pentathlon.visibleIndex = Math.max(0, Number(state.settings.pentathlon.visibleIndex ?? -1));
     saveState();
     renderAll();
+    await savePentathlonControl();
   });
 
-  document.querySelector("[data-next-five]")?.addEventListener("click", () => {
+  document.querySelector("[data-next-five]")?.addEventListener("click", async () => {
     if (!state.settings.pentathlon.started) return;
     state.settings.pentathlon.visibleIndex = Math.min(state.pentathlon.length - 1, Number(state.settings.pentathlon.visibleIndex ?? 0) + 1);
     saveState();
     renderAll();
+    await savePentathlonControl();
   });
 
-  document.querySelector("[data-prev-five]")?.addEventListener("click", () => {
+  document.querySelector("[data-prev-five]")?.addEventListener("click", async () => {
     if (!state.settings.pentathlon.started) return;
     state.settings.pentathlon.visibleIndex = Math.max(-1, Number(state.settings.pentathlon.visibleIndex ?? 0) - 1);
     saveState();
     renderAll();
+    await savePentathlonControl();
   });
 
   document.querySelectorAll("[data-team-name]").forEach((input) => input.addEventListener("change", () => {
