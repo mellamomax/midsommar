@@ -1015,11 +1015,18 @@ function migrateProfile(name, profile) {
   profile.quizScore = Math.max(0, Number(profile.quizScore || 0));
   profile.bingoHits.forEach((item) => {
     if (!profile.bingoProofs[item]) profile.bingoProofs[item] = { photo: "", completedAt: "" };
+    profile.bingoProofs[item].media = proofMediaType(profile.bingoProofs[item]);
   });
   profile.missions = profile.missions.map((mission, index) =>
     typeof mission === "string"
-      ? { id: `${name}-${index}`, text: mission, points: missionPointsFor(mission), photo: "", completedAt: "" }
-      : { photo: "", completedAt: "", points: missionPointsFor(mission.text || "", index), ...mission },
+      ? { id: `${name}-${index}`, text: mission, points: missionPointsFor(mission), photo: "", media: "image", completedAt: "" }
+      : {
+          photo: "",
+          completedAt: "",
+          points: missionPointsFor(mission.text || "", index),
+          ...mission,
+          media: proofMediaType(mission),
+        },
   );
 }
 
@@ -1183,7 +1190,7 @@ function renderIntroModal() {
         </div>
         <div>
           <span class="intro-guide__icon intro-guide__icon--proof" aria-hidden="true">▣</span>
-          <p><strong>Bildbevis</strong><small>Foto eller video sparar beviset och låser avklarade moment.</small></p>
+          <p><strong>Bevis</strong><small>Foto eller video sparar beviset och låser avklarade moment.</small></p>
         </div>
         <div>
           <span class="intro-guide__icon intro-guide__icon--admin" aria-hidden="true">✓</span>
@@ -1339,10 +1346,10 @@ function archiveProfileGalleryItems(name) {
   if (!profile) return;
   const items = [];
   (profile.missions || []).forEach((mission) => {
-    if (mission.photo) items.push({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt, media: "image" });
+    if (mission.photo) items.push({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt, media: proofMediaType(mission) });
   });
   Object.entries(profile.bingoProofs || {}).forEach(([text, proof]) => {
-    if (proof?.photo) items.push({ name, text, photo: proof.photo, type: "Bingo", takenAt: proof.completedAt, media: "image" });
+    if (proof?.photo) items.push({ name, text, photo: proof.photo, type: "Bingo", takenAt: proof.completedAt, media: proofMediaType(proof) });
   });
   ["before", "after"].forEach((slot) => {
     const item = profile.beforeAfter?.[slot];
@@ -2137,10 +2144,10 @@ function evaluateBingoRewards(profile) {
 }
 
 function renderMission(profile) {
-  return `<article class="game-card mission-explain-card"><span class="micro-label">Hemliga uppdrag</span><p>Nedan listas dina hemliga uppdrag. Genomf&ouml;r dem utan att avsl&ouml;ja dig f&ouml;r de andra. Bildbevis kr&auml;vs.</p></article><div class="mission-list">${profile.missions.map((mission, index) => `
+  return `<article class="game-card mission-explain-card"><span class="micro-label">Hemliga uppdrag</span><p>Nedan listas dina hemliga uppdrag. Genomf&ouml;r dem utan att avsl&ouml;ja dig f&ouml;r de andra. Foto- eller videobevis kr&auml;vs.</p></article><div class="mission-list">${profile.missions.map((mission, index) => `
     <article class="mission-card mission-card--compact ${mission.photo ? "is-complete" : ""}">
       <div class="mission-copy"><h3><span class="mission-points">${mission.points || missionPointsFor(mission.text, index)} p</span><span>${escapeHtml(mission.text)}</span></h3>${isAdmin() ? `<label class="mission-point-admin">Poäng <input type="number" min="0" max="20" inputmode="numeric" value="${escapeHtml(mission.points || missionPointsFor(mission.text, index))}" data-mission-points="${index}" /></label>` : ""}</div>
-      ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*" data-mission-upload="${index}" />`}
+      ${mission.photo ? `<span class="done-pill">Klar</span>` : `<button class="upload-button" type="button" data-start-mission="${index}">Utför</button><input class="capture-input" type="file" accept="image/*,video/*" data-mission-upload="${index}" />`}
     </article>`).join("")}</div>`;
 }
 
@@ -2150,8 +2157,8 @@ function renderBingo(profile) {
     const isHit = hits.includes(item);
     return `<button class="bingo-cell ${isHit ? "is-hit" : ""}" type="button" data-bingo="${escapeHtml(item)}" data-bingo-index="${index}" ${isHit ? "disabled" : ""}>
       <span>${escapeHtml(item)}</span>
-      <small>${isHit ? "Klar" : "Ta bild"}</small>
-    </button><input class="capture-input" type="file" accept="image/*" data-bingo-upload="${index}" />`;
+      <small>${isHit ? "Klar" : "Foto/video"}</small>
+    </button><input class="capture-input" type="file" accept="image/*,video/*" data-bingo-upload="${index}" />`;
   }).join("")}</div>
   <div class="bingo-rewards">
     <p class="hint">${hits.length}/9 låsta · unik bricka för ${escapeHtml(state.profile)}</p>
@@ -2286,14 +2293,14 @@ function getGalleryPhotos() {
     if (!profile?.missions) return [];
     return profile.missions
       .filter((mission) => mission.photo)
-      .map((mission) => ({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt, media: "image" }));
+      .map((mission) => ({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt, media: proofMediaType(mission) }));
   });
   const bingoPhotos = names.flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.bingoProofs) return [];
     return Object.entries(profile.bingoProofs)
       .filter(([, proof]) => proof?.photo)
-      .map(([text, proof]) => ({ name, text, photo: proof.photo, type: "Bingo", takenAt: proof.completedAt, media: "image" }));
+      .map(([text, proof]) => ({ name, text, photo: proof.photo, type: "Bingo", takenAt: proof.completedAt, media: proofMediaType(proof) }));
   });
   const beforeAfterVideos = names.flatMap((name) => {
     const profile = state.profiles[name];
@@ -2335,7 +2342,7 @@ function archiveProfileProofs(name, profile, key) {
         photo: mission.photo,
         type: "Uppdrag",
         takenAt: mission.completedAt,
-        media: "image",
+        media: proofMediaType(mission),
       }));
   }
   if (key === "bingo") {
@@ -2347,7 +2354,7 @@ function archiveProfileProofs(name, profile, key) {
         photo: proof.photo,
         type: "Bingo",
         takenAt: proof.completedAt,
-        media: "image",
+        media: proofMediaType(proof),
       }));
   }
 }
@@ -2356,13 +2363,14 @@ function renderPhotos() {
   const photos = getGalleryPhotos();
   if (galleryIndex !== null && !photos[galleryIndex]) galleryIndex = null;
   if (!photos.length) {
-    return `<article class="game-card"><h3>Inga bilder ännu</h3><p class="hint">När någon klarar uppdrag eller bingo med bild hamnar bevisen här.</p></article>`;
+    return `<article class="game-card"><h3>Inga bilder eller videor ännu</h3><p class="hint">När någon klarar uppdrag eller bingo hamnar bevisen här.</p></article>`;
   }
   if (galleryIndex !== null) return renderPhotoViewer(photos);
 
   return `<div class="photo-grid">${photos.map((item, index) => `
     <button class="photo-card" type="button" data-photo-index="${index}">
       ${item.media === "video" ? `<video class="${item.type === "Före / efter" ? "before-after-video" : ""}" src="${item.photo}" muted playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
+      ${item.media === "video" ? `<span class="photo-media-badge">Video</span>` : ""}
       <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${escapeHtml(formatPhotoTime(item.takenAt))}</small></div>
     </button>
   `).join("")}</div>`;
@@ -2568,6 +2576,26 @@ function extensionForMime(mime) {
   return "jpg";
 }
 
+function mediaTypeForFile(file) {
+  const mime = String(file?.type || "").toLowerCase();
+  const extension = String(file?.name || "").split(".").pop()?.toLowerCase();
+  return mime.startsWith("video/") || ["mov", "mp4", "m4v", "webm"].includes(extension) ? "video" : "image";
+}
+
+function proofMediaType(proof) {
+  if (proof?.media === "video") return "video";
+  const source = String(proof?.photo || proof?.video || "");
+  return /\.(mov|mp4|m4v|webm)(?:$|[?#])/i.test(source) ? "video" : "image";
+}
+
+function proofFileIsAllowed(file) {
+  const mime = String(file?.type || "").toLowerCase();
+  const extension = String(file?.name || "").split(".").pop()?.toLowerCase();
+  return mime.startsWith("image/")
+    || mime.startsWith("video/")
+    || ["jpg", "jpeg", "png", "webp", "heic", "heif", "mov", "mp4", "m4v", "webm"].includes(extension);
+}
+
 function videoDuration(file) {
   return new Promise((resolve) => {
     const video = document.createElement("video");
@@ -2615,7 +2643,7 @@ async function uploadProofFile(file, kind, label, options = {}) {
     body: blob,
   });
   if (!response.ok) {
-    console.warn("Kunde inte ladda upp bild till Supabase", await response.text());
+    console.warn("Kunde inte ladda upp bevis till Supabase", await response.text());
     return "";
   }
   return `${SUPABASE_URL}/storage/v1/object/public/${PROOF_BUCKET}/${encodeURI(path)}`;
@@ -2632,14 +2660,36 @@ async function completeMissionWithFile(input) {
   const profile = activeProfile();
   const mission = profile.missions[missionIndex];
   if (!mission || mission.photo) return;
-  const photo = await uploadProofImage(file, "mission", mission.id || missionIndex);
-  if (!photo) {
-    window.alert("Bilden kunde inte laddas upp. Testa igen med en vanlig bild från kameran eller albumet.");
+  const uploadButton = document.querySelector(`[data-start-mission="${missionIndex}"]`);
+  if (!proofFileIsAllowed(file)) {
+    input.value = "";
+    window.alert("Välj ett foto eller en video.");
     return;
   }
-  mission.photo = photo;
+  if (file.size > 25 * 1024 * 1024) {
+    input.value = "";
+    window.alert("Filen är större än 25 MB. Välj en kortare video eller ett mindre foto.");
+    return;
+  }
+  if (uploadButton) {
+    uploadButton.disabled = true;
+    uploadButton.textContent = "Laddar...";
+  }
+  const media = mediaTypeForFile(file);
+  const proof = await uploadProofFile(file, "mission", mission.id || missionIndex);
+  if (!proof) {
+    input.value = "";
+    if (uploadButton) {
+      uploadButton.disabled = false;
+      uploadButton.textContent = "Försök igen";
+    }
+    window.alert("Beviset kunde inte laddas upp. Kontrollera anslutningen och försök igen.");
+    return;
+  }
+  mission.photo = proof;
+  mission.media = media;
   mission.completedAt = new Date().toISOString();
-  archiveGalleryItem({ name: state.profile, text: mission.text, photo, type: "Uppdrag", takenAt: mission.completedAt, media: "image" });
+  archiveGalleryItem({ name: state.profile, text: mission.text, photo: proof, type: "Uppdrag", takenAt: mission.completedAt, media });
   profile.activeMission = null;
   profile.points += mission.points || missionPointsFor(mission.text, missionIndex);
   saveState();
@@ -2653,15 +2703,38 @@ async function completeBingoWithFile(input) {
   const profile = activeProfile();
   const item = profile.bingo[bingoIndex];
   if (!item || profile.bingoProofs?.[item]?.completedAt) return;
-  const photo = await uploadProofImage(file, "bingo", item);
-  if (!photo) {
-    window.alert("Bilden kunde inte laddas upp. Testa igen med en vanlig bild från kameran eller albumet.");
+  const bingoButton = document.querySelector(`[data-bingo-index="${bingoIndex}"]`);
+  if (!proofFileIsAllowed(file)) {
+    input.value = "";
+    window.alert("Välj ett foto eller en video.");
+    return;
+  }
+  if (file.size > 25 * 1024 * 1024) {
+    input.value = "";
+    window.alert("Filen är större än 25 MB. Välj en kortare video eller ett mindre foto.");
+    return;
+  }
+  if (bingoButton) {
+    bingoButton.disabled = true;
+    const status = bingoButton.querySelector("small");
+    if (status) status.textContent = "Laddar...";
+  }
+  const media = mediaTypeForFile(file);
+  const proof = await uploadProofFile(file, "bingo", item);
+  if (!proof) {
+    input.value = "";
+    if (bingoButton) {
+      bingoButton.disabled = false;
+      const status = bingoButton.querySelector("small");
+      if (status) status.textContent = "Försök igen";
+    }
+    window.alert("Beviset kunde inte laddas upp. Kontrollera anslutningen och försök igen.");
     return;
   }
   profile.bingoProofs = profile.bingoProofs || {};
   const completedAt = new Date().toISOString();
-  profile.bingoProofs[item] = { photo, completedAt };
-  archiveGalleryItem({ name: state.profile, text: item, photo, type: "Bingo", takenAt: completedAt, media: "image" });
+  profile.bingoProofs[item] = { photo: proof, media, completedAt };
+  archiveGalleryItem({ name: state.profile, text: item, photo: proof, type: "Bingo", takenAt: completedAt, media });
   if (!profile.bingoHits.includes(item)) profile.bingoHits.push(item);
   evaluateBingoRewards(profile);
   saveState();
@@ -3218,7 +3291,7 @@ function bindDynamicEvents() {
 
   document.querySelectorAll("[data-start-mission]").forEach((button) => button.addEventListener("click", () => {
     const missionIndex = Number(button.dataset.startMission);
-    if (!window.confirm("Ta en bild nu för att låsa uppdraget och få poäng?")) return;
+    if (!window.confirm("Lägg till ett foto eller en video som bevis för att låsa uppdraget och få poäng?")) return;
     document.querySelector(`[data-mission-upload="${missionIndex}"]`)?.click();
   }));
 
@@ -3227,7 +3300,7 @@ function bindDynamicEvents() {
     const bingoIndex = Number(button.dataset.bingoIndex);
     const item = profile.bingo[bingoIndex];
     if (!item || profile.bingoProofs?.[item]?.completedAt) return;
-    if (!window.confirm("Ta en bild nu för att låsa bingorutan?")) return;
+    if (!window.confirm("Lägg till ett foto eller en video som bevis för att låsa bingorutan?")) return;
     document.querySelector(`[data-bingo-upload="${bingoIndex}"]`)?.click();
   }));
 

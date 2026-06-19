@@ -2303,6 +2303,7 @@ body {
 }
 
 .photo-card {
+  position: relative;
   display: grid;
   width: 100%;
   border: 0;
@@ -6199,6 +6200,20 @@ body[data-section="games"] .game-picker {
   object-fit: cover;
   border-radius: 10px;
   background: #111;
+}
+
+.photo-card .photo-media-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #fff;
+  background: rgba(16, 30, 22, 0.82);
+  font-size: 0.68rem;
+  font-weight: 850;
+  line-height: 1.2;
 }
 
 .photo-viewer__stage video {
