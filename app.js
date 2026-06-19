@@ -1,6 +1,6 @@
 ﻿const EVENT_START = new Date("2026-06-19T12:00:00+02:00");
 const BEFORE_VIDEO_OPEN = new Date("2026-06-19T12:00:00+02:00");
-const BEFORE_VIDEO_CLOSE = new Date("2026-06-19T13:00:00+02:00");
+const BEFORE_VIDEO_CLOSE = new Date("2026-06-19T15:00:00+02:00");
 const AFTER_VIDEO_OPEN = new Date("2026-06-19T20:00:00+02:00");
 const MATCH_TIP_DEADLINE = new Date("2026-06-20T19:00:00+02:00");
 const STORAGE_KEY = "midsommar-dashboard-v6";
@@ -2179,7 +2179,7 @@ function beforeAfterSlotState(slot, item, beforeItem) {
   const now = new Date();
   if (item.video) return { disabled: true, message: "Klar" };
   if (slot === "before" && now < BEFORE_VIDEO_OPEN) return { disabled: true, message: "Öppnar på midsommardagen." };
-  if (slot === "before" && now >= BEFORE_VIDEO_CLOSE) return { disabled: true, message: "Före stängde 13:00." };
+  if (slot === "before" && now >= BEFORE_VIDEO_CLOSE) return { disabled: true, message: "Före stängde 15:00." };
   if (slot === "after" && !beforeItem?.video) return { disabled: true, message: "Ta före-videon först." };
   if (slot === "after" && now < AFTER_VIDEO_OPEN) return { disabled: true, message: "Öppnar efter 20:00." };
   return { disabled: false, message: "Ingen video än." };
@@ -2663,6 +2663,11 @@ async function completeBingoWithFile(input) {
 async function completeBeforeAfterVideo(input) {
   const file = input.files?.[0];
   if (!file) return;
+  if (file.size > 25 * 1024 * 1024) {
+    input.value = "";
+    window.alert("Videon är större än 25 MB. Välj en kortare eller mindre video.");
+    return;
+  }
   const slot = input.dataset.beforeAfterUpload;
   if (!["before", "after"].includes(slot)) return;
   const profile = activeProfile();
