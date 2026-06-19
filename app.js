@@ -12,7 +12,6 @@ const PENTATHLON_CONTROL_ID = "pentathlon-control";
 const PROOF_BUCKET = "proofs";
 const PROOF_MAX_BYTES = 50 * 1024 * 1024;
 const SHARED_STATE_KEYS = [
-  "profiles",
   "nameOverrides",
   "rsvp",
   "pack",
@@ -38,11 +37,15 @@ const NOTIFICATION_PROMPT_KEY = "midsommar-notification-prompt-v1";
 
 let remoteReady = false;
 let remoteSaveTimer = null;
+let remoteProfileSaveTimer = null;
 let applyingRemoteState = false;
 let lastRemoteStateJson = "";
 let lastPentathlonControlJson = "";
 let remotePollTimer = null;
 let pendingRemoteSave = false;
+let pendingProfileSave = false;
+let profileBaselines = {};
+const forcedProfilePointSaves = new Set();
 let galleryIndex = null;
 let galleryMotion = "open";
 let toastTimer = null;
@@ -783,11 +786,20 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if (!applyingRemoteState) scheduleRemoteSave();
+  if (!applyingRemoteState) {
+    scheduleRemoteSave();
+    scheduleRemoteProfileSave();
+  }
 }
 
 function getSharedState() {
   return sanitizeSharedState(Object.fromEntries(SHARED_STATE_KEYS.map((key) => [key, state[key]])));
+}
+
+function sharedStateWithoutProfileStore(sharedState) {
+  if (!sharedState || typeof sharedState !== "object") return sharedState;
+  const { profileStore, profiles, ...shared } = sharedState;
+  return shared;
 }
 
 function sanitizeSharedState(sharedState) {
@@ -800,6 +812,7 @@ function sanitizeSharedState(sharedState) {
 function applySharedState(sharedState) {
   if (!sharedState || typeof sharedState !== "object") return;
   sharedState = repairStoredText(sharedState);
+  applyProfileStore(sharedState.profileStore);
   SHARED_STATE_KEYS.forEach((key) => {
     if (sharedState[key] !== undefined) state[key] = sharedState[key];
   });
@@ -807,6 +820,94 @@ function applySharedState(sharedState) {
     const profile = state.profiles[name];
     if (profile) migrateProfile(name, profile);
   });
+}
+
+function storedParticipant(name) {
+  return guests.includes(name);
+}
+
+function sanitizedProfile(profile) {
+  return sanitizeSharedState(profile || {});
+}
+
+function applyProfileStore(profileStore) {
+  if (!profileStore || typeof profileStore !== "object") return false;
+  let changed = false;
+  guests.forEach((name) => {
+    const profile = profileStore[name];
+    if (!profile) return;
+    const nextProfile = repairStoredText(profile);
+    const nextJson = JSON.stringify(nextProfile);
+    if (JSON.stringify(state.profiles?.[name]) !== nextJson) {
+      state.profiles[name] = nextProfile;
+      migrateProfile(name, state.profiles[name]);
+      changed = true;
+    }
+    profileBaselines[name] = JSON.stringify(sanitizedProfile(state.profiles[name]));
+  });
+  return changed;
+}
+
+function scheduleRemoteProfileSave() {
+  if (!remoteReady) return;
+  pendingProfileSave = true;
+  clearTimeout(remoteProfileSaveTimer);
+  remoteProfileSaveTimer = setTimeout(saveRemoteProfiles, 250);
+}
+
+async function saveRemoteProfiles() {
+  if (!remoteReady) return;
+  let changedDuringSave = false;
+  const changes = guests
+    .filter((name) => state.profiles?.[name])
+    .map((name) => {
+      const profile = sanitizedProfile(state.profiles[name]);
+      const profileJson = JSON.stringify(profile);
+      const baselineJson = profileBaselines[name] || "";
+      return { name, profile, profileJson, baselineJson };
+    })
+    .filter((item) => item.profileJson !== item.baselineJson);
+
+  if (!changes.length) {
+    pendingProfileSave = false;
+    return;
+  }
+
+  for (const item of changes) {
+    let baseline = {};
+    try {
+      baseline = item.baselineJson ? JSON.parse(item.baselineJson) : {};
+    } catch {}
+    const forcePoints = forcedProfilePointSaves.has(item.name);
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/save_participant_profile`, {
+      method: "POST",
+      headers: remoteHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        p_name: item.name,
+        p_profile: item.profile,
+        p_base_points: Number(baseline.points || 0),
+        p_force_points: forcePoints,
+      }),
+    });
+    if (!response.ok) {
+      console.warn(`Kunde inte spara profilen ${item.name}`, await response.text());
+      continue;
+    }
+    const savedProfile = await response.json();
+    const normalizedSavedProfile = repairStoredText(savedProfile);
+    profileBaselines[item.name] = JSON.stringify(sanitizedProfile(normalizedSavedProfile));
+    const itemChangedDuringSave = JSON.stringify(sanitizedProfile(state.profiles[item.name])) !== item.profileJson;
+    if (!itemChangedDuringSave) {
+      state.profiles[item.name] = normalizedSavedProfile;
+      migrateProfile(item.name, state.profiles[item.name]);
+      forcedProfilePointSaves.delete(item.name);
+    } else {
+      changedDuringSave = true;
+    }
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  pendingProfileSave = false;
+  if (changedDuringSave) scheduleRemoteProfileSave();
 }
 
 function repairMojibakeText(value) {
@@ -902,7 +1003,7 @@ async function loadRemoteState() {
     applySharedState(sharedState);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     applyingRemoteState = false;
-    lastRemoteStateJson = JSON.stringify(sharedState);
+    lastRemoteStateJson = JSON.stringify(sharedStateWithoutProfileStore(sharedState));
   } else {
     await saveRemoteState();
   }
@@ -928,18 +1029,20 @@ async function fetchRemoteState() {
 }
 
 async function pollRemoteState() {
-  if (!remoteReady || pendingRemoteSave) return;
+  if (!remoteReady || pendingRemoteSave || pendingProfileSave) return;
   const [sharedState, control] = await Promise.all([fetchRemoteState(), fetchPentathlonControl()]);
   let changed = false;
   if (sharedState) {
-    const nextJson = JSON.stringify(sharedState);
+    const profileChanged = applyProfileStore(sharedState.profileStore);
+    const nextJson = JSON.stringify(sharedStateWithoutProfileStore(sharedState));
     if (nextJson !== lastRemoteStateJson) {
       lastRemoteStateJson = nextJson;
       applyingRemoteState = true;
-      applySharedState(sharedState);
+      applySharedState(sharedStateWithoutProfileStore(sharedState));
       applyingRemoteState = false;
       changed = true;
     }
+    if (profileChanged) changed = true;
   }
   if (control && applyPentathlonControl(control)) changed = true;
   if (!changed) return;
@@ -3263,6 +3366,7 @@ function bindDynamicEvents() {
     const profile = state.profiles[name] || makeProfile(name);
     profile.points = 0;
     state.profiles[name] = profile;
+    if (storedParticipant(name)) forcedProfilePointSaves.add(name);
     saveState();
     renderAll();
   });
@@ -3281,6 +3385,7 @@ function bindDynamicEvents() {
     const profile = state.profiles[name] || makeProfile(name);
     profile.points = Math.max(0, Number(profile.points || 0) + delta);
     state.profiles[name] = profile;
+    if (storedParticipant(name)) forcedProfilePointSaves.add(name);
     saveState();
     renderAll();
   }));
