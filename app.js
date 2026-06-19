@@ -32,6 +32,7 @@ const SHARED_STATE_KEYS = [
 ];
 const LOCAL_LOGOUT_KEY = "midsommar-last-global-logout";
 const LOCAL_INTRO_PREFIX = "midsommar-intro-seen-v3";
+const NOTIFICATION_PROMPT_KEY = "midsommar-notification-prompt-v1";
 
 let remoteReady = false;
 let remoteSaveTimer = null;
@@ -1079,6 +1080,7 @@ function renderAll() {
   renderPrep();
   renderParty();
   renderIntroModal();
+  renderNotificationPrompt();
 }
 
 function activatePartyIfEventStarted() {
@@ -1191,6 +1193,42 @@ function renderIntroModal() {
       <button class="pill-button intro-card__start" type="button" data-close-intro>Nu kör vi</button>
     </section>
   </div>`);
+}
+
+function canRequestNotifications() {
+  return isStandaloneApp()
+    && "Notification" in window
+    && "serviceWorker" in navigator
+    && Notification.permission === "default";
+}
+
+function renderNotificationPrompt() {
+  document.querySelector("#notification-modal")?.remove();
+  if (document.querySelector("#intro-modal") || !state.profile || isAdmin()) return;
+  if (!canRequestNotifications() || sessionStorage.getItem(NOTIFICATION_PROMPT_KEY) === "later") return;
+  document.body.insertAdjacentHTML("beforeend", `<div class="notification-modal" id="notification-modal" role="dialog" aria-modal="true" aria-label="Tillåt notiser">
+    <section class="notification-card">
+      <span class="notification-card__icon" aria-hidden="true">!</span>
+      <div>
+        <span class="micro-label">Midsommar 2026</span>
+        <h2>Vill du ha notiser?</h2>
+        <p>Tillåt notiser så kan Midsommar-appen meddela när firandet drar igång.</p>
+      </div>
+      <button class="pill-button" type="button" data-enable-notifications>Tillåt notiser</button>
+      <button class="notification-later" type="button" data-notification-later>Inte nu</button>
+    </section>
+  </div>`);
+}
+
+async function requestNotificationPermission() {
+  if (!canRequestNotifications()) return;
+  const permission = await Notification.requestPermission();
+  document.querySelector("#notification-modal")?.remove();
+  if (permission === "granted") {
+    showToast("Notiser är tillåtna");
+    return;
+  }
+  showToast("Notiser aktiverades inte");
 }
 
 function allParticipants() {
@@ -3715,6 +3753,16 @@ document.addEventListener("click", (event) => {
   if (introClose) {
     localStorage.setItem(introSeenKey(), "1");
     document.querySelector("#intro-modal")?.remove();
+    renderNotificationPrompt();
+    return;
+  }
+  if (event.target.closest("[data-enable-notifications]")) {
+    requestNotificationPermission();
+    return;
+  }
+  if (event.target.closest("[data-notification-later]")) {
+    sessionStorage.setItem(NOTIFICATION_PROMPT_KEY, "later");
+    document.querySelector("#notification-modal")?.remove();
     return;
   }
   const dashboardToggle = event.target.closest("[data-dashboard-toggle]");
