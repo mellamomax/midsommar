@@ -31,7 +31,7 @@ const SHARED_STATE_KEYS = [
   "galleryArchive",
 ];
 const LOCAL_LOGOUT_KEY = "midsommar-last-global-logout";
-const LOCAL_INTRO_PREFIX = "midsommar-intro-seen";
+const LOCAL_INTRO_PREFIX = "midsommar-intro-seen-v2";
 
 let remoteReady = false;
 let remoteSaveTimer = null;
