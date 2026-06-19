@@ -1,6 +1,6 @@
-﻿const EVENT_START = new Date("2026-06-19T10:00:00+02:00");
-const BEFORE_VIDEO_OPEN = new Date("2026-06-19T10:00:00+02:00");
-const BEFORE_VIDEO_CLOSE = new Date("2026-06-19T11:00:00+02:00");
+﻿const EVENT_START = new Date("2026-06-19T11:00:00+02:00");
+const BEFORE_VIDEO_OPEN = new Date("2026-06-19T11:00:00+02:00");
+const BEFORE_VIDEO_CLOSE = new Date("2026-06-19T12:00:00+02:00");
 const AFTER_VIDEO_OPEN = new Date("2026-06-19T20:00:00+02:00");
 const MATCH_TIP_DEADLINE = new Date("2026-06-20T19:00:00+02:00");
 const STORAGE_KEY = "midsommar-dashboard-v6";
