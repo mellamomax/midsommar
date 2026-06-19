@@ -2167,7 +2167,7 @@ function renderBeforeAfter(profile) {
   const afterState = beforeAfterSlotState("after", after, before);
   return `<article class="game-card before-after-card">
     <h3>Video challenge</h3>
-    <p class="hint">Spela in en före-video när appen öppnar. Efter 20:00 kan du spela in efter-videon och få 20 poäng.</p>
+    <p class="hint">Spela in en före-video när appen öppnar. Efter 20:00 kan du spela in efter-videon och få 20 poäng. Max 10 sekunder per video.</p>
     <div class="before-after-grid">
       ${renderBeforeAfterSlot("before", "Före", before, beforeState)}
       ${renderBeforeAfterSlot("after", "Efter", after, afterState)}
@@ -2179,7 +2179,7 @@ function beforeAfterSlotState(slot, item, beforeItem) {
   const now = new Date();
   if (item.video) return { disabled: true, message: "Klar" };
   if (slot === "before" && now < BEFORE_VIDEO_OPEN) return { disabled: true, message: "Öppnar på midsommardagen." };
-  if (slot === "before" && now >= BEFORE_VIDEO_CLOSE) return { disabled: true, message: "Före stängde 11:00." };
+  if (slot === "before" && now >= BEFORE_VIDEO_CLOSE) return { disabled: true, message: "Före stängde 13:00." };
   if (slot === "after" && !beforeItem?.video) return { disabled: true, message: "Ta före-videon först." };
   if (slot === "after" && now < AFTER_VIDEO_OPEN) return { disabled: true, message: "Öppnar efter 20:00." };
   return { disabled: false, message: "Ingen video än." };
@@ -2568,6 +2568,22 @@ function extensionForMime(mime) {
   return "jpg";
 }
 
+function videoDuration(file) {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    const objectUrl = URL.createObjectURL(file);
+    const finish = (duration = 0) => {
+      URL.revokeObjectURL(objectUrl);
+      video.remove();
+      resolve(Number(duration) || 0);
+    };
+    video.preload = "metadata";
+    video.addEventListener("loadedmetadata", () => finish(video.duration), { once: true });
+    video.addEventListener("error", () => finish(0), { once: true });
+    video.src = objectUrl;
+  });
+}
+
 function proofPath(kind, label, extension = "jpg", profileName = state.profile) {
   const safeProfile = (profileName || "guest").toLowerCase();
   const safeLabel = String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "proof";
@@ -2655,6 +2671,17 @@ async function completeBeforeAfterVideo(input) {
   const slotState = beforeAfterSlotState(slot, profile.beforeAfter[slot], profile.beforeAfter.before);
   if (slotState.disabled) {
     showToast(slotState.message);
+    return;
+  }
+  const duration = await videoDuration(file);
+  if (!duration) {
+    input.value = "";
+    window.alert("Videons längd kunde inte läsas. Testa att välja videon igen.");
+    return;
+  }
+  if (duration > 10.25) {
+    input.value = "";
+    window.alert(`Videon är ${Math.ceil(duration)} sekunder. Välj en video som är högst 10 sekunder.`);
     return;
   }
   const video = await uploadProofFile(file, "fore-efter", slot, { compressImage: false });
