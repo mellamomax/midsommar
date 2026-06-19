@@ -1205,6 +1205,9 @@ function migrateProfile(name, profile) {
           media: proofMediaType(mission),
         },
   );
+  profile.missionHistory = Array.isArray(profile.missionHistory) ? profile.missionHistory : [];
+  profile.missionArchive = Array.isArray(profile.missionArchive) ? profile.missionArchive : [];
+  profile.missionRound = profile.missionRound || "";
 }
 
 function getMissionsFor(name) {
@@ -2489,7 +2492,7 @@ function getGalleryPhotos() {
   const missionPhotos = names.flatMap((name) => {
     const profile = state.profiles[name];
     if (!profile?.missions) return [];
-    return profile.missions
+    return [...(profile.missions || []), ...(profile.missionArchive || [])]
       .filter((mission) => mission.photo)
       .map((mission) => ({ name, text: mission.text, photo: mission.photo, type: "Uppdrag", takenAt: mission.completedAt, media: proofMediaType(mission) }));
   });
