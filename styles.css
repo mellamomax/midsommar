@@ -6190,6 +6190,10 @@ body[data-section="games"] .game-picker {
   background: #111;
 }
 
+video.before-after-video {
+  transform: scaleX(-1);
+}
+
 .match-wallpaper {
   display: grid;
   align-content: start;

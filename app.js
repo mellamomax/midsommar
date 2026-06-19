@@ -2189,7 +2189,7 @@ function renderBeforeAfterSlot(slot, label, item, slotState) {
   const title = slot === "after" ? `${label} · 20 p` : label;
   return `<section class="before-after-slot ${item.video ? "is-done" : ""} ${slotState.disabled && !item.video ? "is-locked" : ""}">
     <strong>${title}</strong>
-    ${item.video ? `<video src="${item.video}" controls playsinline preload="metadata"></video><small>${escapeHtml(formatPhotoTime(item.completedAt))}</small>` : `<p class="hint">${escapeHtml(slotState.message)}</p>`}
+    ${item.video ? `<video class="before-after-video" src="${item.video}" controls playsinline preload="metadata"></video><small>${escapeHtml(formatPhotoTime(item.completedAt))}</small>` : `<p class="hint">${escapeHtml(slotState.message)}</p>`}
     <button class="upload-button" type="button" data-before-after-start="${slot}" ${slotState.disabled || item.video ? "disabled" : ""}>${item.video ? "Klar" : "Ta video"}</button>
     <input class="capture-input" type="file" accept="video/*" capture="user" data-before-after-upload="${slot}" />
   </section>`;
@@ -2362,7 +2362,7 @@ function renderPhotos() {
 
   return `<div class="photo-grid">${photos.map((item, index) => `
     <button class="photo-card" type="button" data-photo-index="${index}">
-      ${item.media === "video" ? `<video src="${item.photo}" muted playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
+      ${item.media === "video" ? `<video class="${item.type === "Före / efter" ? "before-after-video" : ""}" src="${item.photo}" muted playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
       <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${escapeHtml(formatPhotoTime(item.takenAt))}</small></div>
     </button>
   `).join("")}</div>`;
@@ -2375,7 +2375,7 @@ function renderPhotoViewer(photos) {
     <button class="photo-close" type="button" data-gallery-close aria-label="Stäng bildvisare">×</button>
     <button class="photo-nav photo-nav--prev" type="button" data-gallery-prev aria-label="Föregående bild">‹</button>
     <figure class="photo-viewer__stage">
-      ${item.media === "video" ? `<video src="${item.photo}" controls playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
+      ${item.media === "video" ? `<video class="${item.type === "Före / efter" ? "before-after-video" : ""}" src="${item.photo}" controls playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
       <figcaption><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${position} · ${escapeHtml(formatPhotoTime(item.takenAt))}</small></figcaption>
     </figure>
     <button class="photo-nav photo-nav--next" type="button" data-gallery-next aria-label="Nästa bild">›</button>
