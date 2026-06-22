@@ -2160,6 +2160,65 @@ body {
   gap: 9px;
 }
 
+.gallery-download-bar {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 10px 11px;
+  border: 1px solid rgba(31, 77, 53, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 6px 18px rgba(31, 77, 53, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.gallery-download-bar > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.gallery-download-bar strong {
+  color: var(--leaf-dark);
+  font-size: 0.9rem;
+}
+
+.gallery-download-bar span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.gallery-download-bar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 13px;
+  color: #fff;
+  background: var(--leaf-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.gallery-download-bar button span {
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.gallery-download-bar button:disabled {
+  opacity: 0.58;
+}
+
 .photo-card {
   overflow: hidden;
   border-radius: 8px;

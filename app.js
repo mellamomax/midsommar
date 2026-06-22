@@ -48,6 +48,8 @@ let profileBaselines = {};
 const forcedProfilePointSaves = new Set();
 let galleryIndex = null;
 let galleryMotion = "open";
+let galleryDownloadBusy = false;
+let galleryDownloadProgress = "";
 let toastTimer = null;
 let profileClickTimer = null;
 let lastLoginTap = 0;
@@ -2563,18 +2565,150 @@ function archiveProfileProofs(name, profile, key) {
 function renderPhotos() {
   const photos = getGalleryPhotos();
   if (galleryIndex !== null && !photos[galleryIndex]) galleryIndex = null;
+  const toolbar = renderGalleryDownloadToolbar(photos.length);
   if (!photos.length) {
-    return `<article class="game-card"><h3>Inga bilder eller videor ännu</h3><p class="hint">När någon klarar uppdrag eller bingo hamnar bevisen här.</p></article>`;
+    return `${toolbar}<article class="game-card"><h3>Inga bilder eller videor ännu</h3><p class="hint">När någon klarar uppdrag eller bingo hamnar bevisen här.</p></article>`;
   }
   if (galleryIndex !== null) return renderPhotoViewer(photos);
 
-  return `<div class="photo-grid">${photos.map((item, index) => `
+  return `${toolbar}<div class="photo-grid">${photos.map((item, index) => `
     <button class="photo-card" type="button" data-photo-index="${index}">
       ${item.media === "video" ? `<video class="${item.type === "Före / efter" ? "before-after-video" : ""}" src="${item.photo}" muted playsinline preload="metadata"></video>` : `<img src="${item.photo}" alt="${escapeHtml(item.type)} från ${escapeHtml(item.name)}" />`}
       ${item.media === "video" ? `<span class="photo-media-badge">Video</span>` : ""}
       <div><strong>${escapeHtml(item.name)} · ${escapeHtml(item.type)}</strong><span>${escapeHtml(item.text)}</span><small>${escapeHtml(formatPhotoTime(item.takenAt))}</small></div>
     </button>
   `).join("")}</div>`;
+}
+
+function renderGalleryDownloadToolbar(mediaCount) {
+  const buttonLabel = galleryDownloadBusy ? "Förbereder..." : "Ladda ner alla";
+  const status = galleryDownloadProgress || `${mediaCount} ${mediaCount === 1 ? "fil" : "filer"}`;
+  return `<div class="gallery-download-bar">
+    <div>
+      <strong>Alla minnen</strong>
+      <span data-gallery-download-status aria-live="polite">${escapeHtml(status)}</span>
+    </div>
+    <button type="button" data-download-gallery ${galleryDownloadBusy || !mediaCount ? "disabled" : ""}>
+      <span aria-hidden="true">↓</span>${buttonLabel}
+    </button>
+  </div>`;
+}
+
+function setGalleryDownloadProgress(message) {
+  galleryDownloadProgress = message;
+  const status = document.querySelector("[data-gallery-download-status]");
+  if (status) status.textContent = message;
+  const button = document.querySelector("[data-download-gallery]");
+  if (button) {
+    button.disabled = galleryDownloadBusy;
+    button.innerHTML = `<span aria-hidden="true">↓</span>${galleryDownloadBusy ? "Förbereder..." : "Ladda ner alla"}`;
+  }
+}
+
+function galleryFileExtension(item, blob) {
+  const contentType = String(blob?.type || "").toLowerCase();
+  const urlPath = (() => {
+    try {
+      return new URL(item.photo).pathname;
+    } catch {
+      return "";
+    }
+  })();
+  const urlExtension = urlPath.match(/\.([a-z0-9]{2,5})$/i)?.[1]?.toLowerCase();
+  if (urlExtension) return urlExtension === "jpeg" ? "jpg" : urlExtension;
+  const extensions = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/heic": "heic",
+    "image/heif": "heif",
+    "video/mp4": "mp4",
+    "video/quicktime": "mov",
+    "video/webm": "webm",
+  };
+  return extensions[contentType] || (item.media === "video" ? "mp4" : "jpg");
+}
+
+function safeGalleryFilename(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 70)
+    .toLowerCase() || "minne";
+}
+
+function galleryArchiveFilename(item, index, blob) {
+  const date = item.takenAt ? new Date(item.takenAt) : null;
+  const datePart = date && !Number.isNaN(date.getTime())
+    ? `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}`
+    : "tid-saknas";
+  const extension = galleryFileExtension(item, blob);
+  const number = String(index + 1).padStart(3, "0");
+  return `${number}_${datePart}_${safeGalleryFilename(item.name)}_${safeGalleryFilename(item.type)}_${safeGalleryFilename(item.text)}.${extension}`;
+}
+
+async function downloadAllGalleryMedia() {
+  if (galleryDownloadBusy) return;
+  const media = getGalleryPhotos();
+  if (!media.length) {
+    showToast("Det finns inga bilder eller videor ännu");
+    return;
+  }
+  if (typeof JSZip === "undefined") {
+    showToast("Nedladdningen kunde inte starta. Ladda om appen.");
+    return;
+  }
+
+  galleryDownloadBusy = true;
+  setGalleryDownloadProgress(`Hämtar 0 av ${media.length}`);
+  const zip = new JSZip();
+  const folder = zip.folder("midsommar-2026");
+  let downloaded = 0;
+  const failed = [];
+
+  try {
+    for (let index = 0; index < media.length; index += 1) {
+      const item = media[index];
+      try {
+        const response = await fetch(item.photo);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        folder.file(galleryArchiveFilename(item, index, blob), blob, { binary: true });
+        downloaded += 1;
+      } catch (error) {
+        console.warn("Kunde inte hämta gallerifil", item.photo, error);
+        failed.push(item);
+      }
+      setGalleryDownloadProgress(`Hämtar ${index + 1} av ${media.length}`);
+    }
+
+    if (!downloaded) throw new Error("Inga filer kunde hämtas");
+    setGalleryDownloadProgress("Packar 0 %");
+    const archive = await zip.generateAsync(
+      { type: "blob", compression: "STORE", mimeType: "application/zip" },
+      ({ percent }) => setGalleryDownloadProgress(`Packar ${Math.round(percent)} %`),
+    );
+    const url = URL.createObjectURL(archive);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `midsommar-2026-${new Date().toISOString().slice(0, 10)}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    showToast(failed.length
+      ? `${downloaded} filer hämtades. ${failed.length} kunde inte laddas ner.`
+      : `${downloaded} bilder och videor hämtades`);
+  } catch (error) {
+    console.error("Kunde inte skapa galleriarkiv", error);
+    showToast("Kunde inte skapa nedladdningen. Försök igen.");
+  } finally {
+    galleryDownloadBusy = false;
+    galleryDownloadProgress = "";
+    setGalleryDownloadProgress(`${media.length} ${media.length === 1 ? "fil" : "filer"}`);
+  }
 }
 
 function renderPhotoViewer(photos) {
@@ -3537,6 +3671,10 @@ function bindDynamicEvents() {
     galleryMotion = "open";
     renderAll();
   }));
+
+  document.querySelector("[data-download-gallery]")?.addEventListener("click", () => {
+    downloadAllGalleryMedia();
+  });
 
   document.querySelector("[data-gallery-close]")?.addEventListener("click", () => {
     galleryIndex = null;
